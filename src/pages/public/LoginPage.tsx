@@ -1,7 +1,43 @@
-import { Box, Button, Link, Stack, TextField, Typography } from "@mui/material";
-import { Link as RouterLink } from "react-router-dom";
+import { Box, Button, Link, Stack, TextField, Typography, Alert } from "@mui/material";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function LoginPage() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const u = await login(email, password);
+      const r = u?.roles ?? [];
+      if (r.length === 0) {
+        setError("Sesión iniciada, pero tu cuenta no tiene un rol asignado (ADMIN, ASESOR, ASPIRANTE). Pide al administrador que te asigne un rol en la base de datos (tabla rol_usuario).");
+        return;
+      }
+      if (r.includes("ADMIN")) navigate("/admin");
+      else if (r.includes("ASESOR")) navigate("/asesor");
+      else if (r.includes("ASPIRANTE")) navigate("/aspirante");
+      else navigate("/");
+    } catch (err: any) {
+      if (!err?.response) {
+        setError("No se pudo conectar con el servidor. Verifica que el backend esté en ejecución (puerto 3000).");
+      } else {
+        const msg = err?.response?.data?.message;
+        setError(Array.isArray(msg) ? msg[0] : msg || "Credenciales incorrectas");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", display: "flex" }}>
       {/* IZQUIERDA: Form */}
@@ -34,19 +70,23 @@ export default function LoginPage() {
             Ingresa los detalles de tu cuenta para continuar
           </Typography>
 
+          <form onSubmit={handleSubmit}>
           <Stack spacing={2}>
-            <TextField label="Username" variant="standard" fullWidth />
-            <TextField label="Password" type="password" variant="standard" fullWidth />
+            {error && <Alert severity="error">{error}</Alert>}
+            <TextField label="Email" variant="standard" fullWidth type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+            <TextField label="Contraseña" type="password" variant="standard" fullWidth value={password} onChange={(e) => setPassword(e.target.value)} required />
 
             <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
-              <Link component="button" underline="hover" sx={{ color: "#7c3aed", fontSize: 14 }}>
+              <Link component="button" type="button" underline="hover" sx={{ color: "#7c3aed", fontSize: 14 }}>
                 ¿Olvidaste tu contraseña?
               </Link>
             </Box>
 
             <Button
+              type="submit"
               variant="contained"
               size="large"
+              disabled={loading}
               sx={{
                 mt: 1,
                 borderRadius: 2,
@@ -57,20 +97,20 @@ export default function LoginPage() {
                 "&:hover": { bgcolor: "#7c3aed" },
               }}
             >
-                Iniciar sesión
+                {loading ? "..." : "Iniciar sesión"}
             </Button>
-
-            <Typography sx={{ mt: 1, fontSize: 14, color: "text.secondary" }}>
-              ¿No tienes una cuenta?{" "}
-              <Link component={RouterLink} to="/register" underline="hover" sx={{ color: "#7c3aed", fontWeight: 700 }}>
-                Regístrate
-              </Link>
-            </Typography>
-
-            <Link component={RouterLink} to="/" underline="hover" sx={{ color: "#7c3aed", fontWeight: 700 }}>
-              Volver al inicio
-            </Link>
           </Stack>
+          </form>
+
+          <Typography sx={{ mt: 2, fontSize: 14, color: "text.secondary" }}>
+            ¿No tienes una cuenta?{" "}
+            <Link component={RouterLink} to="/register" underline="hover" sx={{ color: "#7c3aed", fontWeight: 700 }}>
+              Regístrate
+            </Link>
+          </Typography>
+          <Link component={RouterLink} to="/" underline="hover" sx={{ color: "#7c3aed", fontWeight: 700, display: "block", mt: 1 }}>
+            Volver al inicio
+          </Link>
         </Box>
       </Box>
 
