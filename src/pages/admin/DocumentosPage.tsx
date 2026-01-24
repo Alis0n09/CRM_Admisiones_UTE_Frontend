@@ -1,15 +1,80 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
 import * as docService from "../../services/documentoPostulacion.service";
 import * as postulacionService from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
+import Description from "@mui/icons-material/Description";
+import AttachFile from "@mui/icons-material/AttachFile";
+
+function getTipoIcon(tipo?: string) {
+  const tipoLower = tipo?.toLowerCase() || "";
+  if (tipoLower.includes("cédula")) return "🆔";
+  if (tipoLower.includes("título")) return "🎓";
+  if (tipoLower.includes("certificado")) return "📜";
+  if (tipoLower.includes("foto")) return "📷";
+  return "📄";
+}
+
+function getEstadoColor(estado?: string) {
+  if (!estado) return "default";
+  const estadoLower = estado.toLowerCase();
+  if (estadoLower.includes("pendiente")) return "warning";
+  if (estadoLower.includes("aprobado")) return "success";
+  if (estadoLower.includes("rechazado")) return "error";
+  return "default";
+}
 
 const cols: Column<DocumentoPostulacion>[] = [
-  { id: "tipo_documento", label: "Tipo", minWidth: 120 },
-  { id: "nombre_archivo", label: "Archivo", minWidth: 160 },
-  { id: "postulacion", label: "Postulación", minWidth: 160, format: (_, r) => r.postulacion ? `#${(r.postulacion as any).id_postulacion?.slice(0, 8)}` : "-" },
-  { id: "estado_documento", label: "Estado", minWidth: 100 },
+  { 
+    id: "tipo_documento", 
+    label: "Tipo de Documento", 
+    minWidth: 180,
+    format: (v) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Typography variant="h6">{getTipoIcon(v)}</Typography>
+        <Typography variant="body2" fontWeight={600}>{v || "-"}</Typography>
+      </Box>
+    )
+  },
+  { 
+    id: "nombre_archivo", 
+    label: "Archivo", 
+    minWidth: 200,
+    format: (v) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <AttachFile sx={{ color: "#6b7280", fontSize: 18 }} />
+        <Typography variant="body2" sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+          {v || "-"}
+        </Typography>
+      </Box>
+    )
+  },
+  { 
+    id: "postulacion", 
+    label: "Postulación", 
+    minWidth: 160, 
+    format: (_, r) => r.postulacion ? (
+      <Chip 
+        label={`#${(r.postulacion as any).id_postulacion?.slice(0, 8)}`}
+        size="small"
+        sx={{ bgcolor: "#e0e7ff", color: "#4338ca", fontWeight: 600 }}
+      />
+    ) : "-" 
+  },
+  { 
+    id: "estado_documento", 
+    label: "Estado", 
+    minWidth: 140,
+    format: (v) => (
+      <Chip 
+        label={v || "Pendiente"} 
+        size="small" 
+        color={getEstadoColor(v) as any}
+        sx={{ fontWeight: 600 }}
+      />
+    )
+  },
 ];
 
 export default function DocumentosPage() {
