@@ -1,47 +1,441 @@
-import { Box, Button, Card, CardContent, MenuItem, TextField, Typography } from "@mui/material";
+import { 
+  Box, 
+  Button, 
+  Card, 
+  CardContent, 
+  MenuItem, 
+  TextField, 
+  Typography, 
+  Avatar, 
+  Stack, 
+  Divider, 
+  CircularProgress,
+  Alert,
+  Grid,
+  InputAdornment,
+  Snackbar,
+} from "@mui/material";
 import { useEffect, useState } from "react";
 import * as clienteService from "../../services/cliente.service";
 import { useAuth } from "../../context/AuthContext";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import PublicIcon from "@mui/icons-material/Public";
+import SaveIcon from "@mui/icons-material/Save";
+import EditIcon from "@mui/icons-material/Edit";
 
 export default function AspirantePerfilPage() {
   const { user } = useAuth();
   const [form, setForm] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" });
 
   useEffect(() => {
-    if (!user?.id_cliente) return;
-    clienteService.getCliente(user.id_cliente).then(setForm).catch(() => setForm({})).finally(() => setLoading(false));
+    if (!user?.id_cliente) {
+      setLoading(false);
+      return;
+    }
+    clienteService.getCliente(user.id_cliente)
+      .then(setForm)
+      .catch(() => setForm({}))
+      .finally(() => setLoading(false));
   }, [user?.id_cliente]);
 
   const save = () => {
-    if (!user?.id_cliente || !form.nombres || !form.apellidos || !form.numero_identificacion) return;
+    if (!user?.id_cliente || !form.nombres || !form.apellidos || !form.numero_identificacion) {
+      setSnackbar({ open: true, message: "Por favor completa los campos requeridos", severity: "error" });
+      return;
+    }
     setSaving(true);
-    clienteService.updateCliente(user.id_cliente, form).then(() => alert("Perfil actualizado")).catch((e) => alert(e?.response?.data?.message || "Error")).finally(() => setSaving(false));
+    clienteService.updateCliente(user.id_cliente, form)
+      .then(() => {
+        setSnackbar({ open: true, message: "Perfil actualizado exitosamente", severity: "success" });
+      })
+      .catch((e) => {
+        setSnackbar({ open: true, message: e?.response?.data?.message || "Error al actualizar el perfil", severity: "error" });
+      })
+      .finally(() => setSaving(false));
   };
 
-  if (loading) return <Typography>Cargando...</Typography>;
-  if (!form.id_cliente) return <Typography>No tienes perfil de cliente asociado.</Typography>;
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  if (!form.id_cliente) {
+    return (
+      <Alert severity="warning">
+        No tienes perfil de cliente asociado. Por favor contacta al administrador.
+      </Alert>
+    );
+  }
+
+  const nombreCompleto = `${form.nombres || ""} ${form.apellidos || ""}`.trim() || "Usuario";
+  const iniciales = nombreCompleto
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2) || "U";
 
   return (
     <Box>
-      <Typography variant="h5" fontWeight={700} sx={{ mb: 2 }}>Mi perfil</Typography>
-      <Card sx={{ maxWidth: 500, borderRadius: 2 }}>
-        <CardContent>
-          <TextField margin="dense" fullWidth label="Nombres" value={form.nombres ?? ""} onChange={(e) => setForm({ ...form, nombres: e.target.value })} required />
-          <TextField margin="dense" fullWidth label="Apellidos" value={form.apellidos ?? ""} onChange={(e) => setForm({ ...form, apellidos: e.target.value })} required />
-          <TextField margin="dense" fullWidth select label="Tipo identificación" value={form.tipo_identificacion ?? "Cédula"} onChange={(e) => setForm({ ...form, tipo_identificacion: e.target.value })}>
-            <MenuItem value="Cédula">Cédula</MenuItem><MenuItem value="Pasaporte">Pasaporte</MenuItem>
-          </TextField>
-          <TextField margin="dense" fullWidth label="Número identificación" value={form.numero_identificacion ?? ""} onChange={(e) => setForm({ ...form, numero_identificacion: e.target.value })} required />
-          <TextField margin="dense" fullWidth label="Correo" type="email" value={form.correo ?? ""} onChange={(e) => setForm({ ...form, correo: e.target.value })} />
-          <TextField margin="dense" fullWidth label="Teléfono" value={form.telefono ?? ""} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-          <TextField margin="dense" fullWidth label="Celular" value={form.celular ?? ""} onChange={(e) => setForm({ ...form, celular: e.target.value })} />
-          <TextField margin="dense" fullWidth label="Nacionalidad" value={form.nacionalidad ?? ""} onChange={(e) => setForm({ ...form, nacionalidad: e.target.value })} />
-          <TextField margin="dense" fullWidth label="Fecha nacimiento" type="date" InputLabelProps={{ shrink: true }} value={form.fecha_nacimiento?.toString().slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })} />
-          <Button variant="contained" onClick={save} disabled={saving} sx={{ mt: 2 }}>Guardar cambios</Button>
+      {/* Header con Avatar */}
+      <Card sx={{ borderRadius: 2, boxShadow: 2, mb: 2, background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)" }}>
+        <CardContent sx={{ p: 2.5 }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Avatar
+              sx={{
+                width: 70,
+                height: 70,
+                bgcolor: "rgba(255, 255, 255, 0.2)",
+                color: "white",
+                fontSize: 28,
+                fontWeight: 700,
+                border: "3px solid rgba(255, 255, 255, 0.3)",
+              }}
+            >
+              {iniciales}
+            </Avatar>
+            <Box sx={{ flex: 1, color: "white" }}>
+              <Typography variant="h5" sx={{ fontWeight: 700, mb: 0.5 }}>
+                {nombreCompleto}
+              </Typography>
+              <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.25 }}>
+                {form.correo || user?.email || "Sin correo especificado"}
+              </Typography>
+              <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                {form.numero_identificacion ? `${form.tipo_identificacion || "Cédula"}: ${form.numero_identificacion}` : "Sin identificación"}
+              </Typography>
+            </Box>
+          </Stack>
         </CardContent>
       </Card>
+
+      {/* Formulario de Edición - Organizado en secciones */}
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        {/* Sección: Datos Básicos */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <PersonIcon sx={{ mr: 0.75, color: "#3b82f6", fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Datos Básicos
+              </Typography>
+            </Box>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Nombres <span style={{ color: "#d32f2f" }}>*</span>
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.nombres ?? ""}
+                    onChange={(e) => setForm({ ...form, nombres: e.target.value })}
+                    required
+                    placeholder="Ingresa tus nombres"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Apellidos <span style={{ color: "#d32f2f" }}>*</span>
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.apellidos ?? ""}
+                    onChange={(e) => setForm({ ...form, apellidos: e.target.value })}
+                    required
+                    placeholder="Ingresa tus apellidos"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Sección: Identificación */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <BadgeIcon sx={{ mr: 0.75, color: "#3b82f6", fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Identificación
+              </Typography>
+            </Box>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Tipo de Identificación
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    select
+                    value={form.tipo_identificacion ?? "Cédula"}
+                    onChange={(e) => setForm({ ...form, tipo_identificacion: e.target.value })}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  >
+                    <MenuItem value="Cédula">Cédula</MenuItem>
+                    <MenuItem value="Pasaporte">Pasaporte</MenuItem>
+                  </TextField>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Número de Identificación <span style={{ color: "#d32f2f" }}>*</span>
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.numero_identificacion ?? ""}
+                    onChange={(e) => setForm({ ...form, numero_identificacion: e.target.value })}
+                    required
+                    placeholder="Ingresa tu número de identificación"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Sección: Información de Contacto */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <EmailIcon sx={{ mr: 0.75, color: "#3b82f6", fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Información de Contacto
+              </Typography>
+            </Box>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Correo Electrónico
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="email"
+                    value={form.correo ?? ""}
+                    onChange={(e) => setForm({ ...form, correo: e.target.value })}
+                    placeholder="correo@ejemplo.com"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Teléfono
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.telefono ?? ""}
+                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                    placeholder="Ej: 043556677"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Celular
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.celular ?? ""}
+                    onChange={(e) => setForm({ ...form, celular: e.target.value })}
+                    placeholder="Ej: 0987766554"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Sección: Información Adicional */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
+              <PublicIcon sx={{ mr: 0.75, color: "#3b82f6", fontSize: 20 }} />
+              <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+                Información Adicional
+              </Typography>
+            </Box>
+            <Grid container spacing={1.5}>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Nacionalidad
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    value={form.nacionalidad ?? ""}
+                    onChange={(e) => setForm({ ...form, nacionalidad: e.target.value })}
+                    placeholder="Ej: Ecuatoriana"
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PublicIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Box>
+                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                    Fecha de Nacimiento
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    type="date"
+                    value={form.fecha_nacimiento?.toString().slice(0, 10) ?? ""}
+                    onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <CalendarTodayIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
+
+        {/* Botones de Acción */}
+        <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
+          <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
+            <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+              <Button
+                variant="outlined"
+                onClick={() => window.location.reload()}
+                size="small"
+                sx={{ 
+                  textTransform: "none", 
+                  borderRadius: 1.5,
+                  px: 2.5,
+                  borderColor: "#3b82f6",
+                  color: "#3b82f6",
+                  "&:hover": {
+                    borderColor: "#2563eb",
+                    bgcolor: "#eff6ff",
+                  },
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="contained"
+                onClick={save}
+                disabled={saving}
+                size="small"
+                startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+                sx={{
+                  textTransform: "none",
+                  borderRadius: 1.5,
+                  px: 3,
+                  background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #2563eb 0%, #059669 100%)",
+                  },
+                  "&:disabled": {
+                    background: "#e5e7eb",
+                  },
+                }}
+              >
+                {saving ? "Guardando..." : "Guardar Cambios"}
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
+      </Box>
+
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

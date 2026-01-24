@@ -40,6 +40,7 @@ import AspiranteTareasPage from "../pages/aspirante/AspiranteTareasPage";
 import AspiranteCarrerasPage from "../pages/aspirante/AspiranteCarrerasPage";
 import AspiranteBecasPage from "../pages/aspirante/AspiranteBecasPage";
 import AspiranteSeguimientosPage from "../pages/aspirante/AspiranteSeguimientosPage";
+import ProcesoAdmisionPage from "../pages/aspirante/ProcesoAdmisionPage";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 
@@ -86,7 +87,9 @@ export default function AppRouter() {
 
       {/* Aspirante */}
       <Route path="/aspirante" element={<ProtectedRoute allowedRoles={["ADMIN", "ASPIRANTE"]}><AspiranteLayout /></ProtectedRoute>}>
-        <Route index element={<AspiranteDashboard />} />
+        <Route index element={<ProcesoAdmisionPage />} />
+        <Route path="solicitud" element={<ProcesoAdmisionPage />} />
+        <Route path="formulario" element={<AspiranteDocumentosPage />} />
         <Route path="perfil" element={<AspirantePerfilPage />} />
         <Route path="postulaciones" element={<AspirantePostulacionesPage />} />
         <Route path="documentos" element={<AspiranteDocumentosPage />} />
