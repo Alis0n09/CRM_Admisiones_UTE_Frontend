@@ -7,7 +7,11 @@ import {
   Stack,
   TextField,
   Typography,
+  Alert,
+  Snackbar,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import TopbarPublic from "../../components/TopbarPublic";
 import FooterPublic from "../../components/FooterPublic";
 import Logo from "../../components/Logo";
@@ -21,6 +25,7 @@ import {
   Email,
   LocationOn,
 } from "@mui/icons-material";
+import * as clienteService from "../../services/cliente.service";
 
 const scholarships = [
   {
@@ -79,6 +84,114 @@ const careers = [
 ];
 
 export default function HomePage() {
+  const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    nombresCompletos: "",
+    correo: "",
+    telefono: "",
+    mensaje: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: "success" | "error";
+  }>({ open: false, message: "", severity: "success" });
+
+  const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [field]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Validación básica
+    if (!formData.nombresCompletos.trim() || !formData.correo.trim() || !formData.telefono.trim()) {
+      setSnackbar({
+        open: true,
+        message: "Por favor completa todos los campos requeridos",
+        severity: "error",
+      });
+      return;
+    }
+
+    // Dividir nombres completos en nombres y apellidos
+    const nombresArray = formData.nombresCompletos.trim().split(" ");
+    const nombres = nombresArray[0] || "";
+    const apellidos = nombresArray.slice(1).join(" ") || nombresArray[0] || "";
+
+    if (!nombres || !apellidos) {
+      setSnackbar({
+        open: true,
+        message: "Por favor ingresa nombres y apellidos completos",
+        severity: "error",
+      });
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Generar un número de identificación temporal único (máximo 20 caracteres según la entidad)
+      // Usar formato corto: TEMP + últimos dígitos del timestamp + número aleatorio corto
+      const timestamp = Date.now().toString().slice(-8); // Últimos 8 dígitos del timestamp
+      const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // 3 dígitos
+      const numeroIdentificacionTemp = `TEMP${timestamp}${randomNum}`.slice(0, 20); // Máximo 20 caracteres
+      
+      // Preparar los datos del cliente según la estructura de la entidad
+      // NOTA: No enviar 'estado' ya que el backend tiene un valor por defecto y puede causar error
+      const clienteData: Partial<clienteService.Cliente> = {
+        // Campos requeridos (nullable: false)
+        nombres: nombres.trim(),
+        apellidos: apellidos.trim(),
+        tipo_identificacion: "Cédula", // Valor por defecto, el admin/asesor puede actualizarlo
+        numero_identificacion: numeroIdentificacionTemp, // Temporal único (máx 20 chars), debe ser actualizado por admin/asesor
+        origen: formData.mensaje.trim() || "Formulario web - Página principal",
+        // NO incluir 'estado' - el backend lo maneja con valor por defecto 'Nuevo'
+        
+        // Campos opcionales de contacto
+        correo: formData.correo.trim() || undefined,
+        telefono: formData.telefono.trim() || undefined,
+        celular: formData.telefono.trim() || undefined, // Usar el mismo teléfono para celular si no se especifica
+        
+        // Campos opcionales que no se capturan en el formulario público
+        // calle_principal, calle_secundaria, numero_casa, nacionalidad, genero, estado_civil, fecha_nacimiento
+        // Estos pueden ser completados por el admin/asesor después
+      };
+
+      await clienteService.createClientePublico(clienteData);
+
+      // Limpiar formulario
+      setFormData({
+        nombresCompletos: "",
+        correo: "",
+        telefono: "",
+        mensaje: "",
+      });
+
+      setSnackbar({
+        open: true,
+        message: "¡Gracias! Hemos recibido tu información. Te contactaremos pronto.",
+        severity: "success",
+      });
+    } catch (error: any) {
+      console.error("Error al enviar formulario:", error);
+      const errorMessage = 
+        error?.response?.data?.message || 
+        error?.message || 
+        error?.response?.data?.error ||
+        "Error al enviar el formulario. Por favor intenta nuevamente.";
+      
+      setSnackbar({
+        open: true,
+        message: errorMessage,
+        severity: "error",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", position: "relative", overflow: "hidden" }}>
       <TopbarPublic />
@@ -314,6 +427,7 @@ export default function HomePage() {
             <Button
               variant="contained"
               size="medium"
+              onClick={() => navigate("/becas")}
               sx={{
                 background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)",
                 color: "white",
@@ -368,75 +482,97 @@ export default function HomePage() {
               zIndex: 1,
             }}
           >
-            <Stack spacing={2}>
-              <TextField
-                label="Nombres completos"
-                variant="outlined"
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
+            <form onSubmit={handleSubmit}>
+              <Stack spacing={2}>
+                <TextField
+                  label="Nombres completos"
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  value={formData.nombresCompletos}
+                  onChange={handleChange("nombresCompletos")}
+                  required
+                  disabled={loading}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                <TextField
+                  label="Correo electrónico"
+                  type="email"
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  value={formData.correo}
+                  onChange={handleChange("correo")}
+                  required
+                  disabled={loading}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                <TextField
+                  label="Número de teléfono"
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  value={formData.telefono}
+                  onChange={handleChange("telefono")}
+                  required
+                  disabled={loading}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                <TextField
+                  label="Tu mensaje"
+                  multiline
+                  rows={3}
+                  variant="outlined"
+                  fullWidth
+                  size="small"
+                  value={formData.mensaje}
+                  onChange={handleChange("mensaje")}
+                  disabled={loading}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="medium"
+                  disabled={loading}
+                  sx={{
+                    background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)",
+                    color: "white",
+                    px: 3,
+                    py: 1,
                     borderRadius: 2,
-                  },
-                }}
-              />
-              <TextField
-                label="Correo electrónico"
-                type="email"
-                variant="outlined"
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-              <TextField
-                label="Número de teléfono"
-                variant="outlined"
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-              <TextField
-                label="Tu mensaje"
-                multiline
-                rows={3}
-                variant="outlined"
-                fullWidth
-                size="small"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
-                }}
-              />
-              <Button
-                variant="contained"
-                size="medium"
-                sx={{
-                  background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)",
-                  color: "white",
-                  px: 3,
-                  py: 1,
-                  borderRadius: 2,
-                  fontWeight: 700,
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  alignSelf: "flex-start",
-                  "&:hover": {
-                    background: "linear-gradient(135deg, #2563eb 0%, #059669 100%)",
-                  },
-                }}
-              >
-                Enviar mensaje &gt;
-              </Button>
-            </Stack>
+                    fontWeight: 700,
+                    textTransform: "none",
+                    fontSize: "1rem",
+                    alignSelf: "flex-start",
+                    "&:hover": {
+                      background: "linear-gradient(135deg, #2563eb 0%, #059669 100%)",
+                    },
+                    "&:disabled": {
+                      opacity: 0.6,
+                    },
+                  }}
+                >
+                  {loading ? "Enviando..." : "Enviar mensaje >"}
+                </Button>
+              </Stack>
+            </form>
           </Card>
         </Box>
 
@@ -517,7 +653,7 @@ export default function HomePage() {
                     <Typography variant="body2" sx={{ color: "#64748b", mb: 1.5, fontSize: "0.9rem" }}>
                       {career.desc}
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.5 }}>
+                    <Stack direction="row" spacing={1} alignItems="center">
                       <Box
                         sx={{
                           width: 28,
@@ -537,22 +673,33 @@ export default function HomePage() {
                         {career.instructor}
                       </Typography>
                     </Stack>
-                    <Button
-                      variant="text"
-                      sx={{
-                        color: "#3b82f6",
-                        fontWeight: 700,
-                        textTransform: "none",
-                        px: 0,
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      Más &gt;
-                    </Button>
                   </CardContent>
                 </Card>
               </Box>
             ))}
+          </Box>
+
+          <Box sx={{ textAlign: "center", mt: 4, position: "relative", zIndex: 1 }}>
+            <Button
+              variant="contained"
+              size="medium"
+              onClick={() => navigate("/carreras")}
+              sx={{
+                background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)",
+                color: "white",
+                px: 3,
+                py: 1,
+                borderRadius: 2,
+                fontWeight: 700,
+                textTransform: "none",
+                fontSize: "1rem",
+                "&:hover": {
+                  background: "linear-gradient(135deg, #2563eb 0%, #059669 100%)",
+                },
+              }}
+            >
+              Más información &gt;
+            </Button>
           </Box>
         </Box>
 
@@ -638,6 +785,22 @@ export default function HomePage() {
 
       {/* FOOTER */}
       <FooterPublic />
+
+      {/* Snackbar para notificaciones */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

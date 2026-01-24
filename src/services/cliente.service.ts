@@ -1,4 +1,5 @@
 import { api } from "./api";
+import axios from "axios";
 
 const base = "/cliente";
 
@@ -55,5 +56,17 @@ export async function updateCliente(id: string, body: Partial<Cliente>) {
 
 export async function deleteCliente(id: string) {
   const { data } = await api.delete(`${base}/${id}`);
+  return getData<Cliente>(data);
+}
+
+// Función pública para crear clientes desde formularios públicos (sin autenticación requerida)
+export async function createClientePublico(body: Partial<Cliente>) {
+  // Crear una instancia de axios sin el interceptor de autenticación ni redirección
+  const axiosPublic = axios.create({
+    baseURL: import.meta.env.VITE_API_URL || "http://localhost:3000",
+  });
+  
+  // No agregar interceptores que puedan interferir con peticiones públicas
+  const { data } = await axiosPublic.post(base, body);
   return getData<Cliente>(data);
 }
