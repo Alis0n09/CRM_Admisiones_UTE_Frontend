@@ -4,6 +4,8 @@ import AdminLayout from "../layouts/AdminLayout";
 import AsesorLayout from "../layouts/AsesorLayout";
 import AspiranteLayout from "../layouts/AspiranteLayout";
 import HomePage from "../pages/public/HomePage";
+import BecasDetallePage from "../pages/public/BecasDetallePage";
+import CarrerasDetallePage from "../pages/public/CarrerasDetallePage";
 import LoginPage from "../pages/public/LoginPage";
 import RegisterPage from "../pages/public/RegisterPage";
 
@@ -44,6 +46,8 @@ export default function AppRouter() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
+        <Route path="/becas" element={<BecasDetallePage />} />
+        <Route path="/carreras" element={<CarrerasDetallePage />} />
       </Route>
 
       <Route path="/login" element={<LoginPage />} />
