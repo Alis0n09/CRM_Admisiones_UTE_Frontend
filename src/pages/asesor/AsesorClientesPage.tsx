@@ -1,38 +1,118 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DataTable, { type Column } from "../../components/DataTable";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
 
+function getInitials(nombres: string, apellidos: string): string {
+  const first = nombres?.[0]?.toUpperCase() || "";
+  const last = apellidos?.[0]?.toUpperCase() || "";
+  return first + last;
+}
+
+function getEstadoColor(estado?: string) {
+  if (!estado) return "default";
+  const estadoLower = estado.toLowerCase();
+  if (estadoLower.includes("nuevo")) return "info";
+  if (estadoLower.includes("proceso")) return "warning";
+  if (estadoLower.includes("matriculado")) return "success";
+  return "default";
+}
+
 const cols: Column<Cliente>[] = [
-  { id: "nombres", label: "Nombres", minWidth: 120 },
-  { id: "apellidos", label: "Apellidos", minWidth: 120 },
-  { id: "numero_identificacion", label: "Cédula", minWidth: 100 },
-  { id: "correo", label: "Correo", minWidth: 160 },
-  { id: "celular", label: "Celular", minWidth: 100 },
-  { id: "estado", label: "Estado", minWidth: 90 },
+  { 
+    id: "nombres", 
+    label: "Aspirante", 
+    minWidth: 200,
+    format: (_, r) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Avatar sx={{ bgcolor: "#8b5cf6", width: 40, height: 40, fontSize: "0.875rem" }}>
+          {getInitials(r.nombres, r.apellidos)}
+        </Avatar>
+        <Box>
+          <Typography variant="body2" fontWeight={600}>
+            {r.nombres} {r.apellidos}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {r.correo || "Sin correo"}
+          </Typography>
+        </Box>
+      </Box>
+    )
+  },
+  { id: "numero_identificacion", label: "Cédula", minWidth: 120 },
+  { id: "celular", label: "Celular", minWidth: 120 },
+  { 
+    id: "estado", 
+    label: "Estado", 
+    minWidth: 130,
+    format: (v) => (
+      <Chip 
+        label={v || "Nuevo"} 
+        size="small" 
+        color={getEstadoColor(v) as any}
+        sx={{ fontWeight: 600 }}
+      />
+    )
+  },
 ];
 
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
 
 export default function AsesorClientesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Cliente[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState("");
+  const urlSearch = searchParams.get("search") || "";
+  const [search, setSearch] = useState(urlSearch);
   const [open, setOpen] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
 
+  // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
+  useEffect(() => {
+    const urlSearchParam = searchParams.get("search") || "";
+    if (urlSearchParam !== search) {
+      setSearch(urlSearchParam);
+      setPage(1);
+    }
+  }, [searchParams]);
+
   const load = useCallback(() => {
-    s.getClientes({ page, limit, search: search || undefined }).then((r: any) => {
+    const currentSearch = searchParams.get("search") || search || "";
+    const searchParam = currentSearch.trim();
+    // Pasar el parámetro de búsqueda solo si tiene contenido
+    const params: { page: number; limit: number; search?: string } = { page, limit };
+    if (searchParam) {
+      params.search = searchParam;
+    }
+    s.getClientes(params).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
-    }).catch(() => setItems([]));
-  }, [page, limit, search]);
+    }).catch((err) => {
+      console.error("Error en búsqueda:", err);
+      setItems([]);
+      setTotal(0);
+    });
+  }, [page, limit, search, searchParams]);
 
-  useEffect(() => load(), [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+    // Actualizar URL sin recargar la página
+    if (value) {
+      setSearchParams({ search: value });
+    } else {
+      setSearchParams({});
+    }
+  };
 
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
@@ -43,11 +123,11 @@ export default function AsesorClientesPage() {
 
   return (
     <>
-      <DataTable title="Clientes" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
+      <DataTable title="Mis Aspirantes" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
         onEdit={(r) => { setSel(r); setForm({ ...r }); setOpen(true); }}
-        search={search} onSearchChange={(v) => { setSearch(v); setPage(1); }}
+        search={search} onSearchChange={handleSearchChange}
         getId={(r) => r.id_cliente} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar cliente" : "Nuevo cliente"}</DialogTitle>

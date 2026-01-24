@@ -1,17 +1,75 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
 import * as postulacionService from "../../services/postulacion.service";
 import * as clienteService from "../../services/cliente.service";
 import * as carreraService from "../../services/carrera.service";
 import type { Postulacion } from "../../services/postulacion.service";
+import School from "@mui/icons-material/School";
+
+function getInitials(nombres?: string, apellidos?: string): string {
+  const first = nombres?.[0]?.toUpperCase() || "";
+  const last = apellidos?.[0]?.toUpperCase() || "";
+  return first + last;
+}
+
+function getEstadoColor(estado?: string) {
+  if (!estado) return "default";
+  const estadoLower = estado.toLowerCase();
+  if (estadoLower.includes("pendiente")) return "warning";
+  if (estadoLower.includes("revisión")) return "info";
+  if (estadoLower.includes("aprobada")) return "success";
+  if (estadoLower.includes("rechazada")) return "error";
+  return "default";
+}
 
 const cols: Column<Postulacion>[] = [
-  { id: "cliente", label: "Cliente", minWidth: 160, format: (_, r) => r.cliente ? `${r.cliente.nombres} ${r.cliente.apellidos}` : "-" },
-  { id: "carrera", label: "Carrera", minWidth: 180, format: (_, r) => r.carrera?.nombre_carrera ?? "-" },
-  { id: "periodo_academico", label: "Período", minWidth: 100 },
-  { id: "fecha_postulacion", label: "Fecha", minWidth: 100 },
-  { id: "estado_postulacion", label: "Estado", minWidth: 100 },
+  { 
+    id: "cliente", 
+    label: "Aspirante", 
+    minWidth: 200, 
+    format: (_, r) => r.cliente ? (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Avatar sx={{ bgcolor: "#3b82f6", width: 40, height: 40, fontSize: "0.875rem" }}>
+          {getInitials(r.cliente.nombres, r.cliente.apellidos)}
+        </Avatar>
+        <Box>
+          <Typography variant="body2" fontWeight={600}>
+            {r.cliente.nombres} {r.cliente.apellidos}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ID: {r.id_postulacion.slice(0, 8)}
+          </Typography>
+        </Box>
+      </Box>
+    ) : "-" 
+  },
+  { 
+    id: "carrera", 
+    label: "Carrera", 
+    minWidth: 200, 
+    format: (_, r) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <School sx={{ color: "#8b5cf6", fontSize: 20 }} />
+        <Typography variant="body2">{r.carrera?.nombre_carrera ?? "-"}</Typography>
+      </Box>
+    )
+  },
+  { id: "periodo_academico", label: "Período", minWidth: 120 },
+  { id: "fecha_postulacion", label: "Fecha", minWidth: 120 },
+  { 
+    id: "estado_postulacion", 
+    label: "Estado", 
+    minWidth: 140,
+    format: (v) => (
+      <Chip 
+        label={v || "Pendiente"} 
+        size="small" 
+        color={getEstadoColor(v) as any}
+        sx={{ fontWeight: 600 }}
+      />
+    )
+  },
 ];
 
 export default function PostulacionesPage() {

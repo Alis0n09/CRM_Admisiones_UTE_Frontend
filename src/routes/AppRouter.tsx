@@ -27,6 +27,8 @@ import AsesorPostulacionesPage from "../pages/asesor/AsesorPostulacionesPage";
 import AsesorCarrerasPage from "../pages/asesor/AsesorCarrerasPage";
 import AsesorDocumentosPage from "../pages/asesor/AsesorDocumentosPage";
 import AsesorSeguimientosPage from "../pages/asesor/AsesorSeguimientosPage";
+import AsesorEvaluacionesPage from "../pages/asesor/AsesorEvaluacionesPage";
+import AsesorCalendarioPage from "../pages/asesor/AsesorCalendarioPage";
 
 import AspiranteDashboard from "../pages/aspirante/AspiranteDashboard";
 import AspirantePerfilPage from "../pages/aspirante/AspirantePerfilPage";
@@ -69,6 +71,8 @@ export default function AppRouter() {
       <Route path="/asesor" element={<ProtectedRoute allowedRoles={["ADMIN", "ASESOR"]}><AsesorLayout /></ProtectedRoute>}>
         <Route index element={<AsesorDashboard />} />
         <Route path="clientes" element={<AsesorClientesPage />} />
+        <Route path="evaluaciones" element={<AsesorEvaluacionesPage />} />
+        <Route path="calendario" element={<AsesorCalendarioPage />} />
         <Route path="tareas" element={<AsesorTareasPage />} />
         <Route path="postulaciones" element={<AsesorPostulacionesPage />} />
         <Route path="carreras" element={<AsesorCarrerasPage />} />

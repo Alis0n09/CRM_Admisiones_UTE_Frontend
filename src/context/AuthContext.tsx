@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setLoading(false));
   }, []);
 
-  // Restaurar desde localStorage si getProfile falla pero hay user guardado
+
   useEffect(() => {
     if (!loading || user) return;
     const u = localStorage.getItem("user");

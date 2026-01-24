@@ -74,33 +74,110 @@ export default function DataTable<T extends { [k: string]: any }>({
           )}
         </Box>
       </Box>
-      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2 }}>
+      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 3, boxShadow: 3, border: "1px solid #e5e7eb" }}>
         <TableContainer sx={{ maxHeight: 520 }}>
-          <Table stickyHeader size="small">
+          <Table stickyHeader size="medium">
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
-                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth }}>{col.label}</TableCell>
+                  <TableCell 
+                    key={String(col.id)} 
+                    sx={{ 
+                      fontWeight: 700, 
+                      minWidth: col.minWidth,
+                      bgcolor: "#f8fafc",
+                      color: "#1e293b",
+                      fontSize: "0.875rem",
+                      textTransform: "uppercase",
+                      letterSpacing: "0.5px",
+                      borderBottom: "2px solid #e2e8f0"
+                    }}
+                  >
+                    {col.label}
+                  </TableCell>
                 ))}
-                {(onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: 100 }}>Acciones</TableCell>}
+                {(onEdit || onDelete) && (
+                  <TableCell sx={{ 
+                    fontWeight: 700, 
+                    width: 120,
+                    bgcolor: "#f8fafc",
+                    color: "#1e293b",
+                    fontSize: "0.875rem",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    borderBottom: "2px solid #e2e8f0"
+                  }}>
+                    Acciones
+                  </TableCell>
+                )}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow key={getId(row)} hover>
-                  {columns.map((col) => (
-                    <TableCell key={String(col.id)}>
-                      {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
-                    </TableCell>
-                  ))}
-                  {(onEdit || onDelete) && (
-                    <TableCell>
-                      {onEdit && <IconButton size="small" onClick={() => onEdit(row)}><Edit fontSize="small" /></IconButton>}
-                      {onDelete && <IconButton size="small" color="error" onClick={() => onDelete(row)}><Delete fontSize="small" /></IconButton>}
-                    </TableCell>
-                  )}
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No hay datos disponibles
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                rows.map((row, idx) => (
+                  <TableRow 
+                    key={getId(row)} 
+                    hover
+                    sx={{
+                      "&:nth-of-type(even)": { bgcolor: "#f9fafb" },
+                      "&:hover": { bgcolor: "#f3f4f6", transform: "scale(1.01)", transition: "all 0.2s" },
+                      transition: "all 0.2s",
+                      borderLeft: idx % 2 === 0 ? "3px solid transparent" : "3px solid #e5e7eb"
+                    }}
+                  >
+                    {columns.map((col) => (
+                      <TableCell 
+                        key={String(col.id)}
+                        sx={{
+                          fontSize: "0.875rem",
+                          color: "#374151",
+                          py: 1.5
+                        }}
+                      >
+                        {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
+                      </TableCell>
+                    ))}
+                    {(onEdit || onDelete) && (
+                      <TableCell>
+                        <Box sx={{ display: "flex", gap: 0.5 }}>
+                          {onEdit && (
+                            <IconButton 
+                              size="small" 
+                              onClick={() => onEdit(row)}
+                              sx={{
+                                color: "#3b82f6",
+                                "&:hover": { bgcolor: "#dbeafe", color: "#2563eb" }
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          )}
+                          {onDelete && (
+                            <IconButton 
+                              size="small" 
+                              color="error" 
+                              onClick={() => onDelete(row)}
+                              sx={{
+                                "&:hover": { bgcolor: "#fee2e2" }
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Box>
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
