@@ -1,8 +1,9 @@
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import { Box, Card, CardContent, Typography, Stack } from "@mui/material";
 import People from "@mui/icons-material/People";
 import Assignment from "@mui/icons-material/Assignment";
 import School from "@mui/icons-material/School";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
 import * as tareaService from "../../services/tarea.service";
 import * as postulacionService from "../../services/postulacion.service";
@@ -13,6 +14,7 @@ function toItems(res: any): number {
 }
 
 export default function AsesorDashboard() {
+  const navigate = useNavigate();
   const [counts, setCounts] = useState({ clientes: 0, tareas: 0, postulaciones: 0 });
 
   useEffect(() => {
@@ -30,28 +32,72 @@ export default function AsesorDashboard() {
   }, []);
 
   const cards = [
-    { title: "Clientes", value: counts.clientes, icon: <People fontSize="large" />, color: "#5b5bf7" },
-    { title: "Mis tareas", value: counts.tareas, icon: <Assignment fontSize="large" />, color: "#10b981" },
-    { title: "Postulaciones", value: counts.postulaciones, icon: <School fontSize="large" />, color: "#f59e0b" },
+    {
+      title: "Clientes",
+      value: counts.clientes,
+      icon: <People sx={{ fontSize: 24 }} />,
+      bgColor: "#3b82f6",
+      color: "white",
+      route: "/asesor/clientes",
+    },
+    {
+      title: "Mis tareas",
+      value: counts.tareas,
+      icon: <Assignment sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/asesor/tareas",
+    },
+    {
+      title: "Postulaciones",
+      value: counts.postulaciones,
+      icon: <School sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/asesor/postulaciones",
+    },
   ];
 
   return (
-    <Box>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 3 }}>
-        <span style={{ color: "#0ea5e9" }}>—</span> Panel de asesor
+    <Box sx={{ width: "100%", maxWidth: "100%" }}>
+      {/* Header */}
+      <Typography variant="h4" fontWeight={800} sx={{ mb: 1, color: "#1e293b" }}>
+        Dashboard
       </Typography>
-      <Typography sx={{ color: "text.secondary", mb: 3 }}>
-        Resumen de tu gestión en el CRM
-      </Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" }, gap: 2 }}>
-        {cards.map((c) => (
-          <Card key={c.title} sx={{ borderRadius: 2, boxShadow: 2, borderLeft: `4px solid ${c.color}` }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Box>
-                <Typography color="text.secondary" variant="body2">{c.title}</Typography>
-                <Typography variant="h4" fontWeight={700}>{c.value}</Typography>
-              </Box>
-              <Box sx={{ color: c.color }}>{c.icon}</Box>
+
+      {/* Navigation Cards */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "nowrap" }}>
+        {cards.map((card, index) => (
+          <Card
+            key={index}
+            onClick={() => navigate(card.route)}
+            sx={{
+              flex: "1 1 0",
+              minWidth: 0,
+              borderRadius: 2,
+              bgcolor: card.bgColor,
+              color: card.color,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              },
+            }}
+          >
+            <CardContent sx={{ p: 1.5 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {card.icon}
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem", lineHeight: 1.2 }}>
+                    {card.title}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: "0.75rem", opacity: 0.9, display: "block" }}>
+                    {card.value} Registros
+                  </Typography>
+                </Box>
+              </Stack>
             </CardContent>
           </Card>
         ))}

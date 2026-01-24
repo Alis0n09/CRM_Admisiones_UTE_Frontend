@@ -62,27 +62,53 @@ export default function DataTable<T extends { [k: string]: any }>({
   return (
     <Box>
       <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>{title}</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ color: "#1e293b" }}>{title}</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
           {onSearchChange && (
-            <TextField size="small" placeholder={searchPlaceholder} value={search ?? ""} onChange={(e) => onSearchChange(e.target.value)} sx={{ minWidth: 200 }} />
+            <TextField
+              size="small"
+              placeholder={searchPlaceholder}
+              value={search ?? ""}
+              onChange={(e) => onSearchChange(e.target.value)}
+              sx={{
+                minWidth: 200,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  bgcolor: "#f5f5f5",
+                  "& fieldset": {
+                    borderColor: "#e5e7eb",
+                  },
+                },
+              }}
+            />
           )}
           {onAdd && (
-            <Button variant="contained" startIcon={<Add />} onClick={onAdd} sx={{ textTransform: "none", bgcolor: "#5b5bf7", "&:hover": { bgcolor: "#4a4ae6" } }}>
-              Nuevo
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={onAdd}
+              sx={{
+                textTransform: "none",
+                bgcolor: "#3b82f6",
+                fontWeight: 600,
+                borderRadius: 2,
+                "&:hover": { bgcolor: "#2563eb" },
+              }}
+            >
+              + Nuevo
             </Button>
           )}
         </Box>
       </Box>
-      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2 }}>
+      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white" }}>
         <TableContainer sx={{ maxHeight: 520 }}>
           <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
-                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth }}>{col.label}</TableCell>
+                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth, color: "#1e293b", bgcolor: "#f8fafc" }}>{col.label}</TableCell>
                 ))}
-                {(onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: 100 }}>Acciones</TableCell>}
+                {(onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: 100, color: "#1e293b", bgcolor: "#f8fafc" }}>ACCIONES</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
@@ -95,8 +121,30 @@ export default function DataTable<T extends { [k: string]: any }>({
                   ))}
                   {(onEdit || onDelete) && (
                     <TableCell>
-                      {onEdit && <IconButton size="small" onClick={() => onEdit(row)}><Edit fontSize="small" /></IconButton>}
-                      {onDelete && <IconButton size="small" color="error" onClick={() => onDelete(row)}><Delete fontSize="small" /></IconButton>}
+                      {onEdit && (
+                        <IconButton
+                          size="small"
+                          onClick={() => onEdit(row)}
+                          sx={{
+                            color: "#3b82f6",
+                            "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
+                          }}
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      )}
+                      {onDelete && (
+                        <IconButton
+                          size="small"
+                          onClick={() => onDelete(row)}
+                          sx={{
+                            color: "#ef4444",
+                            "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      )}
                     </TableCell>
                   )}
                 </TableRow>

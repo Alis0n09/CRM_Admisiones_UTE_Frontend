@@ -1,8 +1,44 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Box, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
 import * as s from "../../services/beca.service";
 import type { Beca } from "../../services/beca.service";
+
+// Becas por defecto que se ofrecen
+const becasPorDefecto: Partial<Beca>[] = [
+  {
+    nombre_beca: "Becas por mérito",
+    tipo_beca: "Mérito",
+    descripcion: "Reconocimiento al rendimiento académico",
+    porcentaje_cobertura: 50,
+    fecha_inicio: new Date().toISOString().slice(0, 10),
+    estado: "Activa",
+  },
+  {
+    nombre_beca: "Apoyo socioeconómico",
+    tipo_beca: "Socioeconómica",
+    descripcion: "Opciones de ayuda según situación y requisitos",
+    porcentaje_cobertura: 100,
+    fecha_inicio: new Date().toISOString().slice(0, 10),
+    estado: "Activa",
+  },
+  {
+    nombre_beca: "Convenios y descuentos",
+    tipo_beca: "Convenio",
+    descripcion: "Beneficios por convenios institucionales",
+    porcentaje_cobertura: 30,
+    fecha_inicio: new Date().toISOString().slice(0, 10),
+    estado: "Activa",
+  },
+  {
+    nombre_beca: "Apoyo por deporte",
+    tipo_beca: "Mérito",
+    descripcion: "Beneficios para deportistas destacados",
+    porcentaje_cobertura: 40,
+    fecha_inicio: new Date().toISOString().slice(0, 10),
+    estado: "Activa",
+  },
+];
 
 const cols: Column<Beca>[] = [
   { id: "nombre_beca", label: "Nombre", minWidth: 160 },
@@ -30,7 +66,38 @@ export default function BecasPage() {
     }).catch(() => setItems([]));
   }, [page, limit]);
 
-  useEffect(() => load(), [load]);
+  const inicializarBecasPorDefecto = useCallback(async () => {
+    try {
+      for (const beca of becasPorDefecto) {
+        try {
+          await s.createBeca(beca as any);
+        } catch (error: any) {
+          // Si la beca ya existe, continuar con la siguiente
+          if (error?.response?.status !== 400 && error?.response?.status !== 409) {
+            console.error("Error al crear beca:", error);
+          }
+        }
+      }
+      // Recargar después de crear las becas
+      s.getBecas({ page, limit }).then((r: any) => {
+        setItems(r?.items ?? []);
+        setTotal(r?.meta?.totalItems ?? 0);
+      }).catch(() => setItems([]));
+    } catch (error) {
+      console.error("Error al crear las becas por defecto:", error);
+    }
+  }, [page, limit]);
+
+  useEffect(() => {
+    load();
+    // Inicializar automáticamente si no hay becas
+    s.getBecas({ page: 1, limit: 1 }).then((r: any) => {
+      if ((r?.items ?? []).length === 0) {
+        // No hay becas, inicializar con las por defecto
+        inicializarBecasPorDefecto();
+      }
+    }).catch(() => {});
+  }, [load, inicializarBecasPorDefecto]);
 
   const save = () => {
     if (!form.nombre_beca || !form.tipo_beca || form.porcentaje_cobertura == null) return;
@@ -44,8 +111,40 @@ export default function BecasPage() {
     s.deleteBeca(row.id_beca).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
 
+  const inicializarBecasPorDefectoManual = async () => {
+    if (!confirm("¿Deseas crear las becas por defecto que se ofrecen? Esto creará las becas si no existen.")) return;
+    
+    try {
+      for (const beca of becasPorDefecto) {
+        try {
+          await s.createBeca(beca as any);
+        } catch (error: any) {
+          // Si la beca ya existe, continuar con la siguiente
+          if (error?.response?.status !== 400 && error?.response?.status !== 409) {
+            console.error("Error al crear beca:", error);
+          }
+        }
+      }
+      load();
+      alert("Becas por defecto creadas exitosamente");
+    } catch (error) {
+      alert("Error al crear las becas por defecto");
+    }
+  };
+
   return (
     <>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          Becas que ofrecemos
+        </Typography>
+        {items.length === 0 && (
+          <Button variant="outlined" onClick={inicializarBecasPorDefectoManual}>
+            Inicializar con becas por defecto
+          </Button>
+        )}
+      </Box>
+
       <DataTable title="Becas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}

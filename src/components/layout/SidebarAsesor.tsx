@@ -8,6 +8,7 @@ import Description from "@mui/icons-material/Description";
 import Timeline from "@mui/icons-material/Timeline";
 import Dashboard from "@mui/icons-material/Dashboard";
 import ExitToApp from "@mui/icons-material/ExitToApp";
+import Home from "@mui/icons-material/Home";
 import { useAuth } from "../../context/AuthContext";
 
 const base = "/asesor";
@@ -24,30 +25,86 @@ const links = [
 
 export default function SidebarAsesor() {
   const location = useLocation();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   return (
-    <Box sx={{ width: 260, bgcolor: "white", borderRight: "1px solid #eee", p: 2, display: "flex", flexDirection: "column" }}>
-      <Box sx={{ textAlign: "center", py: 2 }}>
-        <Box component="img" src="/logo.jpeg" alt="Logo" sx={{ width: 120, height: 120, objectFit: "contain", mb: 1 }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-        <Typography fontWeight={700}>Asesor · UTE Admisiones</Typography>
-        {user?.email && <Typography variant="caption" sx={{ color: "text.secondary" }}>{user.email}</Typography>}
+    <Box
+      sx={{
+        width: 260,
+        bgcolor: "#1e293b",
+        color: "white",
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        position: "fixed",
+        left: 0,
+        top: 0,
+        zIndex: 1000,
+      }}
+    >
+      {/* Logo/Brand */}
+      <Box sx={{ p: 3, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 700,
+            fontSize: "1.5rem",
+            color: "white",
+            "& span": { fontWeight: 400 },
+          }}
+        >
+          <span>CRM</span> Admisiones
+        </Typography>
       </Box>
-      <Divider sx={{ my: 2 }} />
-      <Typography variant="caption" sx={{ color: "text.secondary", px: 2 }}>MENÚ</Typography>
-      <List dense sx={{ flex: 1 }}>
-        {links.map(({ to, label, icon }) => (
-          <ListItemButton key={to} component={RouterLink} to={to} selected={location.pathname === to} sx={{ borderRadius: 1 }}>
-            <ListItemIcon sx={{ minWidth: 36 }}>{icon}</ListItemIcon>
-            <ListItemText primary={label} />
+
+      {/* Navigation Links */}
+      <Box sx={{ flex: 1, overflowY: "auto", py: 2 }}>
+        <List dense sx={{ px: 1.5 }}>
+          {links.map(({ to, label, icon }) => {
+            const isActive = location.pathname === to;
+            return (
+              <ListItemButton
+                key={to}
+                component={RouterLink}
+                to={to}
+                sx={{
+                  borderRadius: 2,
+                  mb: 0.5,
+                  bgcolor: isActive ? "#3b82f6" : "transparent",
+                  color: isActive ? "white" : "rgba(255,255,255,0.8)",
+                  "&:hover": {
+                    bgcolor: isActive ? "#2563eb" : "rgba(255,255,255,0.1)",
+                  },
+                  py: 1.25,
+                }}
+              >
+                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{icon}</ListItemIcon>
+                <ListItemText
+                  primary={label}
+                  primaryTypographyProps={{
+                    fontSize: "0.9rem",
+                    fontWeight: isActive ? 600 : 400,
+                  }}
+                />
+              </ListItemButton>
+            );
+          })}
+        </List>
+      </Box>
+
+      {/* Bottom Links */}
+      <Box sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", p: 2 }}>
+        <List dense>
+          <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 2, color: "rgba(255,255,255,0.8)", py: 1.25, "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
+            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><Home /></ListItemIcon>
+            <ListItemText primary="Sitio público" primaryTypographyProps={{ fontSize: "0.9rem" }} />
           </ListItemButton>
-        ))}
-      </List>
-      <Divider />
-      <List dense>
-        <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 1 }}><ListItemIcon sx={{ minWidth: 36 }}><Dashboard /></ListItemIcon><ListItemText primary="Sitio público" /></ListItemButton>
-        <ListItemButton onClick={logout} sx={{ borderRadius: 1 }}><ListItemIcon sx={{ minWidth: 36 }}><ExitToApp /></ListItemIcon><ListItemText primary="Cerrar sesión" /></ListItemButton>
-      </List>
+          <ListItemButton onClick={logout} sx={{ borderRadius: 2, color: "rgba(255,255,255,0.8)", py: 1.25, "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
+            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><ExitToApp /></ListItemIcon>
+            <ListItemText primary="Cerrar sesión" primaryTypographyProps={{ fontSize: "0.9rem" }} />
+          </ListItemButton>
+        </List>
+      </Box>
     </Box>
   );
 }

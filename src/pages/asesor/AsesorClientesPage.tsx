@@ -1,16 +1,52 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField, Avatar, Chip, Box, Stack } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
 
 const cols: Column<Cliente>[] = [
-  { id: "nombres", label: "Nombres", minWidth: 120 },
-  { id: "apellidos", label: "Apellidos", minWidth: 120 },
-  { id: "numero_identificacion", label: "Cédula", minWidth: 100 },
-  { id: "correo", label: "Correo", minWidth: 160 },
-  { id: "celular", label: "Celular", minWidth: 100 },
-  { id: "estado", label: "Estado", minWidth: 90 },
+  {
+    id: "aspirante",
+    label: "ASPIRANTE",
+    minWidth: 250,
+    format: (_, row: Cliente) => {
+      const initials = `${row.nombres?.[0] || ""}${row.apellidos?.[0] || ""}`.toUpperCase();
+      return (
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar sx={{ bgcolor: "#3b82f6", width: 40, height: 40, fontSize: "0.875rem", fontWeight: 600 }}>
+            {initials}
+          </Avatar>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+              {`${row.nombres || ""} ${row.apellidos || ""}`.trim()}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem" }}>
+              {row.correo || "-"}
+            </Typography>
+          </Box>
+        </Stack>
+      );
+    },
+  },
+  { id: "numero_identificacion", label: "CÉDULA", minWidth: 120 },
+  { id: "celular", label: "CELULAR", minWidth: 120 },
+  {
+    id: "estado",
+    label: "ESTADO",
+    minWidth: 100,
+    format: (v: string) => (
+      <Chip
+        label={v || "Nuevo"}
+        size="small"
+        sx={{
+          bgcolor: "#3b82f6",
+          color: "white",
+          fontWeight: 600,
+          fontSize: "0.75rem",
+        }}
+      />
+    ),
+  },
 ];
 
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
@@ -43,12 +79,36 @@ export default function AsesorClientesPage() {
 
   return (
     <>
-      <DataTable title="Clientes" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
-        onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
-        onEdit={(r) => { setSel(r); setForm({ ...r }); setOpen(true); }}
-        search={search} onSearchChange={(v) => { setSearch(v); setPage(1); }}
-        getId={(r) => r.id_cliente} />
+      <DataTable
+        title="Mis Aspirantes"
+        columns={cols}
+        rows={items}
+        total={total}
+        page={page}
+        rowsPerPage={limit}
+        onPageChange={setPage}
+        onRowsPerPageChange={(l) => {
+          setLimit(l);
+          setPage(1);
+        }}
+        onAdd={() => {
+          setSel(null);
+          setForm(empty);
+          setOpen(true);
+        }}
+        onEdit={(r) => {
+          setSel(r);
+          setForm({ ...r });
+          setOpen(true);
+        }}
+        search={search}
+        onSearchChange={(v) => {
+          setSearch(v);
+          setPage(1);
+        }}
+        searchPlaceholder="Buscar aspirantes..."
+        getId={(r) => r.id_cliente}
+      />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar cliente" : "Nuevo cliente"}</DialogTitle>
         <DialogContent>

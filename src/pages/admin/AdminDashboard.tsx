@@ -1,13 +1,27 @@
-import { Box, Card, CardContent, Typography } from "@mui/material";
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Stack,
+  Select,
+  MenuItem,
+  FormControl,
+} from "@mui/material";
 import People from "@mui/icons-material/People";
 import Badge from "@mui/icons-material/Badge";
 import Assignment from "@mui/icons-material/Assignment";
 import School from "@mui/icons-material/School";
+import Campaign from "@mui/icons-material/Campaign";
+import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
 import * as empleadoService from "../../services/empleado.service";
 import * as tareaService from "../../services/tarea.service";
 import * as postulacionService from "../../services/postulacion.service";
+import * as carreraService from "../../services/carrera.service";
+import * as becaService from "../../services/beca.service";
 
 function toItems(res: any): number {
   if (Array.isArray(res)) return res.length;
@@ -15,51 +29,437 @@ function toItems(res: any): number {
 }
 
 export default function AdminDashboard() {
-  const [counts, setCounts] = useState({ clientes: 0, empleados: 0, tareas: 0, postulaciones: 0 });
+  const navigate = useNavigate();
+  const [counts, setCounts] = useState({
+    clientes: 0,
+    empleados: 0,
+    tareas: 0,
+    postulaciones: 0,
+    carreras: 0,
+    becas: 0,
+  });
+  const [postulacionStats, setPostulacionStats] = useState({
+    aprobadas: 0,
+    enProceso: 0,
+    pendientes: 0,
+    rechazadas: 0,
+    total: 0,
+  });
+  const [timeRange, setTimeRange] = useState("daily");
 
   useEffect(() => {
     Promise.all([
       clienteService.getClientes({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
       empleadoService.getEmpleados({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
       tareaService.getTareas({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
-      postulacionService.getPostulaciones({ limit: 1 }).catch(() => ({ items: [], meta: { totalItems: 0 } })),
-    ]).then(([c, e, t, p]) => {
+      postulacionService.getPostulaciones({ limit: 1000 }).catch(() => ({ items: [], meta: { totalItems: 0 } })),
+      carreraService.getCarreras({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
+      becaService.getBecas({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
+    ]).then(([c, e, t, p, car, b]) => {
+      const postulaciones = Array.isArray(p) ? p : (p as any)?.items ?? [];
+      const totalPostulaciones = (p as any)?.meta?.totalItems ?? postulaciones.length;
+      
+      // Calcular estadísticas por estado
+      const aprobadas = postulaciones.filter((post: any) => 
+        post.estado_postulacion?.toLowerCase().includes("aprob") || 
+        post.estado_postulacion === "Aprobada"
+      ).length;
+      const enProceso = postulaciones.filter((post: any) => 
+        post.estado_postulacion?.toLowerCase().includes("proceso") ||
+        post.estado_postulacion?.toLowerCase().includes("revisión") ||
+        post.estado_postulacion === "En Proceso"
+      ).length;
+      const pendientes = postulaciones.filter((post: any) => 
+        post.estado_postulacion?.toLowerCase().includes("pendiente") ||
+        post.estado_postulacion === "Pendiente" ||
+        !post.estado_postulacion
+      ).length;
+      const rechazadas = postulaciones.filter((post: any) => 
+        post.estado_postulacion?.toLowerCase().includes("rechaz") ||
+        post.estado_postulacion === "Rechazada"
+      ).length;
+
+      setPostulacionStats({
+        aprobadas,
+        enProceso,
+        pendientes,
+        rechazadas,
+        total: totalPostulaciones,
+      });
+
       setCounts({
         clientes: (c as any)?.meta?.totalItems ?? toItems(c),
         empleados: (e as any)?.meta?.totalItems ?? toItems(e),
         tareas: (t as any)?.meta?.totalItems ?? toItems(t),
-        postulaciones: (p as any)?.meta?.totalItems ?? (Array.isArray(p) ? (p as any).length : toItems(p)),
+        postulaciones: totalPostulaciones,
+        carreras: (car as any)?.meta?.totalItems ?? toItems(car),
+        becas: (b as any)?.meta?.totalItems ?? toItems(b),
       });
     });
   }, []);
 
-  const cards = [
-    { title: "Clientes (Aspirantes)", value: counts.clientes, icon: <People fontSize="large" />, color: "#5b5bf7" },
-    { title: "Empleados (Asesores)", value: counts.empleados, icon: <Badge fontSize="large" />, color: "#0ea5e9" },
-    { title: "Tareas CRM", value: counts.tareas, icon: <Assignment fontSize="large" />, color: "#10b981" },
-    { title: "Postulaciones", value: counts.postulaciones, icon: <School fontSize="large" />, color: "#f59e0b" },
+  // Tarjetas navegables (todas en la misma fila)
+  const navigationCards = [
+    {
+      title: "Clientes",
+      count: counts.clientes,
+      icon: <People sx={{ fontSize: 24 }} />,
+      bgColor: "#3b82f6",
+      color: "white",
+      route: "/admin/clientes",
+    },
+    {
+      title: "Postulaciones",
+      count: counts.postulaciones,
+      icon: <Campaign sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/admin/postulaciones",
+    },
+    {
+      title: "Carreras",
+      count: counts.carreras,
+      icon: <EmojiEvents sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/admin/carreras",
+    },
+    {
+      title: "Empleados",
+      count: counts.empleados,
+      icon: <Badge sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/admin/empleados",
+    },
+    {
+      title: "Tareas",
+      count: counts.tareas,
+      icon: <Assignment sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/admin/tareas",
+    },
+    {
+      title: "Becas",
+      count: counts.becas,
+      icon: <School sx={{ fontSize: 24 }} />,
+      bgColor: "#f5f5f5",
+      color: "#1e293b",
+      route: "/admin/becas",
+    },
   ];
 
+
+  // Estadísticas de tareas
+  const taskStats = {
+    completed: { value: 10, total: 75, color: "#64748b" },
+    inProgress: { value: 45, total: 75, color: "#3b82f6" },
+    notStarted: { value: 20, total: 75, color: "#ef4444" },
+  };
+
+  const totalHours = "36h 29 min";
+
   return (
-    <Box>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 3 }}>
-        <span style={{ color: "#5b5bf7" }}>—</span> Panel de administración
+    <Box sx={{ width: "100%", maxWidth: "100%", mx: -3, px: 3 }}>
+      {/* Header */}
+      <Typography variant="h4" fontWeight={800} sx={{ mb: 1, color: "#1e293b" }}>
+        Dashboard
       </Typography>
-      <Typography sx={{ color: "text.secondary", mb: 3 }}>
-        Resumen del CRM de Admisiones UTE
-      </Typography>
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }, gap: 2 }}>
-        {cards.map((c) => (
-          <Card key={c.title} sx={{ borderRadius: 2, boxShadow: 2, borderLeft: `4px solid ${c.color}` }}>
-            <CardContent sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <Box>
-                <Typography color="text.secondary" variant="body2">{c.title}</Typography>
-                <Typography variant="h4" fontWeight={700}>{c.value}</Typography>
-              </Box>
-              <Box sx={{ color: c.color }}>{c.icon}</Box>
+
+      {/* Navigation Cards */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "nowrap" }}>
+        {navigationCards.map((card, index) => (
+          <Card
+            key={index}
+            onClick={() => navigate(card.route)}
+            sx={{
+              flex: "1 1 0",
+              minWidth: 0,
+              borderRadius: 2,
+              bgcolor: card.bgColor,
+              color: card.color,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              "&:hover": {
+                transform: "translateY(-2px)",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              },
+            }}
+          >
+            <CardContent sx={{ p: 1.5 }}>
+              <Stack direction="row" spacing={1.5} alignItems="center">
+                {card.icon}
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem", lineHeight: 1.2 }}>
+                    {card.title}
+                  </Typography>
+                  <Typography variant="caption" sx={{ fontSize: "0.75rem", opacity: 0.9, display: "block" }}>
+                    {card.count} Registros
+                  </Typography>
+                </Box>
+              </Stack>
             </CardContent>
           </Card>
         ))}
+      </Box>
+
+      {/* Main Content - Statistics Cards */}
+      <Box sx={{ display: "flex", gap: 1.5, width: "100%", flexWrap: { xs: "wrap", md: "nowrap" } }}>
+        {/* Left Column - Postulaciones Statistics */}
+        <Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", width: { xs: "100%", md: "50%" } }}>
+          <Card sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white", width: "100%", display: "flex", flexDirection: "column", minHeight: "100%" }}>
+            <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                  Estadísticas de Postulaciones
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} sx={{ borderRadius: 2 }}>
+                    <MenuItem value="daily">Diario</MenuItem>
+                    <MenuItem value="weekly">Semanal</MenuItem>
+                    <MenuItem value="monthly">Mensual</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              {/* Progress Bars */}
+              <Stack spacing={2.5} sx={{ mb: 3 }}>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      Aprobadas
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {postulacionStats.aprobadas}/{postulacionStats.total || 1}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: "#10b981",
+                      borderRadius: 1,
+                      width: `${postulacionStats.total > 0 ? (postulacionStats.aprobadas / postulacionStats.total) * 100 : 0}%`,
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      En proceso
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {postulacionStats.enProceso}/{postulacionStats.total || 1}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: "#3b82f6",
+                      borderRadius: 1,
+                      width: `${postulacionStats.total > 0 ? (postulacionStats.enProceso / postulacionStats.total) * 100 : 0}%`,
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      Pendientes
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {postulacionStats.pendientes}/{postulacionStats.total || 1}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: "#f59e0b",
+                      borderRadius: 1,
+                      width: `${postulacionStats.total > 0 ? (postulacionStats.pendientes / postulacionStats.total) * 100 : 0}%`,
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      Rechazadas
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {postulacionStats.rechazadas}/{postulacionStats.total || 1}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: "#ef4444",
+                      borderRadius: 1,
+                      width: `${postulacionStats.total > 0 ? (postulacionStats.rechazadas / postulacionStats.total) * 100 : 0}%`,
+                    }}
+                  />
+                </Box>
+              </Stack>
+
+              {/* Donut Chart Representation */}
+              <Box
+                sx={{
+                  width: 200,
+                  height: 200,
+                  mx: "auto",
+                  mb: 2,
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 180,
+                    height: 180,
+                    borderRadius: "50%",
+                    border: "20px solid #e5e7eb",
+                    borderTopColor: postulacionStats.total > 0 && postulacionStats.aprobadas > 0 ? "#10b981" : "#e5e7eb",
+                    borderRightColor: postulacionStats.total > 0 && postulacionStats.enProceso > 0 ? "#3b82f6" : "#e5e7eb",
+                    borderBottomColor: postulacionStats.total > 0 && postulacionStats.pendientes > 0 ? "#f59e0b" : "#e5e7eb",
+                    borderLeftColor: postulacionStats.total > 0 && postulacionStats.rechazadas > 0 ? "#ef4444" : "#e5e7eb",
+                    transform: "rotate(-45deg)",
+                  }}
+                />
+                <Box sx={{ position: "absolute", textAlign: "center" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                    {postulacionStats.total}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b" }}>
+                    Total
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Typography variant="body2" sx={{ textAlign: "center", color: "#64748b", fontWeight: 600 }}>
+                Postulaciones registradas
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+
+        {/* Right Column - Task Statistics */}
+        <Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", width: { xs: "100%", md: "50%" } }}>
+          <Card sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white", width: "100%", display: "flex", flexDirection: "column", minHeight: "100%" }}>
+            <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+                <Typography variant="h6" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                  Estadísticas de Tareas
+                </Typography>
+                <FormControl size="small" sx={{ minWidth: 120 }}>
+                  <Select value={timeRange} onChange={(e) => setTimeRange(e.target.value)} sx={{ borderRadius: 2 }}>
+                    <MenuItem value="daily">Diario</MenuItem>
+                    <MenuItem value="weekly">Semanal</MenuItem>
+                    <MenuItem value="monthly">Mensual</MenuItem>
+                  </Select>
+                </FormControl>
+              </Stack>
+
+              {/* Progress Bars */}
+              <Stack spacing={2.5} sx={{ mb: 3 }}>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      Completadas
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {taskStats.completed.value}/{taskStats.completed.total}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: taskStats.completed.color,
+                      borderRadius: 1,
+                      width: `${(taskStats.completed.value / taskStats.completed.total) * 100}%`,
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      En progreso
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {taskStats.inProgress.value}/{taskStats.inProgress.total}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: taskStats.inProgress.color,
+                      borderRadius: 1,
+                      width: `${(taskStats.inProgress.value / taskStats.inProgress.total) * 100}%`,
+                    }}
+                  />
+                </Box>
+                <Box>
+                  <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
+                    <Typography variant="body2" sx={{ color: "#1e293b", fontWeight: 600 }}>
+                      No iniciadas
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#64748b" }}>
+                      {taskStats.notStarted.value}/{taskStats.notStarted.total}
+                    </Typography>
+                  </Stack>
+                  <Box
+                    sx={{
+                      height: 24,
+                      bgcolor: taskStats.notStarted.color,
+                      borderRadius: 1,
+                      width: `${(taskStats.notStarted.value / taskStats.notStarted.total) * 100}%`,
+                    }}
+                  />
+                </Box>
+              </Stack>
+
+              {/* Donut Chart Representation */}
+              <Box
+                sx={{
+                  width: 200,
+                  height: 200,
+                  mx: "auto",
+                  mb: 2,
+                  position: "relative",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 180,
+                    height: 180,
+                    borderRadius: "50%",
+                    border: "20px solid #e5e7eb",
+                    borderTopColor: taskStats.inProgress.color,
+                    borderRightColor: taskStats.notStarted.color,
+                    borderBottomColor: taskStats.completed.color,
+                    transform: "rotate(-45deg)",
+                  }}
+                />
+                <Box sx={{ position: "absolute", textAlign: "center" }}>
+                  <Typography variant="h5" sx={{ fontWeight: 700, color: "#1e293b" }}>
+                    {taskStats.completed.value + taskStats.inProgress.value + taskStats.notStarted.value}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b" }}>
+                    Total
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Typography variant="body2" sx={{ textAlign: "center", color: "#64748b", fontWeight: 600 }}>
+                Tiempo total: {totalHours}
+              </Typography>
+            </CardContent>
+          </Card>
+        </Box>
+
       </Box>
     </Box>
   );
