@@ -1,11 +1,9 @@
 import { Card, CardActionArea, CardContent, CardMedia, Typography } from "@mui/material";
-
 type Props = {
   title: string;
   desc: string;
   img: string;
 };
-
 export default function CareerCard({ title, desc, img }: Props) {
   return (
     <Card sx={{ borderRadius: 2, boxShadow: 2 }}>

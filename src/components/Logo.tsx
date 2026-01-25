@@ -1,24 +1,20 @@
 import { Box, Stack, Typography } from "@mui/material";
-
 type LogoProps = {
   size?: "small" | "medium" | "large";
   showText?: boolean;
   horizontal?: boolean;
   symbolOnly?: boolean;
 };
-
 export default function Logo({ size = "medium", showText = true, horizontal = false, symbolOnly = false }: LogoProps) {
   const sizes = {
     small: { symbol: 50, text: "h6", fontSize: "1.2rem" },
     medium: { symbol: 100, text: "h5", fontSize: "1.5rem" },
     large: { symbol: 300, text: "h2", fontSize: "3rem" },
   };
-
   const currentSize = sizes[size];
-
   const LogoContent = (
     <>
-      {/* AV Symbol - Using logo.png from public folder */}
+      {}
       <Box
         sx={{
           position: "relative",
@@ -45,8 +41,7 @@ export default function Logo({ size = "medium", showText = true, horizontal = fa
           }}
         />
       </Box>
-
-      {/* Text */}
+      {}
       {showText && (
         <Typography
           variant={currentSize.text as any}
@@ -66,7 +61,6 @@ export default function Logo({ size = "medium", showText = true, horizontal = fa
       )}
     </>
   );
-
   if (horizontal) {
     return (
       <Stack direction="row" spacing={2} alignItems="center">
@@ -74,7 +68,6 @@ export default function Logo({ size = "medium", showText = true, horizontal = fa
       </Stack>
     );
   }
-
   return (
     <Stack direction="column" spacing={1} alignItems="center">
       {LogoContent}

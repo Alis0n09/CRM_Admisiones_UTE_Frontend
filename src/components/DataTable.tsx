@@ -17,14 +17,12 @@ import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
 import Visibility from "@mui/icons-material/Visibility";
-
 export interface Column<T> {
   id: keyof T | string;
   label: string;
   minWidth?: number;
   format?: (v: any, row: T) => React.ReactNode;
 }
-
 interface DataTableProps<T extends { [k: string]: any }> {
   title: string;
   columns: Column<T>[];
@@ -43,7 +41,6 @@ interface DataTableProps<T extends { [k: string]: any }> {
   searchPlaceholder?: string;
   getId: (row: T) => string;
 }
-
 export default function DataTable<T extends { [k: string]: any }>({
   title,
   columns,

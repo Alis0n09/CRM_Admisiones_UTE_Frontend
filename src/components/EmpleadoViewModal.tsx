@@ -6,19 +6,15 @@ import Phone from "@mui/icons-material/Phone";
 import BusinessCenter from "@mui/icons-material/BusinessCenter";
 import ViewModalBase, { InfoCard, getInitials } from "./ViewModalBase";
 import type { Empleado } from "../services/empleado.service";
-
 interface EmpleadoViewModalProps {
   open: boolean;
   onClose: () => void;
   empleado: Empleado | null;
 }
-
 export default function EmpleadoViewModal({ open, onClose, empleado }: EmpleadoViewModalProps) {
   if (!empleado) return null;
-
   const initials = getInitials(empleado.nombres, empleado.apellidos);
   const nombreCompleto = `${empleado.nombres || ""} ${empleado.apellidos || ""}`.trim();
-
   return (
     <ViewModalBase
       open={open}

@@ -4,18 +4,14 @@ import BusinessCenter from "@mui/icons-material/BusinessCenter";
 import CalendarToday from "@mui/icons-material/CalendarToday";
 import ViewModalBase, { InfoCard } from "./ViewModalBase";
 import type { Carrera } from "../services/carrera.service";
-
 interface CarreraViewModalProps {
   open: boolean;
   onClose: () => void;
   carrera: Carrera | null;
 }
-
 export default function CarreraViewModal({ open, onClose, carrera }: CarreraViewModalProps) {
   if (!carrera) return null;
-
   const nombreInitial = carrera.nombre_carrera?.[0]?.toUpperCase() || "C";
-
   return (
     <ViewModalBase
       open={open}

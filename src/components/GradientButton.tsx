@@ -1,5 +1,4 @@
 import { Button, type ButtonProps } from "@mui/material";
-
 export default function GradientButton(props: ButtonProps) {
   return (
     <Button
@@ -14,13 +13,11 @@ export default function GradientButton(props: ButtonProps) {
         color: "white",
         boxShadow: "0 6px 18px rgba(0,0,0,0.2)",
         transition: "all 0.3s ease",
-
         "&:hover": {
           background: "linear-gradient(135deg, #5b21b6, #7c3aed, #22c55e)",
           boxShadow: "0 10px 24px rgba(0,0,0,0.3)",
           transform: "translateY(-2px)",
         },
-
         "&:active": {
           transform: "scale(0.97)",
         },

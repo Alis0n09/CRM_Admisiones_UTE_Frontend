@@ -4,18 +4,14 @@ import CalendarToday from "@mui/icons-material/CalendarToday";
 import AttachMoney from "@mui/icons-material/AttachMoney";
 import ViewModalBase, { InfoCard, formatDate } from "./ViewModalBase";
 import type { Beca } from "../services/beca.service";
-
 interface BecaViewModalProps {
   open: boolean;
   onClose: () => void;
   beca: Beca | null;
 }
-
 export default function BecaViewModal({ open, onClose, beca }: BecaViewModalProps) {
   if (!beca) return null;
-
   const nombreInitial = beca.nombre_beca?.[0]?.toUpperCase() || "B";
-
   return (
     <ViewModalBase
       open={open}

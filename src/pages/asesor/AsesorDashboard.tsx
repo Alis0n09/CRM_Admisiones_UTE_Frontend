@@ -7,16 +7,13 @@ import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
 import * as tareaService from "../../services/tarea.service";
 import * as postulacionService from "../../services/postulacion.service";
-
 function toItems(res: any): number {
   if (Array.isArray(res)) return res.length;
   return res?.items?.length ?? res?.meta?.totalItems ?? 0;
 }
-
 export default function AsesorDashboard() {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({ clientes: 0, tareas: 0, postulaciones: 0 });
-
   useEffect(() => {
     Promise.all([
       clienteService.getClientes({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
@@ -30,7 +27,6 @@ export default function AsesorDashboard() {
       });
     });
   }, []);
-
   const cards = [
     {
       title: "Clientes",
@@ -57,15 +53,13 @@ export default function AsesorDashboard() {
       route: "/asesor/postulaciones",
     },
   ];
-
   return (
     <Box sx={{ width: "100%", maxWidth: "100%" }}>
-      {/* Header */}
+      {}
       <Typography variant="h4" fontWeight={800} sx={{ mb: 1, color: "#1e293b" }}>
         Dashboard
       </Typography>
-
-      {/* Navigation Cards */}
+      {}
       <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "nowrap" }}>
         {cards.map((card, index) => (
           <Card

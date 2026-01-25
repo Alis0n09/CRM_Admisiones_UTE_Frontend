@@ -10,6 +10,7 @@ import * as documentoService from "../../services/documentoPostulacion.service";
 import * as becaService from "../../services/beca.service";
 import * as becaEstudianteService from "../../services/becaEstudiante.service";
 import * as carreraService from "../../services/carrera.service";
+import * as matriculaService from "../../services/matricula.service";
 import type { Postulacion } from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
 import type { BecaEstudiante } from "../../services/becaEstudiante.service";
@@ -26,7 +27,6 @@ import LocationOnIcon from "@mui/icons-material/LocationOn";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import AddIcon from "@mui/icons-material/Add";
 import { api } from "../../services/api";
-
 const cols: Column<Cliente>[] = [
   {
     id: "aspirante",
@@ -71,9 +71,7 @@ const cols: Column<Cliente>[] = [
     ),
   },
 ];
-
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
-
 export default function AsesorClientesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Cliente[]>([]);
@@ -116,8 +114,6 @@ export default function AsesorClientesPage() {
     monto_otorgado: "",
     estado: "Vigente",
   });
-
-  // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
   useEffect(() => {
     const urlSearchParam = searchParams.get("search") || "";
     if (urlSearchParam !== search) {
@@ -125,11 +121,9 @@ export default function AsesorClientesPage() {
       setPage(1);
     }
   }, [searchParams]);
-
   const load = useCallback(() => {
     const currentSearch = searchParams.get("search") || search || "";
     const searchParam = currentSearch.trim();
-    // Pasar el parámetro de búsqueda solo si tiene contenido
     const params: { page: number; limit: number; search?: string } = { page, limit };
     if (searchParam) {
       params.search = searchParam;
@@ -143,51 +137,38 @@ export default function AsesorClientesPage() {
       setTotal(0);
     });
   }, [page, limit, search, searchParams]);
-
   useEffect(() => {
     load();
   }, [load]);
-
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(1);
-    // Actualizar URL sin recargar la página
     if (value) {
       setSearchParams({ search: value });
     } else {
       setSearchParams({});
     }
   };
-
   const handleView = (row: Cliente) => { setSel(row); setOpenView(true); };
-
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
     (sel ? s.updateCliente(sel.id_cliente, form) : s.createCliente(form as any))
       .then(() => { setOpen(false); load(); })
       .catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const loadClienteDetail = useCallback(async (clienteId: string) => {
     setLoadingDetail(true);
-    
     try {
-      // Cargar información completa del cliente
       const clienteCompleto = await s.getCliente(clienteId);
       setClienteDetail(clienteCompleto);
-  
-      // Cargar postulaciones del cliente. El backend filtra por id_cliente cuando se envía el parámetro
       const postuls = await postulacionService.getPostulaciones({
         id_cliente: clienteId,
         limit: 500,
       });
-      // El backend ya filtra por id_cliente, confiamos en su respuesta
       const postulsList = Array.isArray(postuls)
         ? postuls
         : (postuls as any)?.items || [];
       setPostulaciones(postulsList);
-  
-      // Cargar documentos de las postulaciones
       const docs = await documentoService.getDocumentosPostulacion();
       const docsList = Array.isArray(docs) ? docs : [];
       const postulacionIds = postulsList.map((p: Postulacion) => p.id_postulacion);
@@ -195,21 +176,15 @@ export default function AsesorClientesPage() {
         postulacionIds.includes(d.id_postulacion)
       );
       setDocumentos(docsCliente);
-  
-      // Cargar becas disponibles
       const becasData = await becaService.getBecas({ limit: 100 });
       const becasList = (becasData as any)?.items || [];
       setBecas(becasList);
-  
-      // Cargar becas asignadas al cliente desde el endpoint correcto
       try {
         const becasEstudiantes = await becaEstudianteService.getBecasEstudiantesByCliente(clienteId);
         if (becasEstudiantes && becasEstudiantes.length > 0) {
-          // Tomar la beca más reciente (o la vigente)
           const becaVigente = becasEstudiantes.find((be: BecaEstudiante) => be.estado === "Vigente") || becasEstudiantes[0];
           setBecaAsignada(becaVigente);
           setSelectedBecaId(becaVigente.id_beca || becaVigente.beca?.id_beca || "");
-          // Prellenar el formulario con los datos existentes
           setBecaForm({
             periodo_academico: becaVigente.periodo_academico || "",
             monto_otorgado: becaVigente.monto_otorgado || "",
@@ -218,7 +193,6 @@ export default function AsesorClientesPage() {
         } else {
           setBecaAsignada(null);
           setSelectedBecaId("");
-          // Resetear formulario
           const currentYear = new Date().getFullYear();
           setBecaForm({
             periodo_academico: `${currentYear}-1`,
@@ -237,32 +211,24 @@ export default function AsesorClientesPage() {
       setLoadingDetail(false);
     }
   }, []);
-
   const handleViewDetail = async (cliente: Cliente) => {
     setClienteDetail(cliente);
     setOpenDetail(true);
     await loadClienteDetail(cliente.id_cliente);
   };
-
-  // Cargar carreras al montar el componente
   useEffect(() => {
     carreraService.getCarreras({ limit: 200 }).then((r: any) => {
       setCarreras(r?.items ?? []);
     }).catch(() => setCarreras([]));
   }, []);
-
-  // Recargar datos cuando se abre el diálogo
   useEffect(() => {
     if (openDetail && clienteDetail?.id_cliente) {
       loadClienteDetail(clienteDetail.id_cliente);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDetail]);
-
   const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-    
     try {
       const { data } = await api.post("/upload", formData, {
         headers: {
@@ -283,7 +249,6 @@ export default function AsesorClientesPage() {
       }
     }
   };
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -301,7 +266,6 @@ export default function AsesorClientesPage() {
       setUploadError("");
     }
   };
-
   const handleUploadDocument = async () => {
     if (!selectedFile) {
       setUploadError("Por favor selecciona un archivo");
@@ -315,14 +279,11 @@ export default function AsesorClientesPage() {
       setUploadError("El aspirante no tiene postulaciones. Debe crear una postulación primero.");
       return;
     }
-
     setUploading(true);
     setUploadError("");
-
     try {
       const urlArchivo = await uploadFile(selectedFile);
       const postulacionActiva = postulaciones[0];
-      
       await documentoService.createDocumentoPostulacion({
         id_postulacion: postulacionActiva.id_postulacion,
         tipo_documento: documentoForm.tipo_documento,
@@ -331,8 +292,6 @@ export default function AsesorClientesPage() {
         estado_documento: "Pendiente",
         observaciones: documentoForm.observaciones || "",
       });
-
-      // Recargar documentos
       const docs = await documentoService.getDocumentosPostulacion();
       const docsList = Array.isArray(docs) ? docs : [];
       const postulacionIds = postulaciones.map((p: Postulacion) => p.id_postulacion);
@@ -340,8 +299,6 @@ export default function AsesorClientesPage() {
         postulacionIds.includes(d.id_postulacion)
       );
       setDocumentos(docsCliente);
-
-      // Limpiar formulario
       setSelectedFile(null);
       setDocumentoForm({ tipo_documento: "", observaciones: "" });
       setOpenUploadDialog(false);
@@ -351,7 +308,6 @@ export default function AsesorClientesPage() {
       setUploading(false);
     }
   };
-
   const handleCreatePostulacion = async () => {
     if (!postulacionForm.id_carrera || !postulacionForm.periodo_academico) {
       alert("Por favor completa la carrera y el período académico");
@@ -361,7 +317,6 @@ export default function AsesorClientesPage() {
       alert("Error: No se ha seleccionado un cliente");
       return;
     }
-
     try {
       await postulacionService.createPostulacion({
         id_cliente: clienteDetail.id_cliente,
@@ -370,13 +325,39 @@ export default function AsesorClientesPage() {
         estado_postulacion: postulacionForm.estado_postulacion,
         observaciones: postulacionForm.observaciones || "",
       });
-
-      // Recargar datos del cliente
+      
+      if (postulacionForm.estado_postulacion === "Aprobada") {
+        try {
+          const matriculas = await matriculaService.getMatriculas({ limit: 1000 });
+          const matriculasList = (matriculas as any)?.items ?? [];
+          const existeMatricula = matriculasList.some(
+            (m: any) => 
+              m.id_cliente === clienteDetail.id_cliente && 
+              m.id_carrera === postulacionForm.id_carrera && 
+              m.periodo_academico === postulacionForm.periodo_academico
+          );
+          
+          if (!existeMatricula) {
+            await matriculaService.createMatricula({
+              id_cliente: clienteDetail.id_cliente,
+              id_carrera: postulacionForm.id_carrera,
+              periodo_academico: postulacionForm.periodo_academico,
+              estado: "Activa",
+              fecha_matricula: new Date().toISOString().split('T')[0],
+            });
+            alert("✅ Postulación creada y aprobada. Matrícula creada automáticamente.");
+          } else {
+            alert("✅ Postulación creada y aprobada. La matrícula ya existe para este período.");
+          }
+        } catch (matriculaError: any) {
+          console.error("Error al crear matrícula automática:", matriculaError);
+          alert(`⚠️ Postulación creada, pero hubo un error al crear la matrícula: ${matriculaError?.response?.data?.message || matriculaError?.message || "Error desconocido"}`);
+        }
+      }
+      
       if (clienteDetail.id_cliente) {
         await loadClienteDetail(clienteDetail.id_cliente);
       }
-
-      // Limpiar formulario y cerrar diálogo
       setPostulacionForm({
         id_carrera: "",
         periodo_academico: "",
@@ -388,7 +369,6 @@ export default function AsesorClientesPage() {
       alert(error?.response?.data?.message || "Error al crear la postulación");
     }
   };
-
   const handleSelectBeca = async () => {
     if (!selectedBecaId) {
       alert("Por favor selecciona una beca");
@@ -406,11 +386,8 @@ export default function AsesorClientesPage() {
       alert("Por favor ingresa el monto otorgado");
       return;
     }
-
     try {
-      // Si ya existe una beca asignada, actualizarla; si no, crear una nueva
       if (becaAsignada && becaAsignada.id_beca_estudiante) {
-        // Actualizar beca existente
         await becaEstudianteService.updateBecaEstudiante(becaAsignada.id_beca_estudiante, {
           id_beca: selectedBecaId,
           periodo_academico: becaForm.periodo_academico,
@@ -418,7 +395,6 @@ export default function AsesorClientesPage() {
           estado: becaForm.estado,
         });
       } else {
-        // Crear nueva asignación de beca
         await becaEstudianteService.createBecaEstudiante({
           id_beca: selectedBecaId,
           id_cliente: clienteDetail.id_cliente,
@@ -428,12 +404,9 @@ export default function AsesorClientesPage() {
           fecha_asignacion: new Date().toISOString().split('T')[0],
         });
       }
-
-      // Recargar datos del cliente
       if (clienteDetail.id_cliente) {
         await loadClienteDetail(clienteDetail.id_cliente);
       }
-
       setOpenBecaDialog(false);
       alert("Beca asignada exitosamente");
     } catch (error: any) {
@@ -441,7 +414,6 @@ export default function AsesorClientesPage() {
       alert(error?.response?.data?.message || "Error al asignar la beca. Verifica que todos los campos estén completos.");
     }
   };
-
   return (
     <>
       <DataTable

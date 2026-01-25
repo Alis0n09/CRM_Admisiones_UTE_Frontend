@@ -10,9 +10,7 @@ import CalendarToday from "@mui/icons-material/CalendarToday";
 import ExitToApp from "@mui/icons-material/ExitToApp";
 import Home from "@mui/icons-material/Home";
 import { useAuth } from "../../context/AuthContext";
-
 const base = "/asesor";
-
 const links = [
   { to: base, label: "Dashboard", icon: <Dashboard /> },
   { to: `${base}/clientes`, label: "Mis Aspirantes", icon: <People /> },
@@ -22,12 +20,10 @@ const links = [
   { to: `${base}/documentos`, label: "Documentos", icon: <Description /> },
   { to: `${base}/seguimientos`, label: "Seguimientos", icon: <Timeline /> },
 ];
-
 export default function SidebarAsesor() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-
   const userInitials = user?.email
     ? user.email
         .split("@")[0]
@@ -37,12 +33,10 @@ export default function SidebarAsesor() {
         .toUpperCase()
         .slice(0, 2) || "AS"
     : "AS";
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
-
   return (
     <Box
       sx={{
@@ -72,7 +66,7 @@ export default function SidebarAsesor() {
         },
       }}
     >
-      {/* Logo/Brand Section */}
+      {}
       <Box sx={{ p: 3, borderBottom: "1px solid rgba(255,255,255,0.1)", textAlign: "center", flexShrink: 0 }}>
         <Box
           component="img"
@@ -112,8 +106,7 @@ export default function SidebarAsesor() {
           Asesor
         </Typography>
       </Box>
-
-      {/* Navigation Links */}
+      {}
       <Box sx={{ py: 2, flexShrink: 0 }}>
         <List dense sx={{ px: 1.5 }}>
           {links.map(({ to, label, icon }) => {
@@ -147,8 +140,7 @@ export default function SidebarAsesor() {
           })}
         </List>
       </Box>
-
-      {/* User Info Section */}
+      {}
       <Box sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", p: 2, flexShrink: 0 }}>
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
           <Avatar
@@ -200,8 +192,7 @@ export default function SidebarAsesor() {
           </ListItemButton>
         </List>
       </Box>
-
-      {/* Botón Cerrar Sesión */}
+      {}
       <Box sx={{ px: 1, pb: 2 }}>
         <ListItemButton
           onClick={handleLogout}

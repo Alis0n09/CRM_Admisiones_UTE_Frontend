@@ -1,5 +1,4 @@
 import { Button, Container, MenuItem, Paper, Stack, TextField, Typography } from "@mui/material";
-
 export default function ContactForm() {
   return (
     <Container>
@@ -9,7 +8,6 @@ export default function ContactForm() {
       <Typography sx={{ color: "text.secondary", mb: 2 }}>
         Completa este formulario y un asesor te contactará con información según tu interés.
       </Typography>
-
       <Paper sx={{ p: 3, borderRadius: 2 }}>
         <Stack spacing={2}>
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -17,7 +15,6 @@ export default function ContactForm() {
             <TextField label="Apellido" placeholder="Tus apellidos" fullWidth />
             <TextField label="Correo" placeholder="ejemplo@gmail.com" fullWidth />
           </Stack>
-                
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <TextField select label="Carrera de interés" fullWidth>
             <MenuItem value="software">
@@ -37,13 +34,10 @@ export default function ContactForm() {
             </MenuItem>
         </TextField>
         </Stack>
-
           <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
             <TextField label="Teléfono" placeholder="Ej: 09XXXXXXXX" fullWidth />
             <TextField label="Número de identificación" placeholder="Tu número de identificación" fullWidth />
           </Stack>
-
-
           <Stack direction="row" spacing={2} alignItems="center">
             <Button variant="contained" sx={{background: "blue", "&:hover": {background: "linear-gradient(135deg, #5b21b6, #7c3aed, #22c55e)"}}}>Enviar información</Button>
             <Typography variant="caption" sx={{ color: "text.secondary" }}>

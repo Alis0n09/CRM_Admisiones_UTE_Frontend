@@ -2,11 +2,9 @@ import { Box, IconButton, InputBase, Stack, Button, Badge, Typography } from "@m
 import { Search, Notifications, Home } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-
 export default function TopbarAdmin() {
   const navigate = useNavigate();
   const [searchValue, setSearchValue] = useState("");
-
   const handleSearch = () => {
     if (searchValue.trim()) {
       navigate(`/admin/clientes?search=${encodeURIComponent(searchValue.trim())}`);
@@ -14,13 +12,11 @@ export default function TopbarAdmin() {
       navigate("/admin/clientes");
     }
   };
-
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
     }
   };
-
   return (
     <Box
       sx={{
@@ -33,7 +29,7 @@ export default function TopbarAdmin() {
         justifyContent: "space-between",
       }}
     >
-      {/* Search Bar */}
+      {}
       <Box
         sx={{
           display: "flex",
@@ -65,10 +61,9 @@ export default function TopbarAdmin() {
           sx={{ flex: 1, fontSize: "0.9rem", color: "#1e293b" }}
         />
       </Box>
-
-      {/* Right Side - Home and Notifications */}
+      {}
       <Stack direction="row" spacing={1.5} alignItems="center">
-        {/* Home Button with Icon and Text */}
+        {}
         <Button
           onClick={() => navigate("/")}
           startIcon={<Home />}
@@ -86,8 +81,7 @@ export default function TopbarAdmin() {
         >
           Inicio
         </Button>
-
-        {/* Notifications with Badge */}
+        {}
         <IconButton
           sx={{
             bgcolor: "#f5f5f5",

@@ -29,7 +29,6 @@ import DownloadIcon from "@mui/icons-material/Download";
 import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import { api } from "../../services/api";
-
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
   const estadoLower = estado.toLowerCase();
@@ -38,7 +37,6 @@ function getEstadoColor(estado?: string) {
   if (estadoLower.includes("rechazado")) return "error";
   return "default";
 }
-
 export default function DocumentosPage() {
   const [items, setItems] = useState<DocumentoPostulacion[]>([]);
   const [postulaciones, setPostulaciones] = useState<{ id_postulacion: string; cliente?: { nombres: string }; carrera?: { nombre_carrera: string } }[]>([]);
@@ -51,7 +49,6 @@ export default function DocumentosPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string>("");
-
   const load = useCallback(() => {
     docService.getDocumentosPostulacion()
       .then((r) => {
@@ -60,14 +57,12 @@ export default function DocumentosPage() {
       })
       .catch(() => setItems([]));
   }, []);
-
   useEffect(() => {
     load();
     const handleDocumentosUpdated = () => load();
     window.addEventListener("documentosUpdated", handleDocumentosUpdated);
     return () => window.removeEventListener("documentosUpdated", handleDocumentosUpdated);
   }, [load]);
-
   const loadPostulaciones = useCallback(async () => {
     try {
       const r: any = await postulacionService.getPostulaciones({ limit: 500 });
@@ -80,22 +75,16 @@ export default function DocumentosPage() {
       return [];
     }
   }, []);
-
   useEffect(() => {
     loadPostulaciones();
-    
-    // Escuchar eventos de actualización de postulaciones
     const handlePostulacionesUpdated = () => {
       console.log("Evento de actualización de postulaciones recibido, recargando...");
       loadPostulaciones();
     };
-    
     window.addEventListener("postulacionesUpdated", handlePostulacionesUpdated);
     return () => window.removeEventListener("postulacionesUpdated", handlePostulacionesUpdated);
   }, [loadPostulaciones]);
-
   const openAdd = async () => { 
-    // Recargar postulaciones antes de abrir el modal para asegurar datos actualizados
     const posts = await loadPostulaciones();
     setSel(null);
     setSelectedFile(null);
@@ -105,7 +94,6 @@ export default function DocumentosPage() {
   };
   const handleView = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
   const openEdit = async (r: DocumentoPostulacion) => { 
-    // Recargar postulaciones antes de abrir el modal para asegurar datos actualizados
     await loadPostulaciones();
     setSel(r);
     setSelectedFile(null);
@@ -113,37 +101,28 @@ export default function DocumentosPage() {
     setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); 
     setOpen(true); 
   };
-
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validar tipo de archivo
       const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
       if (!validTypes.includes(file.type)) {
         setUploadError("Solo se permiten archivos PDF, JPG o PNG");
         return;
       }
-      
-      // Validar tamaño (5 MB máximo)
       const maxSize = 5 * 1024 * 1024; // 5 MB en bytes
       if (file.size > maxSize) {
         setUploadError("El archivo no puede ser mayor a 5 MB");
         return;
       }
-      
       setSelectedFile(file);
       setUploadError("");
-      // Actualizar el nombre del archivo automáticamente
       setForm({ ...form, nombre_archivo: file.name });
     }
   };
-
   const uploadFile = async (file: File): Promise<string> => {
     const formData = new FormData();
     formData.append("file", file);
-    
     try {
-      // Intentar primero con /documentos-postulacion/upload
       const { data } = await api.post("/documentos-postulacion/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -155,7 +134,6 @@ export default function DocumentosPage() {
       }
       return url;
     } catch (error: any) {
-      // Si el endpoint /documentos-postulacion/upload no existe, intentar con /upload
       try {
         const { data } = await api.post("/upload", formData, {
           headers: {
@@ -170,42 +148,31 @@ export default function DocumentosPage() {
       } catch (error2: any) {
         const errorMessage = error2?.response?.data?.message || error?.response?.data?.message || "Error al subir el archivo";
         const status = error2?.response?.status || error?.response?.status;
-        
         console.error("Error al subir archivo:", {
           status,
           message: errorMessage,
           data: error2?.response?.data || error?.response?.data
         });
-        
-        // Si el error es 404, significa que el endpoint no existe
         if (status === 404) {
           throw new Error("El servicio de carga de archivos no está disponible. Por favor contacta al administrador.");
         }
-        
         throw new Error(errorMessage || "Error al subir el archivo. Por favor intenta nuevamente.");
       }
     }
   };
-
   const save = async () => {
     if (!form.id_postulacion || !form.tipo_documento || !form.nombre_archivo) {
       alert("Completa los campos requeridos: Postulación, Tipo y Nombre archivo");
       return;
     }
-
-    // Si es un documento nuevo, debe tener un archivo seleccionado o una URL
     if (!sel && !selectedFile && !form.url_archivo) {
       setUploadError("Por favor selecciona un archivo para subir o ingresa una URL");
       return;
     }
-
     setUploading(true);
     setUploadError("");
-
     try {
-      // Subir el archivo si hay uno seleccionado
       let urlArchivo = form.url_archivo;
-      
       if (selectedFile) {
         try {
           urlArchivo = await uploadFile(selectedFile);
@@ -219,14 +186,11 @@ export default function DocumentosPage() {
           return;
         }
       }
-
-      // Validar que tenemos URL del archivo
       if (!urlArchivo || urlArchivo.trim() === "") {
         setUploadError("La URL del archivo es requerida");
         setUploading(false);
         return;
       }
-      
       const documentoData = {
         id_postulacion: form.id_postulacion,
         tipo_documento: form.tipo_documento,
@@ -235,12 +199,10 @@ export default function DocumentosPage() {
         estado_documento: form.estado_documento || "Pendiente",
         observaciones: form.observaciones || "",
       };
-
       await (sel 
         ? docService.updateDocumentoPostulacion(sel.id_documento, documentoData)
         : docService.createDocumentoPostulacion(documentoData)
       );
-      
       setOpen(false);
       setSelectedFile(null);
       setUploadError("");
@@ -253,14 +215,12 @@ export default function DocumentosPage() {
       setUploading(false);
     }
   };
-
   const del = (row: DocumentoPostulacion) => {
     if (!confirm("¿Eliminar este documento?")) return;
     docService.deleteDocumentoPostulacion(row.id_documento)
       .then(() => load())
       .catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const resolveUrl = (url?: string) => {
     const raw = String(url || "").trim();
     if (!raw) return "";
@@ -270,15 +230,12 @@ export default function DocumentosPage() {
     if (raw.startsWith("/")) return `${baseURL}${raw}`;
     return `${baseURL}/${raw}`;
   };
-
   const buildCandidateUrls = (url?: string) => {
     const raw = String(url || "").trim();
     const baseURL = String(api.defaults.baseURL || "").replace(/\/$/, "");
     if (!raw) return [] as string[];
     if (/^https?:\/\//i.test(raw)) return [raw];
     if (!baseURL) return [raw];
-
-    // Si es path absoluto relativo
     if (raw.startsWith("/")) {
       const noSlash = raw.replace(/^\/+/, "");
       return [
@@ -287,8 +244,6 @@ export default function DocumentosPage() {
         `${baseURL}/files/${noSlash}`,
       ];
     }
-
-    // Si es solo filename (sin slashes), probar rutas comunes
     if (!raw.includes("/")) {
       return [
         `${baseURL}/${raw}`,
@@ -296,25 +251,19 @@ export default function DocumentosPage() {
         `${baseURL}/files/${raw}`,
       ];
     }
-
-    // Si es path relativo con carpetas
     return [
       `${baseURL}/${raw.replace(/^\/+/, "")}`,
       `${baseURL}/uploads/${raw.replace(/^\/+/, "")}`,
       `${baseURL}/files/${raw.replace(/^\/+/, "")}`,
     ];
   };
-
   const handleDownload = async (url: string, nombre: string) => {
     if (!url) {
       alert("No hay URL disponible para descargar");
       return;
     }
-    
     const candidates = buildCandidateUrls(url);
     const filename = nombre || "documento";
-
-    // Preferir descarga autenticada (blob) para soportar endpoints protegidos
     for (const candidate of candidates) {
       try {
         const res = await api.get(candidate, { responseType: "blob" });
@@ -330,18 +279,14 @@ export default function DocumentosPage() {
         try { URL.revokeObjectURL(objectUrl); } catch {}
         return;
       } catch (error: any) {
-        // Intentar siguiente candidato
         console.log(`Error al descargar desde ${candidate}:`, error?.response?.status);
       }
     }
-
-    // Fallback directo
     const u = resolveUrl(url);
     if (!u) {
       alert("No se pudo construir la URL para descargar el archivo");
       return;
     }
-    
     try {
       const link = document.createElement("a");
       link.href = u;
@@ -355,7 +300,6 @@ export default function DocumentosPage() {
       alert("Error al descargar el archivo. Por favor intenta nuevamente.");
     }
   };
-
   const cols = useMemo<Column<DocumentoPostulacion>[]>(() => [
     {
       id: "tipo_documento",
@@ -428,7 +372,6 @@ export default function DocumentosPage() {
       ),
     },
   ], []);
-
   return (
     <>
       <DataTable 
@@ -471,8 +414,7 @@ export default function DocumentosPage() {
               <MenuItem value="Otro">Otro</MenuItem>
             </TextField>
             <TextField margin="dense" fullWidth label="Nombre archivo" value={form.nombre_archivo} onChange={(e) => setForm({ ...form, nombre_archivo: e.target.value })} required disabled={!!selectedFile} placeholder={selectedFile ? "El nombre se completará automáticamente" : "Nombre del archivo"} />
-            
-            {/* Selector de archivo */}
+            {}
             <Box>
               <Typography variant="body2" sx={{ mb: 1, color: "text.secondary", fontWeight: 500 }}>
                 Archivo {!sel && <span style={{ color: "#d32f2f" }}>*</span>}
@@ -532,8 +474,7 @@ export default function DocumentosPage() {
                 </Alert>
               )}
             </Box>
-
-            {/* Mostrar URL actual si es edición y no hay nuevo archivo */}
+            {}
             {sel && !selectedFile && (
               <TextField
                 margin="dense"
@@ -544,12 +485,10 @@ export default function DocumentosPage() {
                 helperText="Para cambiar el archivo, selecciona uno nuevo arriba"
               />
             )}
-
-            {/* Campo URL archivo (opcional si hay archivo seleccionado) */}
+            {}
             {!sel && !selectedFile && (
               <TextField margin="dense" fullWidth label="URL archivo (opcional si subes un archivo)" value={form.url_archivo} onChange={(e) => setForm({ ...form, url_archivo: e.target.value })} helperText="O ingresa una URL manualmente si no subes un archivo" />
             )}
-
             <TextField margin="dense" fullWidth select label="Estado" value={form.estado_documento} onChange={(e) => setForm({ ...form, estado_documento: e.target.value })}>
               <MenuItem value="Pendiente">Pendiente</MenuItem>
               <MenuItem value="Aprobado">Aprobado</MenuItem>

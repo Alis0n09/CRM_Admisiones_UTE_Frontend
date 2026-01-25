@@ -5,19 +5,15 @@ import School from "@mui/icons-material/School";
 import DownloadIcon from "@mui/icons-material/Download";
 import ViewModalBase, { InfoCard } from "./ViewModalBase";
 import type { DocumentoPostulacion } from "../services/documentoPostulacion.service";
-
 interface DocumentoViewModalProps {
   open: boolean;
   onClose: () => void;
   documento: DocumentoPostulacion | null;
   onDownload?: (url: string, nombre: string) => void;
 }
-
 export default function DocumentoViewModal({ open, onClose, documento, onDownload }: DocumentoViewModalProps) {
   if (!documento) return null;
-
   const tipoInitial = documento.tipo_documento?.[0]?.toUpperCase() || "D";
-
   return (
     <ViewModalBase
       open={open}

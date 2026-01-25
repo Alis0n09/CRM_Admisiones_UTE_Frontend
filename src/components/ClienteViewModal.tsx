@@ -21,13 +21,11 @@ import BusinessCenter from "@mui/icons-material/BusinessCenter";
 import type { Cliente } from "../services/cliente.service";
 import { useEffect, useState } from "react";
 import * as postulacionService from "../services/postulacion.service";
-
 interface ClienteViewModalProps {
   open: boolean;
   onClose: () => void;
   cliente: Cliente | null;
 }
-
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
   try {
@@ -40,20 +38,17 @@ function formatDate(dateStr?: string): string {
     return dateStr;
   }
 }
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 interface InfoCardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
   iconColor: string;
 }
-
 function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
   return (
     <Card
@@ -99,10 +94,8 @@ function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
     </Card>
   );
 }
-
 export default function ClienteViewModal({ open, onClose, cliente }: ClienteViewModalProps) {
   const [postulacionesCount, setPostulacionesCount] = useState(0);
-
   useEffect(() => {
     if (cliente?.id_cliente) {
       postulacionService
@@ -117,12 +110,9 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
         .catch(() => setPostulacionesCount(0));
     }
   }, [cliente?.id_cliente]);
-
   if (!cliente) return null;
-
   const initials = getInitials(cliente.nombres, cliente.apellidos);
   const nombreCompleto = `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim();
-
   return (
     <Dialog
       open={open}
@@ -137,7 +127,7 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
         },
       }}
     >
-      {/* Header con gradiente morado */}
+      {}
       <Box
         sx={{
           background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
@@ -192,10 +182,9 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
           />
         </Stack>
       </Box>
-
-      {/* Contenido */}
+      {}
       <Box sx={{ p: 3, bgcolor: "#f9fafb", maxHeight: "calc(90vh - 200px)", overflowY: "auto" }}>
-        {/* Información Personal */}
+        {}
         <Box sx={{ mb: 3 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <Person sx={{ color: "#3b82f6", fontSize: 20 }} />
@@ -308,8 +297,7 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
             </Grid>
           </Grid>
         </Box>
-
-        {/* Postulaciones */}
+        {}
         <Box>
           <Box
             sx={{
@@ -335,8 +323,7 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
           </Box>
         </Box>
       </Box>
-
-      {/* Footer */}
+      {}
       <Box
         sx={{
           p: 2,

@@ -9,13 +9,11 @@ import { useAuth } from "../../context/AuthContext";
 import Assignment from "@mui/icons-material/Assignment";
 import CalendarToday from "@mui/icons-material/CalendarToday";
 import Event from "@mui/icons-material/Event";
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
   const estadoLower = estado.toLowerCase();
@@ -24,7 +22,6 @@ function getEstadoColor(estado?: string) {
   if (estadoLower.includes("completada")) return "success";
   return "default";
 }
-
 function formatDate(dateStr?: string) {
   if (!dateStr) return "-";
   try {
@@ -33,7 +30,6 @@ function formatDate(dateStr?: string) {
     return dateStr;
   }
 }
-
 const cols: Column<TareaCrm>[] = [
   { 
     id: "descripcion", 
@@ -110,7 +106,6 @@ const cols: Column<TareaCrm>[] = [
     )
   },
 ];
-
 export default function AsesorTareasPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<TareaCrm[]>([]);
@@ -122,33 +117,49 @@ export default function AsesorTareasPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
   const [form, setForm] = useState<{ id_empleado: string; id_cliente: string; descripcion: string; fecha_asignacion: string; fecha_vencimiento: string; estado: string }>({ id_empleado: "", id_cliente: "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" });
-
   const load = useCallback(() => {
     tareaService.getTareas({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
   useEffect(() => {
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
   }, []);
-
   useEffect(() => { if (user?.id_empleado) setForm((f) => ({ ...f, id_empleado: user.id_empleado! })); }, [user?.id_empleado]);
-
   const openAdd = () => { setSel(null); setForm({ id_empleado: user?.id_empleado || "", id_cliente: clientes[0]?.id_cliente || "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" }); setOpen(true); };
   const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: user?.id_empleado || (r.empleado as any)?.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
-
-  const save = () => {
+  const save = async () => {
     if (!form.id_cliente || !form.descripcion) { alert("Completa cliente y descripción"); return; }
-    const payload = { ...form, id_empleado: form.id_empleado || user?.id_empleado };
-    (sel ? tareaService.updateTarea(sel.id_tarea, { descripcion: form.descripcion, fecha_asignacion: form.fecha_asignacion || undefined, fecha_vencimiento: form.fecha_vencimiento || undefined, estado: form.estado }) : tareaService.createTarea(payload as any))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    
+    const estadoAnterior = sel?.estado;
+    const estadoNuevo = form.estado;
+    const seCompleta = estadoNuevo === "Completada" && estadoAnterior !== "Completada";
+    
+    try {
+      if (sel) {
+        if (seCompleta) {
+          await tareaService.deleteTarea(sel.id_tarea);
+          alert("✅ Tarea completada y eliminada automáticamente.");
+        } else {
+          await tareaService.updateTarea(sel.id_tarea, { descripcion: form.descripcion, fecha_asignacion: form.fecha_asignacion || undefined, fecha_vencimiento: form.fecha_vencimiento || undefined, estado: form.estado });
+        }
+      } else {
+        if (estadoNuevo === "Completada") {
+          alert("⚠️ No se puede crear una tarea directamente como completada.");
+          return;
+        }
+        const payload = { ...form, id_empleado: form.id_empleado || user?.id_empleado };
+        await tareaService.createTarea(payload as any);
+      }
+      setOpen(false);
+      load();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error");
+    }
   };
-
   return (
     <>
       <DataTable title="Mis tareas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}

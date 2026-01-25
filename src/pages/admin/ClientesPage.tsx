@@ -5,7 +5,6 @@ import DataTable, { type Column } from "../../components/DataTable";
 import ClienteViewModal from "../../components/ClienteViewModal";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
-
 const cols: Column<Cliente>[] = [
   {
     id: "aspirante",
@@ -50,9 +49,7 @@ const cols: Column<Cliente>[] = [
     ),
   },
 ];
-
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
-
 export default function ClientesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Cliente[]>([]);
@@ -65,8 +62,6 @@ export default function ClientesPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
-
-  // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
   useEffect(() => {
     const urlSearchParam = searchParams.get("search") || "";
     if (urlSearchParam !== search) {
@@ -74,11 +69,9 @@ export default function ClientesPage() {
       setPage(1);
     }
   }, [searchParams]);
-
   const load = useCallback(() => {
     const currentSearch = searchParams.get("search") || search || "";
     const searchParam = currentSearch.trim();
-    // Pasar el parámetro de búsqueda solo si tiene contenido
     const params: { page: number; limit: number; search?: string } = { page, limit };
     if (searchParam) {
       params.search = searchParam;
@@ -89,45 +82,36 @@ export default function ClientesPage() {
       setTotal((r as any).meta?.totalItems ?? list.length);
     }).catch(() => setItems([]));
   }, [page, limit, search, searchParams]);
-
   useEffect(() => load(), [load]);
-
   const handleSearchChange = (value: string) => {
     setSearch(value);
     setPage(1);
-    // Actualizar URL sin recargar la página
     if (value) {
       setSearchParams({ search: value });
     } else {
       setSearchParams({});
     }
   };
-
   const openAdd = () => { setSel(null); setForm(empty); setOpen(true); };
   const handleView = (row: Cliente) => { setSel(row); setOpenView(true); };
   const openEdit = (row: Cliente) => { setSel(row); setForm({ ...row }); setOpen(true); };
-
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
     if (sel) {
-      // Para actualizar, excluir campos que el backend no acepta en el payload
       const { id_cliente, fecha_registro, fecha_cliente, estado, ...updateData } = form;
       s.updateCliente(sel.id_cliente, updateData)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     } else {
-      // Para crear, enviar todos los campos necesarios
       s.createCliente(form as any)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }
   };
-
   const del = (row: Cliente) => {
     if (!confirm("¿Eliminar este cliente?")) return;
     s.deleteCliente(row.id_cliente).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   return (
     <>
       <DataTable
