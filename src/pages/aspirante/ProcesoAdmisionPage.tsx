@@ -1,17 +1,29 @@
-import { Box, Card, CardContent, Typography, LinearProgress, Button, Chip, Stack, Divider, CircularProgress, Alert } from "@mui/material";
+import {
+  Alert,
+  Box,
+  Button,
+  Card,
+  CardContent,
+  Chip,
+  CircularProgress,
+  Divider,
+  LinearProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
-import EditIcon from "@mui/icons-material/Edit";
-import { useEffect, useState, useMemo } from "react";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import * as clienteService from "../../services/cliente.service";
 import * as postulacionService from "../../services/postulacion.service";
 import * as documentoService from "../../services/documentoPostulacion.service";
+import type { Cliente } from "../../services/cliente.service";
 import type { Postulacion } from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
-import type { Cliente } from "../../services/cliente.service";
 
 interface StepData {
   label: string;
@@ -28,199 +40,250 @@ export default function ProcesoAdmisionPage() {
   const [postulacion, setPostulacion] = useState<Postulacion | null>(null);
   const [documentos, setDocumentos] = useState<DocumentoPostulacion[]>([]);
 
-  useEffect(() => {
-    const loadData = async () => {
-      if (!user?.id_cliente) {
-        setLoading(false);
-        return;
-      }
+  const normalizeKey = (v: unknown) => {
+    const s = String(v ?? "").trim().toLowerCase();
+    return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  };
 
-      try {
-        // Cargar datos del cliente
-        const clienteData = await clienteService.getCliente(user.id_cliente);
-        setCliente(clienteData);
+  const tipoAliases: Record<string, string> = {
+    "cedula": "cedula de identidad",
+    "cedula de identidad": "cedula de identidad",
+    "documento de identidad": "cedula de identidad",
+    "acta": "acta de grado",
+    "acta de grado": "acta de grado",
+    "titulo": "titulo de bachiller",
+    "titulo de bachiller": "titulo de bachiller",
+    "foto": "foto tamano carnet",
+    "foto tamano carnet": "foto tamano carnet",
+    "foto tamaño carnet": "foto tamano carnet",
+  };
 
-        // Cargar postulaciones del cliente
-        const postulaciones = await postulacionService.getPostulaciones();
-        const postulacionesList = Array.isArray(postulaciones) 
-          ? postulaciones 
-          : (postulaciones as any)?.items || [];
-        
-        // Obtener la postulación más reciente o activa
-        const postulacionActiva = postulacionesList.find(
-          (p: Postulacion) => p.id_cliente === user.id_cliente
-        ) || postulacionesList[0];
-        
-        if (postulacionActiva) {
-          setPostulacion(postulacionActiva);
-          
-          // Cargar documentos de la postulación
-          const docs = await documentoService.getDocumentosPostulacion();
-          const docsList = Array.isArray(docs) ? docs : [];
-          const docsPostulacion = docsList.filter(
-            (d: DocumentoPostulacion) => d.id_postulacion === postulacionActiva.id_postulacion
-          );
-          setDocumentos(docsPostulacion);
-        }
-      } catch (error) {
-        console.error("Error cargando datos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const tipoKey = (v: unknown) => {
+    const k = normalizeKey(v);
+    return tipoAliases[k] ?? k;
+  };
 
-    loadData();
-  }, [user?.id_cliente]);
+  const getPostulacionClienteId = (p: Partial<Postulacion> | null | undefined) => {
+    const anyP = p as any;
+    return String(anyP?.id_cliente ?? anyP?.cliente?.id_cliente ?? "").trim();
+  };
 
-  // Documentos requeridos: combina los estándar con los que el asesor ha especificado
-  const documentosRequeridos = useMemo(() => {
-    if (!postulacion) {
-      return [];
+  const getDocPostulacionId = (d: Partial<DocumentoPostulacion> | null | undefined) => {
+    const anyD = d as any;
+    return String(anyD?.id_postulacion ?? anyD?.postulacion?.id_postulacion ?? "").trim();
+  };
+
+  const loadData = useCallback(async () => {
+    if (!user?.id_cliente) {
+      setLoading(false);
+      return;
     }
 
-    // Documentos requeridos estándar para cualquier postulación
+    try {
+      const [clienteRes, postulacionesRes, docsRes] = await Promise.all([
+        clienteService.getCliente(user.id_cliente).catch(() => null as any),
+        postulacionService.getPostulaciones().catch(() => [] as any),
+        documentoService.getDocumentosPostulacion().catch(() => [] as any),
+      ]);
+
+      setCliente(clienteRes || null);
+
+      const postulacionesList: Postulacion[] = Array.isArray(postulacionesRes)
+        ? postulacionesRes
+        : (postulacionesRes as any)?.items || [];
+
+      const docsList: DocumentoPostulacion[] = Array.isArray(docsRes) ? docsRes : [];
+
+      const userClienteId = String(user.id_cliente).trim();
+      const postulacionesCliente = postulacionesList.filter(
+        (p: Postulacion) => getPostulacionClienteId(p) === userClienteId
+      );
+
+      const postulacionActiva = postulacionesCliente.length > 0
+        ? [...postulacionesCliente].sort((a: Postulacion, b: Postulacion) => {
+            const fa = a.fecha_postulacion ? new Date(a.fecha_postulacion).getTime() : 0;
+            const fb = b.fecha_postulacion ? new Date(b.fecha_postulacion).getTime() : 0;
+            return fb - fa;
+          })[0]
+        : postulacionesList[0];
+
+      setPostulacion(postulacionActiva || null);
+
+      const idPostulacionActiva = String(postulacionActiva?.id_postulacion || "").trim();
+      const docsPostulacion = idPostulacionActiva
+        ? docsList.filter((d) => getDocPostulacionId(d) === idPostulacionActiva)
+        : [];
+
+      setDocumentos(docsPostulacion);
+
+      console.log("📊 Mi Solicitud: documentos cargados:", {
+        id_postulacion: idPostulacionActiva,
+        total: docsPostulacion.length,
+        con_url: docsPostulacion.filter((d) => !!d.url_archivo && String(d.url_archivo).trim() !== "").length,
+      });
+    } catch (error) {
+      console.error("Error cargando datos:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id_cliente]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    const handleVisibilityChange = () => { if (!document.hidden) loadData(); };
+    const handleFocus = () => loadData();
+    const handleDocumentUpdate = () => loadData();
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    window.addEventListener("documentosUpdated", handleDocumentUpdate);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      window.removeEventListener("documentosUpdated", handleDocumentUpdate);
+    };
+  }, [loadData]);
+
+  const documentosRequeridos = useMemo(() => {
+    if (!postulacion) return [];
+
     const requeridosEstandar = [
       "Cédula de identidad",
-      "Certificado de notas",
+      "Acta de grado",
       "Título de bachiller",
       "Foto tamaño carnet",
     ];
 
-    // Obtener todos los tipos de documentos que existen para esta postulación
-    // Estos son los que el asesor ha especificado como requeridos
-    const tiposDocumentosExistentes = documentos
-      .filter(d => d.id_postulacion === postulacion.id_postulacion)
-      .map(d => d.tipo_documento);
+    const tiposDocumentosExistentes = documentos.map((d) => d.tipo_documento);
 
-    // Combinar documentos estándar con los especificados por el asesor
-    // Si el asesor ya creó documentos, esos son los requeridos principales
     const todosTipos = tiposDocumentosExistentes.length > 0
       ? [...new Set([...tiposDocumentosExistentes, ...requeridosEstandar])]
       : requeridosEstandar;
 
-    // Crear la lista de documentos requeridos con su estado
-    return todosTipos.map(tipo => {
-      const docExistente = documentos.find(
-        d => d.id_postulacion === postulacion.id_postulacion && d.tipo_documento === tipo
-      );
-      
+    return todosTipos.map((tipo) => {
+      const docExistente = documentos.find((d) => tipoKey(d.tipo_documento) === tipoKey(tipo)) || null;
+      const urlOk = !!docExistente?.url_archivo && String(docExistente.url_archivo).trim() !== "";
       return {
         tipo_documento: tipo,
-        existe: !!docExistente,
-        documento: docExistente || null,
+        existe: !!docExistente && urlOk,
+        documento: docExistente,
         esRequeridoPorAsesor: tiposDocumentosExistentes.includes(tipo),
       };
     }).sort((a, b) => {
-      // Priorizar documentos especificados por el asesor
       if (a.esRequeridoPorAsesor && !b.esRequeridoPorAsesor) return -1;
       if (!a.esRequeridoPorAsesor && b.esRequeridoPorAsesor) return 1;
       return 0;
     });
   }, [postulacion, documentos]);
 
-  // Calcular pasos basados en el estado real
-  const steps = useMemo<StepData[]>(() => {
-    if (!postulacion) {
-      return [
-        { label: "Registro", status: "pending", description: "Pendiente" },
-        { label: "Formulario de admisión", status: "pending", description: "Pendiente" },
-        { label: "Documentos", status: "pending", description: "Pendiente" },
-        { label: "Entrevista", status: "pending", description: "Pendiente" },
-        { label: "Resultado", status: "pending", description: "Pendiente" },
-      ];
-    }
+  const docsProgreso = useMemo(() => {
+    const total = documentosRequeridos.length || 4;
+    const cargados = documentosRequeridos.filter((d) => d.existe && !!d.documento?.url_archivo).length;
+    const porcentaje = total > 0 ? Math.round((cargados / total) * 100) : 0;
+    return { cargados, total, porcentaje };
+  }, [documentosRequeridos]);
 
-    const fechaPostulacion = postulacion.fecha_postulacion 
+  const steps = useMemo<StepData[]>(() => {
+    const fechaRegistro = cliente?.fecha_registro
+      ? new Date(cliente.fecha_registro).toISOString().split("T")[0]
+      : undefined;
+
+    const fechaPostulacion = postulacion?.fecha_postulacion
       ? new Date(postulacion.fecha_postulacion).toISOString().split("T")[0]
       : undefined;
 
-    // Filtrar documentos de esta postulación específica
-    const docsPostulacion = documentos.filter(
-      (d) => d.id_postulacion === postulacion.id_postulacion
-    );
-    
-    const documentosCompletados = docsPostulacion.filter(
-      (d) => d.estado_documento === "Aprobado" || d.estado_documento === "Completado"
-    ).length;
-    
-    // El total de documentos requeridos se basa en los documentos requeridos calculados
-    const totalDocumentosRequeridos = documentosRequeridos.length || 4;
-    const totalDocumentos = Math.max(docsPostulacion.length, totalDocumentosRequeridos);
-    
-    const documentosEnProgreso = docsPostulacion.some(
-      (d) => d.estado_documento === "Pendiente" || d.estado_documento === "En revisión"
-    ) || (docsPostulacion.length > 0 && documentosCompletados < totalDocumentosRequeridos);
+    const docsCompleted = docsProgreso.cargados;
+    const docsTotal = docsProgreso.total;
+    const docsInProgress = docsCompleted > 0 && docsCompleted < docsTotal;
 
-    const estadoPostulacion = postulacion.estado_postulacion?.toLowerCase() || "";
+    const estadoPostulacion = String(postulacion?.estado_postulacion || "").toLowerCase();
+
+    // Regla de coherencia del flujo:
+    // - No puede haber entrevista/resultado si aún no se completan documentos.
+    const documentosOk = docsTotal > 0 && docsCompleted >= docsTotal;
+
+    const hasFinalResult = /(aprob|rechaz|admit|no admit|finaliz|cancel)/i.test(estadoPostulacion);
+    const hasInterview = /entrevista/i.test(estadoPostulacion);
+    const interviewDone = /(entrevista).*(realiz|complet|finaliz)/i.test(estadoPostulacion) || (hasFinalResult && hasInterview);
+
+    const entrevistaStatus: StepData["status"] = !documentosOk
+      ? "pending"
+      : interviewDone
+      ? "completed"
+      : hasInterview
+      ? "in-progress"
+      : "pending";
+
+    const entrevistaDescription = !documentosOk
+      ? "Pendiente"
+      : interviewDone
+      ? "Completada"
+      : hasInterview
+      ? "En progreso"
+      : "Pendiente";
+
+    // Regla: Resultado SOLO puede mostrarse completado cuando:
+    // - Documentos están completos
+    // - Entrevista está completada
+    // - Existe un estado final real en la postulación
+    const resultadoListo = documentosOk && entrevistaStatus === "completed" && hasFinalResult;
+    const resultadoStatus: StepData["status"] = resultadoListo ? "completed" : "pending";
+    const resultadoDescription = resultadoListo
+      ? (postulacion?.estado_postulacion || "Completado")
+      : "Pendiente";
 
     return [
-      {
-        label: "Registro",
-        date: cliente?.fecha_registro 
-          ? new Date(cliente.fecha_registro).toISOString().split("T")[0]
-          : fechaPostulacion,
-        status: cliente ? "completed" : "pending",
-      },
-      {
-        label: "Formulario de admisión",
-        date: fechaPostulacion,
-        status: postulacion ? "completed" : "pending",
-      },
+      { label: "Registro", date: fechaRegistro, status: cliente ? "completed" : "pending" },
+      { label: "Formulario de admisión", date: fechaPostulacion, status: postulacion ? "completed" : "pending" },
       {
         label: "Documentos",
-        status: documentosEnProgreso 
-          ? "in-progress" 
-          : totalDocumentos > 0 && documentosCompletados === totalDocumentos
-          ? "completed"
-          : "pending",
-        description: documentosEnProgreso 
-          ? "En progreso" 
-          : totalDocumentos > 0 
-          ? `${documentosCompletados}/${totalDocumentos} completados`
-          : "Pendiente",
+        status: docsCompleted >= docsTotal && docsTotal > 0 ? "completed" : (docsInProgress || docsCompleted > 0) ? "in-progress" : "pending",
+        description: docsCompleted >= docsTotal && docsTotal > 0 ? "Completado" : `${docsCompleted}/${docsTotal} completados`,
       },
-      {
-        label: "Entrevista",
-        status: estadoPostulacion.includes("entrevista") || estadoPostulacion.includes("aprobado")
-          ? "completed"
-          : estadoPostulacion.includes("rechazado")
-          ? "pending"
-          : "pending",
-        description: estadoPostulacion.includes("entrevista") ? "Programada" : "Pendiente",
-      },
-      {
-        label: "Resultado",
-        status: estadoPostulacion.includes("aprobado")
-          ? "completed"
-          : estadoPostulacion.includes("rechazado")
-          ? "completed"
-          : "pending",
-        description: estadoPostulacion || "Pendiente",
-      },
+      { label: "Entrevista", status: entrevistaStatus, description: entrevistaDescription },
+      { label: "Resultado", status: resultadoStatus, description: resultadoDescription },
     ];
-  }, [postulacion, cliente, documentos, documentosRequeridos]);
+  }, [cliente, postulacion, docsProgreso]);
 
-  const getStepIcon = (status: string) => {
+  const completedSteps = steps.filter((s) => s.status === "completed").length;
+  const inProgressSteps = steps.filter((s) => s.status === "in-progress").length;
+  const overallProgress = steps.length > 0
+    ? Math.round(((completedSteps + (inProgressSteps * 0.5)) / steps.length) * 100)
+    : 0;
+
+  const currentStepIndex = Math.max(0, steps.findIndex((s) => s.status === "in-progress"));
+  const estadoActual = useMemo(() => {
+    if (!postulacion) return "Sin postulación";
+    if (steps[2]?.status === "in-progress") return "Revisión de documentos";
+    if (steps[2]?.status === "completed") return "Documentos completados";
+    return postulacion.estado_postulacion || "En proceso";
+  }, [postulacion, steps]);
+
+  const getStepIcon = (status: StepData["status"]) => {
     switch (status) {
       case "completed":
-        return <CheckCircleIcon sx={{ color: "#22c55e", fontSize: 28 }} />;
+        return <CheckCircleIcon sx={{ color: "#22c55e", fontSize: 20 }} />;
       case "in-progress":
-        return <AccessTimeIcon sx={{ color: "#3b82f6", fontSize: 28 }} />;
+        return <AccessTimeIcon sx={{ color: "#3b82f6", fontSize: 20 }} />;
       default:
-        return <ErrorOutlineIcon sx={{ color: "#9ca3af", fontSize: 28 }} />;
+        return <ErrorOutlineIcon sx={{ color: "#9ca3af", fontSize: 20 }} />;
     }
   };
 
-  const currentStep = steps.findIndex((s) => s.status === "in-progress");
-  const completedSteps = steps.filter((s) => s.status === "completed").length;
-  const progress = (completedSteps / steps.length) * 100;
-
-  const estadoActual = useMemo(() => {
-    if (!postulacion) return "Sin postulación";
-    const estado = postulacion.estado_postulacion || "En proceso";
-    if (steps[2].status === "in-progress") return "Revisión de documentos";
-    return estado;
-  }, [postulacion, steps]);
+  const getStatusLabel = (status: StepData["status"]) => {
+    switch (status) {
+      case "completed":
+        return "Completado";
+      case "in-progress":
+        return "En progreso";
+      default:
+        return "Pendiente";
+    }
+  };
 
   if (loading) {
     return (
@@ -230,373 +293,307 @@ export default function ProcesoAdmisionPage() {
     );
   }
 
-  if (!cliente) {
+  if (!postulacion) {
     return (
       <Alert severity="warning">
-        No se encontró información del cliente. Por favor, completa tu perfil.
+        No se encontró una postulación activa para cargar tu solicitud.
       </Alert>
     );
   }
 
   return (
-    <Box>
-      <Typography variant="h4" fontWeight={800} sx={{ mb: 3 }}>
-        <span style={{ color: "#3b82f6" }}>—</span> Mi Proceso de Admisión
-      </Typography>
-      <Typography sx={{ color: "text.secondary", mb: 3 }}>
-        Revisa el estado de tu solicitud y completa los pasos pendientes
-      </Typography>
-      <Box sx={{ display: "flex", gap: 3, flexDirection: { xs: "column", lg: "row" } }}>
-        {/* Left Column - Main Content */}
-        <Box sx={{ flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
-          {/* Progress Card */}
-          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-            <CardContent sx={{ p: 4 }}>
-            <Typography variant="body2" sx={{ color: "text.secondary", mb: 4 }}>
-              Sigue el progreso de tu solicitud
-            </Typography>
+    <Box sx={{ maxWidth: 1200, mx: "auto" }}>
+      {/* Header */}
+      <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, mb: 1.5 }}>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.25 }}>
+            Mi Proceso de Admisión
+          </Typography>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Sigue el progreso de tu solicitud
+          </Typography>
+        </Box>
+      </Box>
 
-            {/* Progress Bar */}
-            <Box sx={{ mb: 2 }}>
-              <LinearProgress
-                variant="determinate"
-                value={progress}
-                sx={{
-                  height: 12,
-                  borderRadius: 6,
-                  bgcolor: "#e5e7eb",
-                  "& .MuiLinearProgress-bar": {
-                    background: "linear-gradient(90deg, #7c3aed, #22c55e)",
-                    borderRadius: 6,
-                  },
-                }}
-              />
+      {/* Progreso principal */}
+      <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 2, overflow: "hidden" }}>
+        <Box
+          sx={{
+            height: 4,
+            background: "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%)",
+            width: `${overallProgress}%`,
+            transition: "width 0.3s ease",
+          }}
+        />
+        <CardContent sx={{ p: 2 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, mb: 1 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                Estado de tu solicitud
+              </Typography>
+              <Typography variant="body2" sx={{ color: "#64748b" }}>
+                {estadoActual}
+              </Typography>
             </Box>
-
-            <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
-              <Box>
-                <Typography variant="body2" sx={{ color: "text.secondary", mb: 0.5 }}>
-                  Estado de tu solicitud
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {estadoActual}
-                </Typography>
-              </Box>
-              <Box sx={{ textAlign: "right" }}>
-                <Typography variant="h5" sx={{ fontWeight: 700, color: "#3b82f6" }}>
-                  {Math.round(progress)}%
-                </Typography>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>
-                  Completado
-                </Typography>
-              </Box>
+            <Box sx={{ textAlign: "right" }}>
+              <Typography variant="h6" sx={{ fontWeight: 800, color: "#3b82f6" }}>
+                {overallProgress}%
+              </Typography>
+              <Typography variant="caption" sx={{ color: "#64748b" }}>
+                Completado
+              </Typography>
             </Box>
+          </Box>
 
-            <Typography variant="body2" sx={{ color: "text.secondary" }}>
-              Paso {currentStep + 1} de {steps.length}
-            </Typography>
-          </CardContent>
-        </Card>
+          <LinearProgress
+            variant="determinate"
+            value={overallProgress}
+            sx={{
+              height: 6,
+              borderRadius: 4,
+              bgcolor: "#e5e7eb",
+              mb: 0.75,
+              "& .MuiLinearProgress-bar": {
+                borderRadius: 4,
+                background: "#0f172a",
+              },
+            }}
+          />
 
-        {/* Process Timeline Card */}
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-          <CardContent sx={{ p: 4 }}>
-            <Typography variant="h5" sx={{ fontWeight: 700, mb: 4 }}>
+          <Typography variant="body2" sx={{ color: "text.secondary" }}>
+            Paso {Math.min(currentStepIndex + 1, steps.length)} de {steps.length}
+          </Typography>
+        </CardContent>
+      </Card>
+
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 2, alignItems: "start" }}>
+        {/* Timeline */}
+        <Card sx={{ borderRadius: 3, boxShadow: 2, alignSelf: "start" }}>
+          <CardContent sx={{ p: 2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
               Proceso de Admisión
             </Typography>
 
             <Box sx={{ position: "relative" }}>
               {steps.map((step, index) => (
                 <Box
-                  key={index}
+                  key={step.label}
                   sx={{
                     display: "flex",
                     alignItems: "flex-start",
-                    mb: index < steps.length - 1 ? 4 : 0,
+                    gap: 1.25,
+                    mb: index < steps.length - 1 ? 1.5 : 0,
                     position: "relative",
+                    minHeight: 56,
                   }}
                 >
-                  {/* Timeline Line */}
                   {index < steps.length - 1 && (
                     <Box
                       sx={{
                         position: "absolute",
-                        left: 14,
-                        top: 28,
+                        left: 10,
+                        top: 24,
                         width: 2,
-                        height: "calc(100% + 16px)",
-                        bgcolor: step.status === "completed" ? "#22c55e" : "#e5e7eb",
+                        height: "calc(100% + 12px)",
+                        bgcolor: step.status === "completed" ? "#bbf7d0" : "#e5e7eb",
                       }}
                     />
                   )}
 
-                  {/* Step Icon */}
-                  <Box sx={{ mr: 2, mt: 0.5 }}>{getStepIcon(step.status)}</Box>
+                  <Box
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: "50%",
+                      bgcolor:
+                        step.status === "completed" ? "#dcfce7" : step.status === "in-progress" ? "#dbeafe" : "#f3f4f6",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      mt: "1px",
+                    }}
+                  >
+                    {getStepIcon(step.status)}
+                  </Box>
 
-                  {/* Step Content */}
-                  <Box sx={{ flex: 1 }}>
-                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
                       {step.label}
                     </Typography>
-                    {step.date && (
-                      <Typography variant="body2" sx={{ color: "text.secondary", mb: 1 }}>
-                        {step.date}
-                      </Typography>
-                    )}
-                    {step.description && (
-                      <Box sx={{ mt: 1 }}>
-                        <Chip
-                          label={step.description}
+
+                    {/* Segunda línea fija para que el spacing sea equitativo */}
+                    <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.25 }}>
+                      {step.date || getStatusLabel(step.status)}
+                    </Typography>
+
+                    {/* Chip siempre en la misma posición */}
+                    <Box sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                      <Chip
+                        label={step.description || getStatusLabel(step.status)}
+                        size="small"
+                        sx={{
+                          bgcolor:
+                            step.status === "completed" ? "#dcfce7" : step.status === "in-progress" ? "#dbeafe" : "#f3f4f6",
+                          color:
+                            step.status === "completed" ? "#16a34a" : step.status === "in-progress" ? "#2563eb" : "#64748b",
+                          fontWeight: 600,
+                          height: 22,
+                        }}
+                      />
+                      {step.label === "Documentos" && step.status !== "completed" && (
+                        <Button
+                          variant="outlined"
                           size="small"
-                          sx={{
-                            bgcolor:
-                              step.status === "in-progress"
-                                ? "#dbeafe"
-                                : step.status === "completed"
-                                ? "#dcfce7"
-                                : "#f3f4f6",
-                            color:
-                              step.status === "in-progress"
-                                ? "#3b82f6"
-                                : step.status === "completed"
-                                ? "#22c55e"
-                                : "#6b7280",
-                            fontWeight: 500,
-                          }}
-                        />
-                        {step.status === "in-progress" && step.label === "Documentos" && (
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => navigate("/aspirante/documentos")}
-                            sx={{
-                              ml: 2,
-                              textTransform: "none",
-                              bgcolor: "#3b82f6",
-                              "&:hover": { bgcolor: "#2563eb" },
-                            }}
-                          >
-                            Completar ahora
-                          </Button>
-                        )}
-                      </Box>
-                    )}
+                          onClick={() => navigate("/aspirante/documentos")}
+                          sx={{ textTransform: "none", borderRadius: 2, py: 0.25 }}
+                        >
+                          Completar ahora
+                        </Button>
+                      )}
+                    </Box>
                   </Box>
                 </Box>
               ))}
             </Box>
           </CardContent>
         </Card>
-        </Box>
 
-      {/* Right Column - Sidebar */}
-      <Box sx={{ width: { xs: "100%", lg: 380 }, display: "flex", flexDirection: "column", gap: 3 }}>
-        {/* Personal Information Card */}
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-              Información Personal
-            </Typography>
+        {/* Sidebar */}
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
+                Información Personal
+              </Typography>
 
-            <Stack spacing={2.5}>
-              <Box>
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
-                  Nombre completo
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {cliente.nombres} {cliente.apellidos}
-                </Typography>
-              </Box>
+              <Stack spacing={1.25}>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Nombre completo
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    {cliente ? `${cliente.nombres} ${cliente.apellidos}` : "—"}
+                  </Typography>
+                </Box>
 
-              <Divider />
+                <Divider />
 
-              <Box>
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
-                  Programa
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {postulacion?.carrera?.nombre_carrera || "Sin programa asignado"}
-                </Typography>
-              </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Programa
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    {postulacion?.carrera?.nombre_carrera || "—"}
+                  </Typography>
+                </Box>
 
-              <Divider />
+                <Divider />
 
-              <Box>
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
-                  Email
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {cliente.correo || user?.email || "No especificado"}
-                </Typography>
-              </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Email
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    {cliente?.correo || user?.email || "—"}
+                  </Typography>
+                </Box>
 
-              <Divider />
+                <Divider />
 
-              <Box>
-                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 0.5 }}>
-                  Teléfono
-                </Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
-                  {cliente.celular || cliente.telefono || "No especificado"}
-                </Typography>
-              </Box>
+                <Box>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Teléfono
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 800 }}>
+                    {cliente?.celular || cliente?.telefono || "—"}
+                  </Typography>
+                </Box>
 
-              <Button
-                variant="outlined"
-                startIcon={<EditIcon />}
-                fullWidth
-                onClick={() => navigate("/aspirante/perfil")}
-                sx={{
-                  mt: 2,
-                  textTransform: "none",
-                  borderColor: "#7c3aed",
-                  color: "#7c3aed",
-                  "&:hover": {
-                    borderColor: "#6d28d9",
-                    bgcolor: "#f3e8ff",
-                  },
-                }}
-              >
-                Editar perfil
-              </Button>
-            </Stack>
-          </CardContent>
-        </Card>
+                <Button
+                  variant="outlined"
+                  fullWidth
+                  onClick={() => navigate("/aspirante/perfil")}
+                  size="small"
+                  sx={{ textTransform: "none", borderRadius: 2 }}
+                >
+                  Editar perfil
+                </Button>
+              </Stack>
+            </CardContent>
+          </Card>
 
-        {/* Required Documents Card */}
-        <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
-          <CardContent sx={{ p: 3 }}>
-            <Typography variant="h6" sx={{ fontWeight: 700, mb: 3 }}>
-              Documentos Requeridos
-            </Typography>
+          <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
+                Documentos Requeridos
+              </Typography>
 
-            <Stack spacing={2}>
-              {postulacion ? (
-                documentosRequeridos.length > 0 ? (
-                  documentosRequeridos.map((req, index) => {
-                    const doc = req.documento;
-                    const isCompleted = doc && (doc.estado_documento === "Aprobado" || doc.estado_documento === "Completado");
-                    const isPending = !doc || doc.estado_documento === "Pendiente" || !doc.estado_documento;
-                    const isRechazado = doc && doc.estado_documento === "Rechazado";
-                    
-                    return (
-                      <Box
-                        key={`${req.tipo_documento}-${index}`}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 2,
-                          p: 2,
-                          bgcolor: isCompleted ? "#f0fdf4" : isRechazado ? "#fef2f2" : "#f9fafb",
-                          borderRadius: 2,
-                          border: isRechazado ? "1px solid #fecaca" : "1px solid transparent",
-                        }}
-                      >
+              <Stack spacing={1}>
+                {documentosRequeridos.map((req, index) => {
+                  const doc = req.documento;
+                  const isUploaded = !!req.existe && !!doc?.url_archivo && String(doc.url_archivo).trim() !== "";
+
+                  return (
+                    <Box
+                      key={`${req.tipo_documento}-${index}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 1.25,
+                        p: 1.25,
+                        borderRadius: 2,
+                        bgcolor: isUploaded ? "#f0fdf4" : "#f8fafc",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0, flex: 1 }}>
                         <Box
                           sx={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 1,
-                            bgcolor: isCompleted 
-                              ? "#dcfce7" 
-                              : isRechazado 
-                              ? "#fee2e2" 
-                              : isPending 
-                              ? "#fef3c7" 
-                              : "#dbeafe",
+                            width: 32,
+                            height: 32,
+                            borderRadius: 1.5,
+                            bgcolor: isUploaded ? "#dcfce7" : "#eef2f7",
                             display: "flex",
                             alignItems: "center",
                             justifyContent: "center",
+                            flexShrink: 0,
                           }}
                         >
-                          {isCompleted ? (
-                            <CheckCircleIcon sx={{ color: "#22c55e" }} />
-                          ) : isRechazado ? (
-                            <ErrorOutlineIcon sx={{ color: "#ef4444" }} />
+                          {isUploaded ? (
+                            <CheckCircleIcon sx={{ color: "#16a34a" }} />
                           ) : (
-                            <AccessTimeIcon sx={{ color: isPending ? "#f59e0b" : "#3b82f6" }} />
+                            <UploadFileIcon sx={{ color: "#94a3b8" }} />
                           )}
                         </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
+
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 700, color: "#0f172a" }} noWrap>
                             {req.tipo_documento}
                           </Typography>
-                          {doc ? (
-                            <>
-                              <Typography variant="caption" sx={{ color: "text.secondary", display: "block" }}>
-                                {doc.nombre_archivo || "Sin archivo"}
-                              </Typography>
-                              {doc.estado_documento && (
-                                <Chip
-                                  label={doc.estado_documento}
-                                  size="small"
-                                  sx={{
-                                    mt: 0.5,
-                                    height: 20,
-                                    fontSize: "0.7rem",
-                                    bgcolor: isCompleted 
-                                      ? "#dcfce7" 
-                                      : isRechazado 
-                                      ? "#fee2e2" 
-                                      : "#dbeafe",
-                                    color: isCompleted 
-                                      ? "#22c55e" 
-                                      : isRechazado 
-                                      ? "#ef4444" 
-                                      : "#3b82f6",
-                                  }}
-                                />
-                              )}
-                              {doc.observaciones && (
-                                <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.5, fontStyle: "italic" }}>
-                                  {doc.observaciones}
-                                </Typography>
-                              )}
-                            </>
-                          ) : (
-                            <Typography variant="caption" sx={{ color: "text.secondary", fontStyle: "italic" }}>
-                              Pendiente de subir
-                            </Typography>
-                          )}
+                          <Typography variant="caption" sx={{ color: "#64748b", display: "block" }} noWrap>
+                            {isUploaded ? (doc?.nombre_archivo || "Archivo cargado") : "Pendiente de subir"}
+                          </Typography>
                         </Box>
                       </Box>
-                    );
-                  })
-                ) : (
-                  <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
-                    No hay documentos requeridos especificados aún
-                  </Typography>
-                )
-              ) : (
-                <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center", py: 2 }}>
-                  Completa tu postulación para ver los documentos requeridos
-                </Typography>
-              )}
-              
-              {postulacion && (
-                <Button
-                  variant="outlined"
-                  size="small"
-                  fullWidth
-                  onClick={() => navigate("/aspirante/documentos")}
-                  sx={{
-                    mt: 1,
-                    textTransform: "none",
-                    borderColor: "#7c3aed",
-                    color: "#7c3aed",
-                    "&:hover": {
-                      borderColor: "#6d28d9",
-                      bgcolor: "#f3e8ff",
-                    },
-                  }}
-                >
-                  Gestionar documentos
-                </Button>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-      </Box>
+
+                      {!isUploaded && (
+                        <Button
+                          size="small"
+                          variant="text"
+                          onClick={() => navigate("/aspirante/documentos")}
+                          sx={{ textTransform: "none", fontWeight: 700, color: "#2563eb", px: 1 }}
+                        >
+                          Subir
+                        </Button>
+                      )}
+                    </Box>
+                  );
+                })}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
       </Box>
     </Box>
   );

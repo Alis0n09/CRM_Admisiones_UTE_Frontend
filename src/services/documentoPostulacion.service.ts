@@ -15,6 +15,10 @@ export interface DocumentoPostulacion {
 
 function getData<T>(r: any): T {
   if (Array.isArray(r)) return r as T;
+  // Soportar respuestas paginadas tipo { items: [...], meta: {...} }
+  if (Array.isArray(r?.items)) return r.items as T;
+  // Soportar wrappers tipo { data: { items: [...] } }
+  if (Array.isArray(r?.data?.items)) return r.data.items as T;
   return r?.data ?? r;
 }
 
@@ -28,8 +32,20 @@ export async function getDocumentoPostulacion(id: string) {
   return getData<DocumentoPostulacion>(data);
 }
 
-export async function createDocumentoPostulacion(body: { id_postulacion: string; tipo_documento: string; nombre_archivo: string; url_archivo: string; estado_documento?: string; observaciones?: string }) {
-  const { data } = await api.post(base, body);
+export async function createDocumentoPostulacion(body: { 
+  id_postulacion: string; 
+  tipo_documento: string; 
+  nombre_archivo: string; 
+  url_archivo: string; 
+  estado_documento?: string; 
+  observaciones?: string 
+}) {
+  // Enviar exactamente como en Postman: POST /documentos-postulacion con JSON body
+  const { data } = await api.post(base, body, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
   return getData<DocumentoPostulacion>(data);
 }
 
