@@ -87,7 +87,7 @@ export default function DocumentosPage() {
     return true;
   };
 
-  const handleView = (url?: string) => {
+  const handlePreview = (url?: string) => {
     const u = resolveUrl(url);
     if (!u) return;
     setPreviewUrl(u);
@@ -187,7 +187,7 @@ export default function DocumentosPage() {
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_postulacion: postulaciones[0]?.id_postulacion || "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "/uploads/doc.pdf", estado_documento: "Pendiente", observaciones: "" }); setOpen(true); };
-  const handleView = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
+  const handleViewRow = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
   const openEdit = (r: DocumentoPostulacion) => { setSel(r); setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
 
   const save = () => {
@@ -329,7 +329,7 @@ export default function DocumentosPage() {
             </Tooltip>
             <Tooltip title={canPreview(r.url_archivo) ? "Visualizar" : "No disponible para URL temporal"}>
               <span>
-                <IconButton size="small" disabled={!canPreview(r.url_archivo)} onClick={() => handleView(r.url_archivo)}>
+                <IconButton size="small" disabled={!canPreview(r.url_archivo)} onClick={() => handlePreview(r.url_archivo)}>
                   <VisibilityIcon fontSize="small" />
                 </IconButton>
               </span>
@@ -408,7 +408,7 @@ export default function DocumentosPage() {
     <>
       <DataTable title="Documentos de postulación" columns={cols} rows={items.slice((page - 1) * limit, page * limit)} total={items.length} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
+        onAdd={openAdd} onView={handleViewRow} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar documento" : "Nuevo documento"}</DialogTitle>
         <DialogContent>
