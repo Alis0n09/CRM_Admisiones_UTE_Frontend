@@ -27,6 +27,11 @@ export async function getDocumentosPostulacion() {
   return getData<DocumentoPostulacion[]>(data);
 }
 
+export async function getDocumentosPorPostulacion(id_postulacion: string) {
+  const { data } = await api.get(`${base}/por-postulacion/${id_postulacion}`);
+  return getData<DocumentoPostulacion[]>(data);
+}
+
 export async function getDocumentoPostulacion(id: string) {
   const { data } = await api.get(`${base}/${id}`);
   return getData<DocumentoPostulacion>(data);

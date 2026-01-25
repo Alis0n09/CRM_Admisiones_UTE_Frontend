@@ -114,6 +114,31 @@ export default function DocumentosPage() {
     setOpen(true); 
   };
 
+  const handleDownload = (url?: string, nombre?: string) => {
+    const u = resolveUrl(url);
+    if (!u) return;
+    // Descargar autenticado (tu endpoint seguro requiere Bearer token)
+    const token = localStorage.getItem("token");
+    fetch(u, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = nombre || "documento";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(() => {
+        // Fallback: abrir directo si es público
+        window.open(u, "_blank", "noopener,noreferrer");
+      });
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -162,10 +187,9 @@ export default function DocumentosPage() {
             "Content-Type": "multipart/form-data",
           },
         });
-        const url = data.url || data.path || data.fileUrl || data.filename || "";
-        if (!url) {
-          throw new Error("El servidor no devolvió una URL para el archivo");
-        }
+        const payload = (data as any)?.data ?? data;
+        const url = payload?.url_segura || payload?.url_archivo || payload?.url || payload?.path || payload?.fileUrl || "";
+        if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
         return url;
       } catch (error2: any) {
         const errorMessage = error2?.response?.data?.message || error?.response?.data?.message || "Error al subir el archivo";
