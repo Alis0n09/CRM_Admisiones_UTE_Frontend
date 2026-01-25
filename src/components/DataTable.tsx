@@ -16,6 +16,7 @@ import {
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
+import Visibility from "@mui/icons-material/Visibility";
 
 export interface Column<T> {
   id: keyof T | string;
@@ -34,6 +35,7 @@ interface DataTableProps<T extends { [k: string]: any }> {
   onPageChange: (p: number) => void;
   onRowsPerPageChange: (r: number) => void;
   onAdd?: () => void;
+  onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   search?: string;
@@ -52,6 +54,7 @@ export default function DataTable<T extends { [k: string]: any }>({
   onPageChange,
   onRowsPerPageChange,
   onAdd,
+  onView,
   onEdit,
   onDelete,
   search,
@@ -95,7 +98,7 @@ export default function DataTable<T extends { [k: string]: any }>({
                 "&:hover": { bgcolor: "#2563eb" },
               }}
             >
-              + Nuevo
+              Nuevo
             </Button>
           )}
         </Box>
@@ -106,49 +109,71 @@ export default function DataTable<T extends { [k: string]: any }>({
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
-                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth, color: "#1e293b", bgcolor: "#f8fafc" }}>{col.label}</TableCell>
+                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth, color: "white", bgcolor: "#64748b", fontSize: "0.875rem" }}>{col.label}</TableCell>
                 ))}
-                {(onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: 100, color: "#1e293b", bgcolor: "#f8fafc" }}>ACCIONES</TableCell>}
+                {(onView || onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: onView && onEdit ? 140 : 100, color: "white", bgcolor: "#64748b", fontSize: "0.875rem" }}>ACCIONES</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row) => (
-                <TableRow key={getId(row)} hover>
-                  {columns.map((col) => (
-                    <TableCell key={String(col.id)}>
-                      {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
-                    </TableCell>
-                  ))}
-                  {(onEdit || onDelete) && (
-                    <TableCell>
-                      {onEdit && (
-                        <IconButton
-                          size="small"
-                          onClick={() => onEdit(row)}
-                          sx={{
-                            color: "#3b82f6",
-                            "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
-                          }}
-                        >
-                          <Edit fontSize="small" />
-                        </IconButton>
-                      )}
-                      {onDelete && (
-                        <IconButton
-                          size="small"
-                          onClick={() => onDelete(row)}
-                          sx={{
-                            color: "#ef4444",
-                            "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      )}
-                    </TableCell>
-                  )}
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={columns.length + (onView || onEdit || onDelete ? 1 : 0)} align="center" sx={{ py: 4 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      No hay datos disponibles
+                    </Typography>
+                  </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                rows.map((row) => (
+                  <TableRow key={getId(row)} hover sx={{ "&:nth-of-type(even)": { bgcolor: "#f9fafb" } }}>
+                    {columns.map((col) => (
+                      <TableCell key={String(col.id)} sx={{ fontSize: "0.875rem" }}>
+                        {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
+                      </TableCell>
+                    ))}
+                    {(onView || onEdit || onDelete) && (
+                      <TableCell>
+                        {onView && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onView(row)}
+                            sx={{
+                              color: "#8b5cf6",
+                              "&:hover": { bgcolor: "rgba(139, 92, 246, 0.1)" },
+                            }}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        )}
+                        {onEdit && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(row)}
+                            sx={{
+                              color: "#3b82f6",
+                              "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        )}
+                        {onDelete && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(row)}
+                            sx={{
+                              color: "#ef4444",
+                              "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        )}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>

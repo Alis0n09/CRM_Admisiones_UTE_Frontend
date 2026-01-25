@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import TareaViewModal from "../../components/TareaViewModal";
 import * as tareaService from "../../services/tarea.service";
 import * as empleadoService from "../../services/empleado.service";
 import * as clienteService from "../../services/cliente.service";
@@ -23,6 +24,7 @@ export default function TareasPage() {
   const [empleados, setEmpleados] = useState<{ id_empleado: string; nombres: string; apellidos: string }[]>([]);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
   const [form, setForm] = useState<{ id_empleado: string; id_cliente: string; descripcion: string; fecha_asignacion: string; fecha_vencimiento: string; estado: string }>({ id_empleado: "", id_cliente: "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" });
 
@@ -40,6 +42,7 @@ export default function TareasPage() {
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_empleado: empleados[0]?.id_empleado || "", id_cliente: clientes[0]?.id_cliente || "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" }); setOpen(true); };
+  const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: (r.empleado as any)?.id_empleado || r.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
 
   const save = () => {
@@ -58,7 +61,7 @@ export default function TareasPage() {
     <>
       <DataTable title="Tareas CRM" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} onDelete={del} getId={(r) => r.id_tarea} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_tarea} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar tarea" : "Nueva tarea"}</DialogTitle>
         <DialogContent>
@@ -83,6 +86,7 @@ export default function TareasPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <TareaViewModal open={openView} onClose={() => setOpenView(false)} tarea={sel} />
     </>
   );
 }

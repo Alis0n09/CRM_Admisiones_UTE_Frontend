@@ -1,16 +1,100 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import SeguimientoViewModal from "../../components/SeguimientoViewModal";
 import * as seguimientoService from "../../services/seguimiento.service";
 import * as clienteService from "../../services/cliente.service";
 import type { Seguimiento } from "../../services/seguimiento.service";
+import Phone from "@mui/icons-material/Phone";
+import Email from "@mui/icons-material/Email";
+import WhatsApp from "@mui/icons-material/WhatsApp";
+import Person from "@mui/icons-material/Person";
+
+function getInitials(nombres?: string, apellidos?: string): string {
+  const first = nombres?.[0]?.toUpperCase() || "";
+  const last = apellidos?.[0]?.toUpperCase() || "";
+  return first + last;
+}
+
+function getMedioIcon(medio?: string) {
+  const medioLower = medio?.toLowerCase() || "";
+  if (medioLower.includes("llamada")) return <Phone sx={{ fontSize: 18, color: "#10b981" }} />;
+  if (medioLower.includes("email")) return <Email sx={{ fontSize: 18, color: "#3b82f6" }} />;
+  if (medioLower.includes("whatsapp")) return <WhatsApp sx={{ fontSize: 18, color: "#25d366" }} />;
+  if (medioLower.includes("presencial")) return <Person sx={{ fontSize: 18, color: "#8b5cf6" }} />;
+  return <Phone sx={{ fontSize: 18 }} />;
+}
 
 const cols: Column<Seguimiento>[] = [
-  { id: "cliente", label: "Cliente", minWidth: 160, format: (_, r) => r.cliente ? `${r.cliente.nombres} ${r.cliente.apellidos}` : "-" },
-  { id: "fecha_contacto", label: "Fecha contacto", minWidth: 110 },
-  { id: "medio", label: "Medio", minWidth: 100 },
-  { id: "comentarios", label: "Comentarios", minWidth: 150 },
-  { id: "proximo_paso", label: "Próximo paso", minWidth: 120 },
+  { 
+    id: "cliente", 
+    label: "Cliente", 
+    minWidth: 200, 
+    format: (_, r) => r.cliente ? (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Avatar sx={{ bgcolor: "#8b5cf6", width: 40, height: 40, fontSize: "0.875rem" }}>
+          {getInitials(r.cliente.nombres, r.cliente.apellidos)}
+        </Avatar>
+        <Box>
+          <Typography variant="body2" fontWeight={600}>
+            {r.cliente.nombres} {r.cliente.apellidos}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ID: {r.id_seguimiento.slice(0, 8)}
+          </Typography>
+        </Box>
+      </Box>
+    ) : "-" 
+  },
+  { 
+    id: "fecha_contacto", 
+    label: "Fecha Contacto", 
+    minWidth: 140,
+    format: (v) => v ? new Date(v).toLocaleDateString("es-ES") : "-"
+  },
+  { 
+    id: "medio", 
+    label: "Medio", 
+    minWidth: 140,
+    format: (v) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        {getMedioIcon(v)}
+        <Typography variant="body2">{v || "-"}</Typography>
+      </Box>
+    )
+  },
+  { 
+    id: "comentarios", 
+    label: "Comentarios", 
+    minWidth: 200,
+    format: (v) => (
+      <Typography 
+        variant="body2" 
+        sx={{ 
+          maxWidth: 250, 
+          overflow: "hidden", 
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap"
+        }}
+      >
+        {v || "Sin comentarios"}
+      </Typography>
+    )
+  },
+  { 
+    id: "proximo_paso", 
+    label: "Próximo Paso", 
+    minWidth: 180,
+    format: (v) => v ? (
+      <Chip 
+        label={v}
+        size="small"
+        sx={{ bgcolor: "#fef3c7", color: "#92400e", fontWeight: 600 }}
+      />
+    ) : (
+      <Typography variant="body2" color="text.secondary">-</Typography>
+    )
+  },
 ];
 
 const empty = { id_cliente: "", fecha_contacto: "", medio: "Llamada", comentarios: "", proximo_paso: "", fecha_proximo_contacto: "" };
@@ -22,6 +106,7 @@ export default function AsesorSeguimientosPage() {
   const [limit, setLimit] = useState(10);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Seguimiento | null>(null);
   const [form, setForm] = useState(empty);
 
@@ -47,6 +132,7 @@ export default function AsesorSeguimientosPage() {
       <DataTable title="Seguimientos" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm({ ...empty, id_cliente: clientes[0]?.id_cliente || "", fecha_contacto: new Date().toISOString().slice(0, 10) }); setOpen(true); }}
+        onView={(r) => { setSel(r); setOpenView(true); }}
         onEdit={(r) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", fecha_contacto: r.fecha_contacto?.toString().slice(0, 10) || "", medio: r.medio || "", comentarios: r.comentarios || "", proximo_paso: r.proximo_paso || "", fecha_proximo_contacto: r.fecha_proximo_contacto?.toString().slice(0, 10) || "" }); setOpen(true); }}
         getId={(r) => r.id_seguimiento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -68,6 +154,7 @@ export default function AsesorSeguimientosPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <SeguimientoViewModal open={openView} onClose={() => setOpenView(false)} seguimiento={sel} />
     </>
   );
 }

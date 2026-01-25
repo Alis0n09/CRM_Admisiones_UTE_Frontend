@@ -11,7 +11,7 @@ export default function AdminLayout() {
         component="main"
         sx={{
           flex: 1,
-          ml: "260px",
+          ml: "300px",
           display: "flex",
           flexDirection: "column",
           minHeight: "100vh",

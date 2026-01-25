@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import SeguimientoViewModal from "../../components/SeguimientoViewModal";
 import * as seguimientoService from "../../services/seguimiento.service";
 import type { Seguimiento } from "../../services/seguimiento.service";
 
@@ -18,6 +19,7 @@ export default function AspiranteSeguimientosPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Seguimiento | null>(null);
   const [form, setForm] = useState<{ comentarios: string; proximo_paso: string }>({ comentarios: "", proximo_paso: "" });
 
@@ -41,6 +43,7 @@ export default function AspiranteSeguimientosPage() {
     <>
       <DataTable title="Seguimientos" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
+        onView={(r) => { setSel(r); setOpenView(true); }}
         onEdit={(r) => { setSel(r); setForm({ comentarios: r.comentarios || "", proximo_paso: r.proximo_paso || "" }); setOpen(true); }}
         getId={(r) => r.id_seguimiento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -51,6 +54,7 @@ export default function AspiranteSeguimientosPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <SeguimientoViewModal open={openView} onClose={() => setOpenView(false)} seguimiento={sel} />
     </>
   );
 }

@@ -1,6 +1,8 @@
-import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField, Avatar, Chip, Box, Stack } from "@mui/material";
+import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField, Avatar, Chip, Box, Stack, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DataTable, { type Column } from "../../components/DataTable";
+import ClienteViewModal from "../../components/ClienteViewModal";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
 
@@ -52,23 +54,61 @@ const cols: Column<Cliente>[] = [
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
 
 export default function AsesorClientesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Cliente[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState("");
+  const urlSearch = searchParams.get("search") || "";
+  const [search, setSearch] = useState(urlSearch);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
 
+  // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
+  useEffect(() => {
+    const urlSearchParam = searchParams.get("search") || "";
+    if (urlSearchParam !== search) {
+      setSearch(urlSearchParam);
+      setPage(1);
+    }
+  }, [searchParams]);
+
   const load = useCallback(() => {
-    s.getClientes({ page, limit, search: search || undefined }).then((r: any) => {
+    const currentSearch = searchParams.get("search") || search || "";
+    const searchParam = currentSearch.trim();
+    // Pasar el parámetro de búsqueda solo si tiene contenido
+    const params: { page: number; limit: number; search?: string } = { page, limit };
+    if (searchParam) {
+      params.search = searchParam;
+    }
+    s.getClientes(params).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
-    }).catch(() => setItems([]));
-  }, [page, limit, search]);
+    }).catch((err) => {
+      console.error("Error en búsqueda:", err);
+      setItems([]);
+      setTotal(0);
+    });
+  }, [page, limit, search, searchParams]);
 
-  useEffect(() => load(), [load]);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+    // Actualizar URL sin recargar la página
+    if (value) {
+      setSearchParams({ search: value });
+    } else {
+      setSearchParams({});
+    }
+  };
+
+  const handleView = (row: Cliente) => { setSel(row); setOpenView(true); };
 
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
@@ -96,16 +136,14 @@ export default function AsesorClientesPage() {
           setForm(empty);
           setOpen(true);
         }}
+        onView={handleView}
         onEdit={(r) => {
           setSel(r);
           setForm({ ...r });
           setOpen(true);
         }}
         search={search}
-        onSearchChange={(v) => {
-          setSearch(v);
-          setPage(1);
-        }}
+        onSearchChange={handleSearchChange}
         searchPlaceholder="Buscar aspirantes..."
         getId={(r) => r.id_cliente}
       />
@@ -127,6 +165,7 @@ export default function AsesorClientesPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <ClienteViewModal open={openView} onClose={() => setOpenView(false)} cliente={sel} />
     </>
   );
 }

@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Box, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import BecaViewModal from "../../components/BecaViewModal";
 import * as s from "../../services/beca.service";
 import type { Beca } from "../../services/beca.service";
 
@@ -56,6 +57,7 @@ export default function BecasPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Beca | null>(null);
   const [form, setForm] = useState<Partial<Beca>>(empty);
 
@@ -101,9 +103,89 @@ export default function BecasPage() {
 
   const save = () => {
     if (!form.nombre_beca || !form.tipo_beca || form.porcentaje_cobertura == null) return;
-    (sel ? s.updateBeca(sel.id_beca, form) : s.createBeca(form as any))
+    
+    // Convertir porcentaje_cobertura a número decimal válido
+    let porcentajeCobertura: number;
+    if (typeof form.porcentaje_cobertura === 'number' && !isNaN(form.porcentaje_cobertura)) {
+      porcentajeCobertura = form.porcentaje_cobertura;
+    } else {
+      const parsed = Number(String(form.porcentaje_cobertura).replace(',', '.'));
+      porcentajeCobertura = isNaN(parsed) ? 0 : parsed;
+    }
+    
+    // Convertir monto_maximo a número decimal válido si existe
+    let montoMaximo: number | undefined;
+    if (form.monto_maximo != null && form.monto_maximo !== "" && form.monto_maximo !== 0) {
+      if (typeof form.monto_maximo === 'number' && !isNaN(form.monto_maximo)) {
+        montoMaximo = form.monto_maximo;
+      } else {
+        const parsed = Number(String(form.monto_maximo).replace(',', '.'));
+        montoMaximo = isNaN(parsed) ? undefined : parsed;
+      }
+    }
+    
+    // Validar que los números sean válidos antes de enviar
+    if (isNaN(porcentajeCobertura)) {
+      alert("El porcentaje de cobertura debe ser un número válido");
+      return;
+    }
+    
+    if (montoMaximo != null && isNaN(montoMaximo)) {
+      alert("El monto máximo debe ser un número válido");
+      return;
+    }
+    
+    // Preparar los datos asegurando que los números sean decimales válidos
+    // El backend puede estar esperando números como strings con formato decimal explícito
+    // Intentamos primero como números, pero si falla, el backend podría necesitar strings
+    const dataToSend: any = {
+      nombre_beca: form.nombre_beca,
+      tipo_beca: form.tipo_beca,
+      descripcion: form.descripcion || undefined,
+      porcentaje_cobertura: porcentajeCobertura, // Enviar como número
+      fecha_inicio: form.fecha_inicio,
+      fecha_fin: form.fecha_fin || undefined,
+      estado: form.estado || "Activa",
+    };
+    
+    // Solo incluir monto_maximo si tiene un valor válido
+    if (montoMaximo != null && montoMaximo > 0) {
+      dataToSend.monto_maximo = montoMaximo; // Enviar como número
+    }
+    
+    // Asegurar que los números sean válidos
+    if (isNaN(porcentajeCobertura) || !isFinite(porcentajeCobertura)) {
+      alert("El porcentaje de cobertura debe ser un número válido");
+      return;
+    }
+    
+    if (montoMaximo != null && (isNaN(montoMaximo) || !isFinite(montoMaximo))) {
+      alert("El monto máximo debe ser un número válido");
+      return;
+    }
+    
+    // Convertir a strings con formato decimal si el backend lo requiere
+    // Esto es un workaround para backends que validan formato decimal estricto
+    const payloadToSend: any = {
+      ...dataToSend,
+      porcentaje_cobertura: String(porcentajeCobertura.toFixed(2)),
+    };
+    
+    if (montoMaximo != null && montoMaximo > 0) {
+      payloadToSend.monto_maximo = String(montoMaximo.toFixed(2));
+    }
+    
+    // Debug: verificar que los valores sean números válidos
+    console.log("Datos a enviar (payload):", payloadToSend);
+    console.log("Tipo de porcentaje_cobertura:", typeof payloadToSend.porcentaje_cobertura, payloadToSend.porcentaje_cobertura);
+    console.log("Tipo de monto_maximo:", typeof payloadToSend.monto_maximo, payloadToSend.monto_maximo);
+    
+    (sel ? s.updateBeca(sel.id_beca, payloadToSend) : s.createBeca(payloadToSend))
       .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+      .catch((e) => {
+        console.error("Error al guardar beca:", e);
+        alert(e?.response?.data?.message || e?.message || "Error al guardar la beca");
+      });
   };
 
   const del = (row: Beca) => {
@@ -148,6 +230,7 @@ export default function BecasPage() {
       <DataTable title="Becas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
+        onView={(r) => { setSel(r); setOpenView(true); }}
         onEdit={(r) => { setSel(r); setForm({ ...r }); setOpen(true); }}
         onDelete={del} getId={(r) => r.id_beca} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -158,8 +241,20 @@ export default function BecasPage() {
             <MenuItem value="Mérito">Mérito</MenuItem><MenuItem value="Socioeconómica">Socioeconómica</MenuItem><MenuItem value="Convenio">Convenio</MenuItem>
           </TextField>
           <TextField margin="dense" fullWidth label="Descripción" multiline value={form.descripcion ?? ""} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
-          <TextField margin="dense" fullWidth type="number" label="% Cobertura" value={form.porcentaje_cobertura ?? 0} onChange={(e) => setForm({ ...form, porcentaje_cobertura: parseFloat(e.target.value) || 0 })} />
-          <TextField margin="dense" fullWidth type="number" label="Monto máximo" value={form.monto_maximo ?? ""} onChange={(e) => setForm({ ...form, monto_maximo: e.target.value ? parseFloat(e.target.value) : undefined })} />
+          <TextField margin="dense" fullWidth type="number" label="% Cobertura" value={form.porcentaje_cobertura ?? 0} onChange={(e) => {
+            const value = e.target.value;
+            const numValue = value === "" ? 0 : Number(value);
+            setForm({ ...form, porcentaje_cobertura: isNaN(numValue) ? 0 : numValue });
+          }} />
+          <TextField margin="dense" fullWidth type="number" label="Monto máximo" value={form.monto_maximo ?? ""} onChange={(e) => {
+            const value = e.target.value;
+            if (value === "") {
+              setForm({ ...form, monto_maximo: undefined });
+            } else {
+              const numValue = Number(value);
+              setForm({ ...form, monto_maximo: isNaN(numValue) ? undefined : numValue });
+            }
+          }} />
           <TextField margin="dense" fullWidth label="Fecha inicio" type="date" InputLabelProps={{ shrink: true }} value={form.fecha_inicio?.toString().slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, fecha_inicio: e.target.value })} required />
           <TextField margin="dense" fullWidth label="Fecha fin" type="date" InputLabelProps={{ shrink: true }} value={form.fecha_fin?.toString().slice(0, 10) ?? ""} onChange={(e) => setForm({ ...form, fecha_fin: e.target.value || undefined })} />
           <TextField margin="dense" fullWidth select label="Estado" value={form.estado ?? "Activa"} onChange={(e) => setForm({ ...form, estado: e.target.value })}>
@@ -168,6 +263,7 @@ export default function BecasPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <BecaViewModal open={openView} onClose={() => setOpenView(false)} beca={sel} />
     </>
   );
 }

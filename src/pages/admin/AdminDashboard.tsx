@@ -14,6 +14,9 @@ import Assignment from "@mui/icons-material/Assignment";
 import School from "@mui/icons-material/School";
 import Campaign from "@mui/icons-material/Campaign";
 import EmojiEvents from "@mui/icons-material/EmojiEvents";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
@@ -98,54 +101,48 @@ export default function AdminDashboard() {
     });
   }, []);
 
-  // Tarjetas navegables (todas en la misma fila)
+  // Tarjetas navegables con diseño estilo estadísticas
   const navigationCards = [
     {
       title: "Clientes",
       count: counts.clientes,
-      icon: <People sx={{ fontSize: 24 }} />,
-      bgColor: "#3b82f6",
-      color: "white",
+      icon: <People sx={{ fontSize: 32 }} />,
+      iconColor: "#3b82f6", // Azul
       route: "/admin/clientes",
     },
     {
       title: "Postulaciones",
       count: counts.postulaciones,
-      icon: <Campaign sx={{ fontSize: 24 }} />,
-      bgColor: "#f5f5f5",
-      color: "#1e293b",
+      icon: <Campaign sx={{ fontSize: 32 }} />,
+      iconColor: "#8b5cf6", // Morado
       route: "/admin/postulaciones",
     },
     {
       title: "Carreras",
       count: counts.carreras,
-      icon: <EmojiEvents sx={{ fontSize: 24 }} />,
-      bgColor: "#f5f5f5",
-      color: "#1e293b",
+      icon: <EmojiEvents sx={{ fontSize: 32 }} />,
+      iconColor: "#10b981", // Verde
       route: "/admin/carreras",
     },
     {
       title: "Empleados",
       count: counts.empleados,
-      icon: <Badge sx={{ fontSize: 24 }} />,
-      bgColor: "#f5f5f5",
-      color: "#1e293b",
+      icon: <Badge sx={{ fontSize: 32 }} />,
+      iconColor: "#3b82f6", // Azul
       route: "/admin/empleados",
     },
     {
       title: "Tareas",
       count: counts.tareas,
-      icon: <Assignment sx={{ fontSize: 24 }} />,
-      bgColor: "#f5f5f5",
-      color: "#1e293b",
+      icon: <AccessTimeIcon sx={{ fontSize: 32 }} />,
+      iconColor: "#8b5cf6", // Morado
       route: "/admin/tareas",
     },
     {
       title: "Becas",
       count: counts.becas,
-      icon: <School sx={{ fontSize: 24 }} />,
-      bgColor: "#f5f5f5",
-      color: "#1e293b",
+      icon: <CheckCircleIcon sx={{ fontSize: 32 }} />,
+      iconColor: "#3b82f6", // Azul
       route: "/admin/becas",
     },
   ];
@@ -153,9 +150,9 @@ export default function AdminDashboard() {
 
   // Estadísticas de tareas
   const taskStats = {
-    completed: { value: 10, total: 75, color: "#64748b" },
-    inProgress: { value: 45, total: 75, color: "#3b82f6" },
-    notStarted: { value: 20, total: 75, color: "#ef4444" },
+    completed: { value: 10, total: 75, color: "#10b981" }, // Verde
+    inProgress: { value: 45, total: 75, color: "#3b82f6" }, // Azul
+    notStarted: { value: 20, total: 75, color: "#8b5cf6" }, // Morado
   };
 
   const totalHours = "36h 29 min";
@@ -167,18 +164,17 @@ export default function AdminDashboard() {
         Dashboard
       </Typography>
 
-      {/* Navigation Cards */}
-      <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "nowrap" }}>
+      {/* Navigation Cards - Diseño estilo estadísticas */}
+      <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "wrap" }}>
         {navigationCards.map((card, index) => (
           <Card
             key={index}
             onClick={() => navigate(card.route)}
             sx={{
-              flex: "1 1 0",
-              minWidth: 0,
+              flex: { xs: "1 1 calc(50% - 0.75rem)", md: "1 1 calc(25% - 1.125rem)" },
+              minWidth: { xs: "calc(50% - 0.75rem)", md: "calc(25% - 1.125rem)" },
               borderRadius: 2,
-              bgcolor: card.bgColor,
-              color: card.color,
+              bgcolor: "white",
               boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
               cursor: "pointer",
               transition: "all 0.2s ease",
@@ -188,16 +184,38 @@ export default function AdminDashboard() {
               },
             }}
           >
-            <CardContent sx={{ p: 1.5 }}>
-              <Stack direction="row" spacing={1.5} alignItems="center">
-                {card.icon}
-                <Box sx={{ minWidth: 0, flex: 1 }}>
-                  <Typography variant="body2" sx={{ fontWeight: 700, fontSize: "0.875rem", lineHeight: 1.2 }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
+                <Box sx={{ flex: 1 }}>
+                  {/* Título pequeño arriba */}
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      fontWeight: 500, 
+                      fontSize: "0.875rem", 
+                      color: "#64748b",
+                      mb: 1,
+                      lineHeight: 1.2
+                    }}
+                  >
                     {card.title}
                   </Typography>
-                  <Typography variant="caption" sx={{ fontSize: "0.75rem", opacity: 0.9, display: "block" }}>
-                    {card.count} Registros
+                  {/* Número grande en color */}
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontWeight: 700, 
+                      fontSize: "2rem", 
+                      color: card.iconColor,
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {card.count}
                   </Typography>
+                </Box>
+                {/* Icono a la derecha en el mismo color */}
+                <Box sx={{ color: card.iconColor, display: "flex", alignItems: "center" }}>
+                  {card.icon}
                 </Box>
               </Stack>
             </CardContent>
@@ -418,7 +436,7 @@ export default function AdminDashboard() {
                 </Box>
               </Stack>
 
-              {/* Donut Chart Representation */}
+              {/* Donut Chart Representation with Segmented Colors */}
               <Box
                 sx={{
                   width: 200,
@@ -431,19 +449,86 @@ export default function AdminDashboard() {
                   justifyContent: "center",
                 }}
               >
-                <Box
-                  sx={{
-                    width: 180,
-                    height: 180,
-                    borderRadius: "50%",
-                    border: "20px solid #e5e7eb",
-                    borderTopColor: taskStats.inProgress.color,
-                    borderRightColor: taskStats.notStarted.color,
-                    borderBottomColor: taskStats.completed.color,
-                    transform: "rotate(-45deg)",
-                  }}
-                />
-                <Box sx={{ position: "absolute", textAlign: "center" }}>
+                <svg width="200" height="200" style={{ position: "absolute" }}>
+                  {/* Background circle */}
+                  <circle
+                    cx="100"
+                    cy="100"
+                    r="80"
+                    fill="none"
+                    stroke="#e5e7eb"
+                    strokeWidth="20"
+                  />
+                  {/* Segmented circles with individual colors */}
+                  {(() => {
+                    const total = taskStats.completed.total;
+                    const completed = taskStats.completed.value;
+                    const inProgress = taskStats.inProgress.value;
+                    const notStarted = taskStats.notStarted.value;
+                    const radius = 80;
+                    const circumference = 2 * Math.PI * radius;
+                    const centerX = 100;
+                    const centerY = 100;
+                    
+                    // Calculate percentages
+                    const completedPercent = completed / total;
+                    const inProgressPercent = inProgress / total;
+                    const notStartedPercent = notStarted / total;
+                    
+                    let currentOffset = 0;
+                    
+                    return (
+                      <>
+                        {/* Completed segment (Verde) */}
+                        {completed > 0 && (
+                          <circle
+                            cx={centerX}
+                            cy={centerY}
+                            r={radius}
+                            fill="none"
+                            stroke="#10b981"
+                            strokeWidth="20"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference * (1 - completedPercent)}
+                            strokeLinecap="round"
+                            transform={`rotate(-90 ${centerX} ${centerY})`}
+                          />
+                        )}
+                        {/* In Progress segment (Azul) */}
+                        {inProgress > 0 && (
+                          <circle
+                            cx={centerX}
+                            cy={centerY}
+                            r={radius}
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth="20"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference * (1 - inProgressPercent)}
+                            strokeLinecap="round"
+                            transform={`rotate(${-90 + completedPercent * 360} ${centerX} ${centerY})`}
+                          />
+                        )}
+                        {/* Not Started segment (Morado) */}
+                        {notStarted > 0 && (
+                          <circle
+                            cx={centerX}
+                            cy={centerY}
+                            r={radius}
+                            fill="none"
+                            stroke="#8b5cf6"
+                            strokeWidth="20"
+                            strokeDasharray={circumference}
+                            strokeDashoffset={circumference * (1 - notStartedPercent)}
+                            strokeLinecap="round"
+                            transform={`rotate(${-90 + (completedPercent + inProgressPercent) * 360} ${centerX} ${centerY})`}
+                          />
+                        )}
+                      </>
+                    );
+                  })()}
+                </svg>
+                <Box sx={{ position: "relative", textAlign: "center", zIndex: 1 }}>
                   <Typography variant="h5" sx={{ fontWeight: 700, color: "#1e293b" }}>
                     {taskStats.completed.value + taskStats.inProgress.value + taskStats.notStarted.value}
                   </Typography>

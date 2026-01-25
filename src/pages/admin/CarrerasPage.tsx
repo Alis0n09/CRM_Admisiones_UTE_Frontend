@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Box, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import CarreraViewModal from "../../components/CarreraViewModal";
 import * as s from "../../services/carrera.service";
 import type { Carrera } from "../../services/carrera.service";
 
@@ -65,6 +66,7 @@ export default function CarrerasPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Carrera | null>(null);
   const [form, setForm] = useState<Partial<Carrera>>(empty);
 
@@ -110,9 +112,18 @@ export default function CarrerasPage() {
 
   const save = () => {
     if (!form.nombre_carrera || !form.facultad) return;
-    (sel ? s.updateCarrera(sel.id_carrera, form) : s.createCarrera(form as any))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    if (sel) {
+      // Para actualizar, solo enviar los campos que pueden modificarse (excluir id_carrera)
+      const { id_carrera, ...updateData } = form;
+      s.updateCarrera(sel.id_carrera, updateData)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    } else {
+      // Para crear, enviar todos los campos necesarios
+      s.createCarrera(form as any)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    }
   };
 
   const del = (row: Carrera) => {
@@ -157,6 +168,7 @@ export default function CarrerasPage() {
       <DataTable title="Carreras" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
+        onView={(r) => { setSel(r); setOpenView(true); }}
         onEdit={(r) => { setSel(r); setForm({ ...r }); setOpen(true); }}
         onDelete={del} getId={(r) => r.id_carrera} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -172,6 +184,7 @@ export default function CarrerasPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <CarreraViewModal open={openView} onClose={() => setOpenView(false)} carrera={sel} />
     </>
   );
 }

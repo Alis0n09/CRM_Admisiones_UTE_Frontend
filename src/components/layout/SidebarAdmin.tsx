@@ -49,9 +49,9 @@ export default function SidebarAdmin() {
   return (
     <Box
       sx={{
-        width: 260,
-        bgcolor: "#1e293b",
-        color: "white",
+        width: 300,
+        bgcolor: "white",
+        color: "#1e293b",
         display: "flex",
         flexDirection: "column",
         height: "100vh",
@@ -60,30 +60,31 @@ export default function SidebarAdmin() {
         top: 0,
         zIndex: 1000,
         overflowY: "auto",
+        borderRight: "1px solid #e5e7eb",
         "&::-webkit-scrollbar": {
           width: "8px",
         },
         "&::-webkit-scrollbar-track": {
-          background: "rgba(255,255,255,0.05)",
+          background: "#f5f5f5",
         },
         "&::-webkit-scrollbar-thumb": {
-          background: "rgba(255,255,255,0.2)",
+          background: "#d1d5db",
           borderRadius: "4px",
           "&:hover": {
-            background: "rgba(255,255,255,0.3)",
+            background: "#9ca3af",
           },
         },
       }}
     >
       {/* Logo/Brand Section */}
-      <Box sx={{ p: 3, borderBottom: "1px solid rgba(255,255,255,0.1)", textAlign: "center", flexShrink: 0 }}>
+      <Box sx={{ p: 3, borderBottom: "1px solid #e5e7eb", textAlign: "center", flexShrink: 0 }}>
         <Box
           component="img"
           src="/logo.png"
           alt="Logo"
           sx={{
-            width: 60,
-            height: 60,
+            width: 140,
+            height: 140,
             objectFit: "contain",
             mb: 1.5,
             mx: "auto",
@@ -98,7 +99,7 @@ export default function SidebarAdmin() {
           sx={{
             fontWeight: 700,
             fontSize: "1rem",
-            color: "white",
+            color: "#1e293b",
             mb: 0.5,
           }}
         >
@@ -109,7 +110,7 @@ export default function SidebarAdmin() {
           sx={{
             fontWeight: 400,
             fontSize: "0.875rem",
-            color: "rgba(255,255,255,0.7)",
+            color: "#64748b",
           }}
         >
           Administrador
@@ -130,9 +131,9 @@ export default function SidebarAdmin() {
                   borderRadius: 2,
                   mb: 0.5,
                   bgcolor: isActive ? "#3b82f6" : "transparent",
-                  color: isActive ? "white" : "rgba(255,255,255,0.8)",
+                  color: isActive ? "white" : "#64748b",
                   "&:hover": {
-                    bgcolor: isActive ? "#2563eb" : "rgba(255,255,255,0.1)",
+                    bgcolor: isActive ? "#2563eb" : "#f5f5f5",
                   },
                   py: 1.25,
                 }}
@@ -152,7 +153,7 @@ export default function SidebarAdmin() {
       </Box>
 
       {/* User Info Section */}
-      <Box sx={{ borderTop: "1px solid rgba(255,255,255,0.1)", p: 2, flexShrink: 0 }}>
+      <Box sx={{ borderTop: "1px solid #e5e7eb", p: 2, flexShrink: 0 }}>
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
           <Avatar
             sx={{
@@ -170,7 +171,7 @@ export default function SidebarAdmin() {
               variant="body2"
               sx={{
                 fontWeight: 600,
-                color: "white",
+                color: "#1e293b",
                 fontSize: "0.875rem",
                 lineHeight: 1.2,
               }}
@@ -180,7 +181,7 @@ export default function SidebarAdmin() {
             <Typography
               variant="caption"
               sx={{
-                color: "rgba(255,255,255,0.7)",
+                color: "#64748b",
                 fontSize: "0.75rem",
                 display: "block",
                 overflow: "hidden",
@@ -193,11 +194,11 @@ export default function SidebarAdmin() {
           </Box>
         </Stack>
         <List dense>
-          <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 2, color: "rgba(255,255,255,0.8)", py: 1.25, "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
+          <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 2, color: "#64748b", py: 1.25, "&:hover": { bgcolor: "#f5f5f5" } }}>
             <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><Home /></ListItemIcon>
             <ListItemText primary="Sitio público" primaryTypographyProps={{ fontSize: "0.9rem" }} />
           </ListItemButton>
-          <ListItemButton onClick={logout} sx={{ borderRadius: 2, color: "rgba(255,255,255,0.8)", py: 1.25, "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
+          <ListItemButton onClick={logout} sx={{ borderRadius: 2, color: "#64748b", py: 1.25, "&:hover": { bgcolor: "#f5f5f5" } }}>
             <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><ExitToApp /></ListItemIcon>
             <ListItemText primary="Cerrar sesión" primaryTypographyProps={{ fontSize: "0.9rem" }} />
           </ListItemButton>

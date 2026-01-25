@@ -1,49 +1,126 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, MenuItem, TextField, Avatar, Chip, Box, Stack, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import DataTable, { type Column } from "../../components/DataTable";
+import ClienteViewModal from "../../components/ClienteViewModal";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
 
 const cols: Column<Cliente>[] = [
-  { id: "nombres", label: "Nombres", minWidth: 120 },
-  { id: "apellidos", label: "Apellidos", minWidth: 120 },
-  { id: "numero_identificacion", label: "Cédula", minWidth: 100 },
-  { id: "correo", label: "Correo", minWidth: 160 },
-  { id: "celular", label: "Celular", minWidth: 100 },
-  { id: "origen", label: "Origen", minWidth: 100 },
-  { id: "estado", label: "Estado", minWidth: 90 },
+  {
+    id: "aspirante",
+    label: "ASPIRANTE",
+    minWidth: 250,
+    format: (_, row: Cliente) => {
+      const initials = `${row.nombres?.[0] || ""}${row.apellidos?.[0] || ""}`.toUpperCase();
+      return (
+        <Stack direction="row" spacing={1.5} alignItems="center">
+          <Avatar sx={{ bgcolor: "#8b5cf6", width: 40, height: 40, fontSize: "0.875rem", fontWeight: 600 }}>
+            {initials}
+          </Avatar>
+          <Box>
+            <Typography variant="body2" sx={{ fontWeight: 700, color: "#1e293b" }}>
+              {`${row.nombres || ""} ${row.apellidos || ""}`.trim()}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem" }}>
+              {row.correo || "-"}
+            </Typography>
+          </Box>
+        </Stack>
+      );
+    },
+  },
+  { id: "numero_identificacion", label: "CÉDULA", minWidth: 120 },
+  { id: "celular", label: "CELULAR", minWidth: 120 },
+  {
+    id: "estado",
+    label: "ESTADO",
+    minWidth: 100,
+    format: (v: string) => (
+      <Chip
+        label={v || "Nuevo"}
+        size="small"
+        sx={{
+          bgcolor: "#3b82f6",
+          color: "white",
+          fontWeight: 600,
+          fontSize: "0.75rem",
+        }}
+      />
+    ),
+  },
 ];
 
 const empty: Partial<Cliente> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "", origen: "Web", estado: "Nuevo" };
 
 export default function ClientesPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [items, setItems] = useState<Cliente[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-  const [search, setSearch] = useState("");
+  const urlSearch = searchParams.get("search") || "";
+  const [search, setSearch] = useState(urlSearch);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
 
+  // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
+  useEffect(() => {
+    const urlSearchParam = searchParams.get("search") || "";
+    if (urlSearchParam !== search) {
+      setSearch(urlSearchParam);
+      setPage(1);
+    }
+  }, [searchParams]);
+
   const load = useCallback(() => {
-    s.getClientes({ page, limit, search: search || undefined }).then((r) => {
+    const currentSearch = searchParams.get("search") || search || "";
+    const searchParam = currentSearch.trim();
+    // Pasar el parámetro de búsqueda solo si tiene contenido
+    const params: { page: number; limit: number; search?: string } = { page, limit };
+    if (searchParam) {
+      params.search = searchParam;
+    }
+    s.getClientes(params).then((r) => {
       const list = (r as any).items ?? (Array.isArray(r) ? r : []);
       setItems(list);
       setTotal((r as any).meta?.totalItems ?? list.length);
     }).catch(() => setItems([]));
-  }, [page, limit, search]);
+  }, [page, limit, search, searchParams]);
 
   useEffect(() => load(), [load]);
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value);
+    setPage(1);
+    // Actualizar URL sin recargar la página
+    if (value) {
+      setSearchParams({ search: value });
+    } else {
+      setSearchParams({});
+    }
+  };
+
   const openAdd = () => { setSel(null); setForm(empty); setOpen(true); };
+  const handleView = (row: Cliente) => { setSel(row); setOpenView(true); };
   const openEdit = (row: Cliente) => { setSel(row); setForm({ ...row }); setOpen(true); };
 
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
-    (sel ? s.updateCliente(sel.id_cliente, form) : s.createCliente(form as any))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    if (sel) {
+      // Para actualizar, excluir campos que el backend no acepta en el payload
+      const { id_cliente, fecha_registro, fecha_cliente, estado, ...updateData } = form;
+      s.updateCliente(sel.id_cliente, updateData)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    } else {
+      // Para crear, enviar todos los campos necesarios
+      s.createCliente(form as any)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    }
   };
 
   const del = (row: Cliente) => {
@@ -63,11 +140,12 @@ export default function ClientesPage() {
         onPageChange={setPage}
         onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={openAdd}
+        onView={handleView}
         onEdit={openEdit}
         onDelete={del}
         search={search}
-        onSearchChange={(v) => { setSearch(v); setPage(1); }}
-        searchPlaceholder="Buscar por nombre, cédula..."
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Buscar aspirantes..."
         getId={(r) => r.id_cliente}
       />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -94,6 +172,7 @@ export default function ClientesPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <ClienteViewModal open={openView} onClose={() => setOpenView(false)} cliente={sel} />
     </>
   );
 }

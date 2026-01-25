@@ -1,9 +1,25 @@
 import { Box, IconButton, InputBase, Stack, Button, Badge, Typography } from "@mui/material";
 import { Search, Notifications, Home } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 export default function TopbarAdmin() {
   const navigate = useNavigate();
+  const [searchValue, setSearchValue] = useState("");
+
+  const handleSearch = () => {
+    if (searchValue.trim()) {
+      navigate(`/admin/clientes?search=${encodeURIComponent(searchValue.trim())}`);
+    } else {
+      navigate("/admin/clientes");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   return (
     <Box
@@ -30,9 +46,22 @@ export default function TopbarAdmin() {
           border: "1px solid #e5e7eb",
         }}
       >
-        <Search sx={{ color: "#64748b", mr: 1, fontSize: 20 }} />
+        <IconButton
+          onClick={handleSearch}
+          sx={{
+            p: 0,
+            mr: 1,
+            color: "#64748b",
+            "&:hover": { color: "#3b82f6" },
+          }}
+        >
+          <Search sx={{ fontSize: 20 }} />
+        </IconButton>
         <InputBase
           placeholder="Buscar aspirantes..."
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          onKeyDown={handleKeyDown}
           sx={{ flex: 1, fontSize: "0.9rem", color: "#1e293b" }}
         />
       </Box>

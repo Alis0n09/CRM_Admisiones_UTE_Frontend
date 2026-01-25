@@ -1,21 +1,88 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import DocumentoViewModal from "../../components/DocumentoViewModal";
 import * as docService from "../../services/documentoPostulacion.service";
 import * as postulacionService from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
+import Description from "@mui/icons-material/Description";
+import AttachFile from "@mui/icons-material/AttachFile";
+
+function getTipoIcon(tipo?: string) {
+  const tipoLower = tipo?.toLowerCase() || "";
+  if (tipoLower.includes("cédula")) return "🆔";
+  if (tipoLower.includes("título")) return "🎓";
+  if (tipoLower.includes("certificado")) return "📜";
+  if (tipoLower.includes("foto")) return "📷";
+  return "📄";
+}
+
+function getEstadoColor(estado?: string) {
+  if (!estado) return "default";
+  const estadoLower = estado.toLowerCase();
+  if (estadoLower.includes("pendiente")) return "warning";
+  if (estadoLower.includes("aprobado")) return "success";
+  if (estadoLower.includes("rechazado")) return "error";
+  return "default";
+}
 
 const cols: Column<DocumentoPostulacion>[] = [
-  { id: "tipo_documento", label: "Tipo", minWidth: 120 },
-  { id: "nombre_archivo", label: "Archivo", minWidth: 160 },
-  { id: "postulacion", label: "Postulación", minWidth: 160, format: (_, r) => r.postulacion ? `#${(r.postulacion as any).id_postulacion?.slice(0, 8)}` : "-" },
-  { id: "estado_documento", label: "Estado", minWidth: 100 },
+  { 
+    id: "tipo_documento", 
+    label: "Tipo de Documento", 
+    minWidth: 180,
+    format: (v) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Typography variant="h6">{getTipoIcon(v)}</Typography>
+        <Typography variant="body2" fontWeight={600}>{v || "-"}</Typography>
+      </Box>
+    )
+  },
+  { 
+    id: "nombre_archivo", 
+    label: "Archivo", 
+    minWidth: 200,
+    format: (v) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <AttachFile sx={{ color: "#6b7280", fontSize: 18 }} />
+        <Typography variant="body2" sx={{ maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis" }}>
+          {v || "-"}
+        </Typography>
+      </Box>
+    )
+  },
+  { 
+    id: "postulacion", 
+    label: "Postulación", 
+    minWidth: 160, 
+    format: (_, r) => r.postulacion ? (
+      <Chip 
+        label={`#${(r.postulacion as any).id_postulacion?.slice(0, 8)}`}
+        size="small"
+        sx={{ bgcolor: "#e0e7ff", color: "#4338ca", fontWeight: 600 }}
+      />
+    ) : "-" 
+  },
+  { 
+    id: "estado_documento", 
+    label: "Estado", 
+    minWidth: 140,
+    format: (v) => (
+      <Chip 
+        label={v || "Pendiente"} 
+        size="small" 
+        color={getEstadoColor(v) as any}
+        sx={{ fontWeight: 600 }}
+      />
+    )
+  },
 ];
 
 export default function DocumentosPage() {
   const [items, setItems] = useState<DocumentoPostulacion[]>([]);
   const [postulaciones, setPostulaciones] = useState<{ id_postulacion: string; cliente?: { nombres: string }; carrera?: { nombre_carrera: string } }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<DocumentoPostulacion | null>(null);
   const [form, setForm] = useState<{ id_postulacion: string; tipo_documento: string; nombre_archivo: string; url_archivo: string; estado_documento: string; observaciones: string }>({ id_postulacion: "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "", estado_documento: "Pendiente", observaciones: "" });
   const [page, setPage] = useState(1);
@@ -31,6 +98,7 @@ export default function DocumentosPage() {
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_postulacion: postulaciones[0]?.id_postulacion || "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "/uploads/doc.pdf", estado_documento: "Pendiente", observaciones: "" }); setOpen(true); };
+  const handleView = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
   const openEdit = (r: DocumentoPostulacion) => { setSel(r); setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
 
   const save = () => {
@@ -49,7 +117,7 @@ export default function DocumentosPage() {
     <>
       <DataTable title="Documentos de postulación" columns={cols} rows={items.slice((page - 1) * limit, page * limit)} total={items.length} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar documento" : "Nuevo documento"}</DialogTitle>
         <DialogContent>
@@ -71,6 +139,7 @@ export default function DocumentosPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <DocumentoViewModal open={openView} onClose={() => setOpenView(false)} documento={sel} />
     </>
   );
 }

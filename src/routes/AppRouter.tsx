@@ -29,6 +29,8 @@ import AsesorPostulacionesPage from "../pages/asesor/AsesorPostulacionesPage";
 import AsesorCarrerasPage from "../pages/asesor/AsesorCarrerasPage";
 import AsesorDocumentosPage from "../pages/asesor/AsesorDocumentosPage";
 import AsesorSeguimientosPage from "../pages/asesor/AsesorSeguimientosPage";
+import AsesorEvaluacionesPage from "../pages/asesor/AsesorEvaluacionesPage";
+import AsesorCalendarioPage from "../pages/asesor/AsesorCalendarioPage";
 
 import AspiranteDashboard from "../pages/aspirante/AspiranteDashboard";
 import AspirantePerfilPage from "../pages/aspirante/AspirantePerfilPage";
@@ -38,6 +40,7 @@ import AspiranteTareasPage from "../pages/aspirante/AspiranteTareasPage";
 import AspiranteCarrerasPage from "../pages/aspirante/AspiranteCarrerasPage";
 import AspiranteBecasPage from "../pages/aspirante/AspiranteBecasPage";
 import AspiranteSeguimientosPage from "../pages/aspirante/AspiranteSeguimientosPage";
+import ProcesoAdmisionPage from "../pages/aspirante/ProcesoAdmisionPage";
 
 import ProtectedRoute from "../components/ProtectedRoute";
 
@@ -73,6 +76,8 @@ export default function AppRouter() {
       <Route path="/asesor" element={<ProtectedRoute allowedRoles={["ADMIN", "ASESOR"]}><AsesorLayout /></ProtectedRoute>}>
         <Route index element={<AsesorDashboard />} />
         <Route path="clientes" element={<AsesorClientesPage />} />
+        <Route path="evaluaciones" element={<AsesorEvaluacionesPage />} />
+        <Route path="calendario" element={<AsesorCalendarioPage />} />
         <Route path="tareas" element={<AsesorTareasPage />} />
         <Route path="postulaciones" element={<AsesorPostulacionesPage />} />
         <Route path="carreras" element={<AsesorCarrerasPage />} />
@@ -82,7 +87,9 @@ export default function AppRouter() {
 
       {/* Aspirante */}
       <Route path="/aspirante" element={<ProtectedRoute allowedRoles={["ADMIN", "ASPIRANTE"]}><AspiranteLayout /></ProtectedRoute>}>
-        <Route index element={<AspiranteDashboard />} />
+        <Route index element={<ProcesoAdmisionPage />} />
+        <Route path="solicitud" element={<ProcesoAdmisionPage />} />
+        <Route path="formulario" element={<AspiranteDocumentosPage />} />
         <Route path="perfil" element={<AspirantePerfilPage />} />
         <Route path="postulaciones" element={<AspirantePostulacionesPage />} />
         <Route path="documentos" element={<AspiranteDocumentosPage />} />

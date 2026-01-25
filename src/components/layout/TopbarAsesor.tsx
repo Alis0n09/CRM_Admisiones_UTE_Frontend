@@ -1,34 +1,9 @@
-import { Box, IconButton, InputBase, Stack, Typography, Avatar, Menu, MenuItem } from "@mui/material";
-import { Search, Notifications, KeyboardArrowDown } from "@mui/icons-material";
-import { useState } from "react";
-import { useAuth } from "../../context/AuthContext";
+import { Box, IconButton, InputBase, Stack, Button, Badge } from "@mui/material";
+import { Search, Notifications, Home } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 export default function TopbarAsesor() {
-  const { user, logout } = useAuth();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleLogout = () => {
-    handleMenuClose();
-    logout();
-  };
-
-  const userInitials = user?.email
-    ? user.email
-        .split("@")[0]
-        .split(".")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "AS"
-    : "AS";
+  const navigate = useNavigate();
 
   return (
     <Box
@@ -57,70 +32,45 @@ export default function TopbarAsesor() {
       >
         <Search sx={{ color: "#64748b", mr: 1, fontSize: 20 }} />
         <InputBase
-          placeholder="Buscar..."
+          placeholder="Buscar aspirantes..."
           sx={{ flex: 1, fontSize: "0.9rem", color: "#1e293b" }}
         />
       </Box>
 
-      {/* Right Side - Notifications and Profile */}
-      <Stack direction="row" spacing={2} alignItems="center">
-        {/* Notifications */}
+      {/* Right Side - Home and Notifications */}
+      <Stack direction="row" spacing={1.5} alignItems="center">
+        {/* Home Button with Icon and Text */}
+        <Button
+          onClick={() => navigate("/asesor")}
+          startIcon={<Home />}
+          sx={{
+            bgcolor: "#f5f5f5",
+            color: "#1e293b",
+            textTransform: "none",
+            borderRadius: 2,
+            px: 2,
+            py: 0.75,
+            "&:hover": { bgcolor: "#e5e7eb" },
+            fontWeight: 500,
+            fontSize: "0.9rem",
+          }}
+        >
+          Inicio
+        </Button>
+
+        {/* Notifications with Badge */}
         <IconButton
           sx={{
             bgcolor: "#f5f5f5",
             color: "#1e293b",
             "&:hover": { bgcolor: "#e5e7eb" },
-          }}
-        >
-          <Notifications />
-        </IconButton>
-
-        {/* User Profile */}
-        <Stack
-          direction="row"
-          spacing={1.5}
-          alignItems="center"
-          onClick={handleMenuOpen}
-          sx={{
-            cursor: "pointer",
-            px: 1.5,
-            py: 0.75,
             borderRadius: 2,
-            "&:hover": { bgcolor: "#f5f5f5" },
           }}
         >
-          <Avatar
-            sx={{
-              width: 36,
-              height: 36,
-              bgcolor: "#3b82f6",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-            }}
-          >
-            {userInitials}
-          </Avatar>
-          <Box>
-            <Typography variant="body2" sx={{ fontWeight: 600, color: "#1e293b", fontSize: "0.875rem" }}>
-              {user?.email?.split("@")[0] || "Asesor"}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#64748b", fontSize: "0.75rem" }}>
-              Asesor
-            </Typography>
-          </Box>
-          <KeyboardArrowDown sx={{ color: "#64748b", fontSize: 20 }} />
-        </Stack>
-
-        {/* User Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-          transformOrigin={{ vertical: "top", horizontal: "right" }}
-        >
-          <MenuItem onClick={handleLogout}>Cerrar sesión</MenuItem>
-        </Menu>
+          <Badge badgeContent={1} color="error">
+            <Notifications />
+          </Badge>
+        </IconButton>
       </Stack>
     </Box>
   );

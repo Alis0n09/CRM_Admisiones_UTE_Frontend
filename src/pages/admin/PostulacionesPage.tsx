@@ -1,17 +1,76 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import PostulacionViewModal from "../../components/PostulacionViewModal";
 import * as postulacionService from "../../services/postulacion.service";
 import * as clienteService from "../../services/cliente.service";
 import * as carreraService from "../../services/carrera.service";
 import type { Postulacion } from "../../services/postulacion.service";
+import School from "@mui/icons-material/School";
+
+function getInitials(nombres?: string, apellidos?: string): string {
+  const first = nombres?.[0]?.toUpperCase() || "";
+  const last = apellidos?.[0]?.toUpperCase() || "";
+  return first + last;
+}
+
+function getEstadoColor(estado?: string) {
+  if (!estado) return "default";
+  const estadoLower = estado.toLowerCase();
+  if (estadoLower.includes("pendiente")) return "warning";
+  if (estadoLower.includes("revisión")) return "info";
+  if (estadoLower.includes("aprobada")) return "success";
+  if (estadoLower.includes("rechazada")) return "error";
+  return "default";
+}
 
 const cols: Column<Postulacion>[] = [
-  { id: "cliente", label: "Cliente", minWidth: 160, format: (_, r) => r.cliente ? `${r.cliente.nombres} ${r.cliente.apellidos}` : "-" },
-  { id: "carrera", label: "Carrera", minWidth: 180, format: (_, r) => r.carrera?.nombre_carrera ?? "-" },
-  { id: "periodo_academico", label: "Período", minWidth: 100 },
-  { id: "fecha_postulacion", label: "Fecha", minWidth: 100 },
-  { id: "estado_postulacion", label: "Estado", minWidth: 100 },
+  { 
+    id: "cliente", 
+    label: "Aspirante", 
+    minWidth: 200, 
+    format: (_, r) => r.cliente ? (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+        <Avatar sx={{ bgcolor: "#3b82f6", width: 40, height: 40, fontSize: "0.875rem" }}>
+          {getInitials(r.cliente.nombres, r.cliente.apellidos)}
+        </Avatar>
+        <Box>
+          <Typography variant="body2" fontWeight={600}>
+            {r.cliente.nombres} {r.cliente.apellidos}
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            ID: {r.id_postulacion.slice(0, 8)}
+          </Typography>
+        </Box>
+      </Box>
+    ) : "-" 
+  },
+  { 
+    id: "carrera", 
+    label: "Carrera", 
+    minWidth: 200, 
+    format: (_, r) => (
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <School sx={{ color: "#8b5cf6", fontSize: 20 }} />
+        <Typography variant="body2">{r.carrera?.nombre_carrera ?? "-"}</Typography>
+      </Box>
+    )
+  },
+  { id: "periodo_academico", label: "Período", minWidth: 120 },
+  { id: "fecha_postulacion", label: "Fecha", minWidth: 120 },
+  { 
+    id: "estado_postulacion", 
+    label: "Estado", 
+    minWidth: 140,
+    format: (v) => (
+      <Chip 
+        label={v || "Pendiente"} 
+        size="small" 
+        color={getEstadoColor(v) as any}
+        sx={{ fontWeight: 600 }}
+      />
+    )
+  },
 ];
 
 export default function PostulacionesPage() {
@@ -22,6 +81,7 @@ export default function PostulacionesPage() {
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [carreras, setCarreras] = useState<{ id_carrera: string; nombre_carrera: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Postulacion | null>(null);
   const [form, setForm] = useState<{ id_cliente: string; id_carrera: string; periodo_academico: string; estado_postulacion: string; observaciones: string }>({ id_cliente: "", id_carrera: "", periodo_academico: "", estado_postulacion: "Pendiente", observaciones: "" });
 
@@ -40,13 +100,27 @@ export default function PostulacionesPage() {
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_cliente: clientes[0]?.id_cliente || "", id_carrera: carreras[0]?.id_carrera || "", periodo_academico: new Date().getFullYear() + "-1", estado_postulacion: "Pendiente", observaciones: "" }); setOpen(true); };
+  const handleView = (r: Postulacion) => { setSel(r); setOpenView(true); };
   const openEdit = (r: Postulacion) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", id_carrera: (r.carrera as any)?.id_carrera || r.id_carrera || "", periodo_academico: (r as any).periodo_academico || "", estado_postulacion: r.estado_postulacion || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
 
   const save = () => {
     if (!form.id_cliente || !form.id_carrera || !form.periodo_academico) { alert("Completa cliente, carrera y período"); return; }
-    (sel ? postulacionService.updatePostulacion(sel.id_postulacion, form) : postulacionService.createPostulacion(form))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    if (sel) {
+      // Para actualizar, solo enviar los campos que pueden modificarse
+      const updateData = {
+        periodo_academico: form.periodo_academico,
+        estado_postulacion: form.estado_postulacion,
+        observaciones: form.observaciones,
+      };
+      postulacionService.updatePostulacion(sel.id_postulacion, updateData)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    } else {
+      // Para crear, enviar todos los campos necesarios
+      postulacionService.createPostulacion(form)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    }
   };
 
   const del = (row: Postulacion) => {
@@ -58,7 +132,7 @@ export default function PostulacionesPage() {
     <>
       <DataTable title="Postulaciones" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} onDelete={del} getId={(r) => r.id_postulacion} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_postulacion} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar postulación" : "Nueva postulación"}</DialogTitle>
         <DialogContent>
@@ -82,6 +156,7 @@ export default function PostulacionesPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <PostulacionViewModal open={openView} onClose={() => setOpenView(false)} postulacion={sel} />
     </>
   );
 }
