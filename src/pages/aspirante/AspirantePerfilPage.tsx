@@ -8,10 +8,8 @@ import {
   Typography, 
   Avatar, 
   Stack, 
-  Divider, 
   CircularProgress,
   Alert,
-  Grid,
   InputAdornment,
   Snackbar,
 } from "@mui/material";
@@ -25,7 +23,6 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PublicIcon from "@mui/icons-material/Public";
 import SaveIcon from "@mui/icons-material/Save";
-import EditIcon from "@mui/icons-material/Edit";
 
 export default function AspirantePerfilPage() {
   const { user } = useAuth();
@@ -87,7 +84,7 @@ export default function AspirantePerfilPage() {
 
   return (
     <Box>
-      {/* Header con Avatar */}
+      {/* Header con Avatar (como estaba) */}
       <Card sx={{ borderRadius: 2, boxShadow: 2, mb: 2, background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)" }}>
         <CardContent sx={{ p: 2.5 }}>
           <Stack direction="row" spacing={2} alignItems="center">
@@ -130,52 +127,48 @@ export default function AspirantePerfilPage() {
                 Datos Básicos
               </Typography>
             </Box>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Nombres <span style={{ color: "#d32f2f" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.nombres ?? ""}
-                    onChange={(e) => setForm({ ...form, nombres: e.target.value })}
-                    required
-                    placeholder="Ingresa tus nombres"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Apellidos <span style={{ color: "#d32f2f" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.apellidos ?? ""}
-                    onChange={(e) => setForm({ ...form, apellidos: e.target.value })}
-                    required
-                    placeholder="Ingresa tus apellidos"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Nombres <span style={{ color: "#d32f2f" }}>*</span>
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.nombres ?? ""}
+                  onChange={(e) => setForm({ ...form, nombres: e.target.value })}
+                  required
+                  placeholder="Ingresa tus nombres"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Apellidos <span style={{ color: "#d32f2f" }}>*</span>
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.apellidos ?? ""}
+                  onChange={(e) => setForm({ ...form, apellidos: e.target.value })}
+                  required
+                  placeholder="Ingresa tus apellidos"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PersonIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
@@ -188,54 +181,50 @@ export default function AspirantePerfilPage() {
                 Identificación
               </Typography>
             </Box>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Tipo de Identificación
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    select
-                    value={form.tipo_identificacion ?? "Cédula"}
-                    onChange={(e) => setForm({ ...form, tipo_identificacion: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  >
-                    <MenuItem value="Cédula">Cédula</MenuItem>
-                    <MenuItem value="Pasaporte">Pasaporte</MenuItem>
-                  </TextField>
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Número de Identificación <span style={{ color: "#d32f2f" }}>*</span>
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.numero_identificacion ?? ""}
-                    onChange={(e) => setForm({ ...form, numero_identificacion: e.target.value })}
-                    required
-                    placeholder="Ingresa tu número de identificación"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Tipo de Identificación
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  select
+                  value={form.tipo_identificacion ?? "Cédula"}
+                  onChange={(e) => setForm({ ...form, tipo_identificacion: e.target.value })}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                >
+                  <MenuItem value="Cédula">Cédula</MenuItem>
+                  <MenuItem value="Pasaporte">Pasaporte</MenuItem>
+                </TextField>
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Número de Identificación <span style={{ color: "#d32f2f" }}>*</span>
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.numero_identificacion ?? ""}
+                  onChange={(e) => setForm({ ...form, numero_identificacion: e.target.value })}
+                  required
+                  placeholder="Ingresa tu número de identificación"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <BadgeIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
@@ -248,72 +237,66 @@ export default function AspirantePerfilPage() {
                 Información de Contacto
               </Typography>
             </Box>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Correo Electrónico
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="email"
-                    value={form.correo ?? ""}
-                    onChange={(e) => setForm({ ...form, correo: e.target.value })}
-                    placeholder="correo@ejemplo.com"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <EmailIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Teléfono
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.telefono ?? ""}
-                    onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-                    placeholder="Ej: 043556677"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Celular
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.celular ?? ""}
-                    onChange={(e) => setForm({ ...form, celular: e.target.value })}
-                    placeholder="Ej: 0987766554"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Correo Electrónico
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="email"
+                  value={form.correo ?? ""}
+                  onChange={(e) => setForm({ ...form, correo: e.target.value })}
+                  placeholder="correo@ejemplo.com"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <EmailIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Teléfono
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.telefono ?? ""}
+                  onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+                  placeholder="Ej: 043556677"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Celular
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.celular ?? ""}
+                  onChange={(e) => setForm({ ...form, celular: e.target.value })}
+                  placeholder="Ej: 0987766554"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PhoneIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 
@@ -326,50 +309,46 @@ export default function AspirantePerfilPage() {
                 Información Adicional
               </Typography>
             </Box>
-            <Grid container spacing={1.5}>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Nacionalidad
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={form.nacionalidad ?? ""}
-                    onChange={(e) => setForm({ ...form, nacionalidad: e.target.value })}
-                    placeholder="Ej: Ecuatoriana"
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <PublicIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Box>
-                  <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
-                    Fecha de Nacimiento
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    type="date"
-                    value={form.fecha_nacimiento?.toString().slice(0, 10) ?? ""}
-                    onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <CalendarTodayIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Grid>
-            </Grid>
+            <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)" }, gap: 1.5 }}>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Nacionalidad
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  value={form.nacionalidad ?? ""}
+                  onChange={(e) => setForm({ ...form, nacionalidad: e.target.value })}
+                  placeholder="Ej: Ecuatoriana"
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <PublicIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+              <Box>
+                <Typography variant="caption" sx={{ display: "block", mb: 0.5, color: "text.secondary", fontWeight: 500 }}>
+                  Fecha de Nacimiento
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  value={form.fecha_nacimiento?.toString().slice(0, 10) ?? ""}
+                  onChange={(e) => setForm({ ...form, fecha_nacimiento: e.target.value })}
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <CalendarTodayIcon sx={{ color: "#3b82f6", fontSize: 18 }} />
+                      </InputAdornment>
+                    ),
+                  }}
+                />
+              </Box>
+            </Box>
           </CardContent>
         </Card>
 

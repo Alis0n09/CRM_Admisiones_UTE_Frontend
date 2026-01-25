@@ -5,6 +5,27 @@ import DataTable, { type Column } from "../../components/DataTable";
 import ClienteViewModal from "../../components/ClienteViewModal";
 import * as s from "../../services/cliente.service";
 import type { Cliente } from "../../services/cliente.service";
+import * as postulacionService from "../../services/postulacion.service";
+import * as documentoService from "../../services/documentoPostulacion.service";
+import * as becaService from "../../services/beca.service";
+import * as becaEstudianteService from "../../services/becaEstudiante.service";
+import * as carreraService from "../../services/carrera.service";
+import type { Postulacion } from "../../services/postulacion.service";
+import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
+import type { BecaEstudiante } from "../../services/becaEstudiante.service";
+import SchoolIcon from "@mui/icons-material/School";
+import DescriptionIcon from "@mui/icons-material/Description";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import PersonIcon from "@mui/icons-material/Person";
+import EmailIcon from "@mui/icons-material/Email";
+import PhoneIcon from "@mui/icons-material/Phone";
+import BadgeIcon from "@mui/icons-material/Badge";
+import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import AddIcon from "@mui/icons-material/Add";
+import { api } from "../../services/api";
 
 const cols: Column<Cliente>[] = [
   {
@@ -65,6 +86,35 @@ export default function AsesorClientesPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
+  const [clienteDetail, setClienteDetail] = useState<Cliente | null>(null);
+  const [postulaciones, setPostulaciones] = useState<Postulacion[]>([]);
+  const [documentos, setDocumentos] = useState<DocumentoPostulacion[]>([]);
+  const [becas, setBecas] = useState<any[]>([]);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [openUploadDialog, setOpenUploadDialog] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [documentoForm, setDocumentoForm] = useState({
+    tipo_documento: "",
+    observaciones: "",
+  });
+  const [openPostulacionDialog, setOpenPostulacionDialog] = useState(false);
+  const [carreras, setCarreras] = useState<{ id_carrera: string; nombre_carrera: string }[]>([]);
+  const [postulacionForm, setPostulacionForm] = useState({
+    id_carrera: "",
+    periodo_academico: "",
+    estado_postulacion: "Pendiente",
+    observaciones: "",
+  });
+  const [openBecaDialog, setOpenBecaDialog] = useState(false);
+  const [becaAsignada, setBecaAsignada] = useState<BecaEstudiante | null>(null);
+  const [selectedBecaId, setSelectedBecaId] = useState("");
+  const [becaForm, setBecaForm] = useState({
+    periodo_academico: "",
+    monto_otorgado: "",
+    estado: "Vigente",
+  });
 
   // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
   useEffect(() => {
@@ -115,6 +165,280 @@ export default function AsesorClientesPage() {
     (sel ? s.updateCliente(sel.id_cliente, form) : s.createCliente(form as any))
       .then(() => { setOpen(false); load(); })
       .catch((e) => alert(e?.response?.data?.message || "Error"));
+  };
+
+  const loadClienteDetail = useCallback(async (clienteId: string) => {
+    setLoadingDetail(true);
+    
+    try {
+      // Cargar información completa del cliente
+      const clienteCompleto = await s.getCliente(clienteId);
+      setClienteDetail(clienteCompleto);
+  
+      // Cargar postulaciones del cliente. El backend filtra por id_cliente cuando se envía el parámetro
+      const postuls = await postulacionService.getPostulaciones({
+        id_cliente: clienteId,
+        limit: 500,
+      });
+      // El backend ya filtra por id_cliente, confiamos en su respuesta
+      const postulsList = Array.isArray(postuls)
+        ? postuls
+        : (postuls as any)?.items || [];
+      setPostulaciones(postulsList);
+  
+      // Cargar documentos de las postulaciones
+      const docs = await documentoService.getDocumentosPostulacion();
+      const docsList = Array.isArray(docs) ? docs : [];
+      const postulacionIds = postulsList.map((p: Postulacion) => p.id_postulacion);
+      const docsCliente = docsList.filter((d: DocumentoPostulacion) => 
+        postulacionIds.includes(d.id_postulacion)
+      );
+      setDocumentos(docsCliente);
+  
+      // Cargar becas disponibles
+      const becasData = await becaService.getBecas({ limit: 100 });
+      const becasList = (becasData as any)?.items || [];
+      setBecas(becasList);
+  
+      // Cargar becas asignadas al cliente desde el endpoint correcto
+      try {
+        const becasEstudiantes = await becaEstudianteService.getBecasEstudiantesByCliente(clienteId);
+        if (becasEstudiantes && becasEstudiantes.length > 0) {
+          // Tomar la beca más reciente (o la vigente)
+          const becaVigente = becasEstudiantes.find((be: BecaEstudiante) => be.estado === "Vigente") || becasEstudiantes[0];
+          setBecaAsignada(becaVigente);
+          setSelectedBecaId(becaVigente.id_beca || becaVigente.beca?.id_beca || "");
+          // Prellenar el formulario con los datos existentes
+          setBecaForm({
+            periodo_academico: becaVigente.periodo_academico || "",
+            monto_otorgado: becaVigente.monto_otorgado || "",
+            estado: becaVigente.estado || "Vigente",
+          });
+        } else {
+          setBecaAsignada(null);
+          setSelectedBecaId("");
+          // Resetear formulario
+          const currentYear = new Date().getFullYear();
+          setBecaForm({
+            periodo_academico: `${currentYear}-1`,
+            monto_otorgado: "",
+            estado: "Vigente",
+          });
+        }
+      } catch (error) {
+        console.error("Error cargando becas asignadas:", error);
+        setBecaAsignada(null);
+        setSelectedBecaId("");
+      }
+    } catch (error) {
+      console.error("Error cargando detalle:", error);
+    } finally {
+      setLoadingDetail(false);
+    }
+  }, []);
+
+  const handleViewDetail = async (cliente: Cliente) => {
+    setClienteDetail(cliente);
+    setOpenDetail(true);
+    await loadClienteDetail(cliente.id_cliente);
+  };
+
+  // Cargar carreras al montar el componente
+  useEffect(() => {
+    carreraService.getCarreras({ limit: 200 }).then((r: any) => {
+      setCarreras(r?.items ?? []);
+    }).catch(() => setCarreras([]));
+  }, []);
+
+  // Recargar datos cuando se abre el diálogo
+  useEffect(() => {
+    if (openDetail && clienteDetail?.id_cliente) {
+      loadClienteDetail(clienteDetail.id_cliente);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDetail]);
+
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const { data } = await api.post("/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return data.url || data.path || data.fileUrl || "";
+    } catch (error: any) {
+      try {
+        const { data } = await api.post("/documentos-postulacion/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        return data.url || data.path || data.fileUrl || "";
+      } catch (error2: any) {
+        throw new Error(error2?.response?.data?.message || "Error al subir el archivo");
+      }
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+      if (!validTypes.includes(file.type)) {
+        setUploadError("Solo se permiten archivos PDF, JPG o PNG");
+        return;
+      }
+      const maxSize = 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        setUploadError("El archivo no puede ser mayor a 5 MB");
+        return;
+      }
+      setSelectedFile(file);
+      setUploadError("");
+    }
+  };
+
+  const handleUploadDocument = async () => {
+    if (!selectedFile) {
+      setUploadError("Por favor selecciona un archivo");
+      return;
+    }
+    if (!documentoForm.tipo_documento) {
+      setUploadError("Por favor especifica el tipo de documento");
+      return;
+    }
+    if (postulaciones.length === 0) {
+      setUploadError("El aspirante no tiene postulaciones. Debe crear una postulación primero.");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+
+    try {
+      const urlArchivo = await uploadFile(selectedFile);
+      const postulacionActiva = postulaciones[0];
+      
+      await documentoService.createDocumentoPostulacion({
+        id_postulacion: postulacionActiva.id_postulacion,
+        tipo_documento: documentoForm.tipo_documento,
+        nombre_archivo: selectedFile.name,
+        url_archivo: urlArchivo,
+        estado_documento: "Pendiente",
+        observaciones: documentoForm.observaciones || "",
+      });
+
+      // Recargar documentos
+      const docs = await documentoService.getDocumentosPostulacion();
+      const docsList = Array.isArray(docs) ? docs : [];
+      const postulacionIds = postulaciones.map((p: Postulacion) => p.id_postulacion);
+      const docsCliente = docsList.filter((d: DocumentoPostulacion) => 
+        postulacionIds.includes(d.id_postulacion)
+      );
+      setDocumentos(docsCliente);
+
+      // Limpiar formulario
+      setSelectedFile(null);
+      setDocumentoForm({ tipo_documento: "", observaciones: "" });
+      setOpenUploadDialog(false);
+    } catch (error: any) {
+      setUploadError(error?.message || "Error al subir el documento");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreatePostulacion = async () => {
+    if (!postulacionForm.id_carrera || !postulacionForm.periodo_academico) {
+      alert("Por favor completa la carrera y el período académico");
+      return;
+    }
+    if (!clienteDetail) {
+      alert("Error: No se ha seleccionado un cliente");
+      return;
+    }
+
+    try {
+      await postulacionService.createPostulacion({
+        id_cliente: clienteDetail.id_cliente,
+        id_carrera: postulacionForm.id_carrera,
+        periodo_academico: postulacionForm.periodo_academico,
+        estado_postulacion: postulacionForm.estado_postulacion,
+        observaciones: postulacionForm.observaciones || "",
+      });
+
+      // Recargar datos del cliente
+      if (clienteDetail.id_cliente) {
+        await loadClienteDetail(clienteDetail.id_cliente);
+      }
+
+      // Limpiar formulario y cerrar diálogo
+      setPostulacionForm({
+        id_carrera: "",
+        periodo_academico: "",
+        estado_postulacion: "Pendiente",
+        observaciones: "",
+      });
+      setOpenPostulacionDialog(false);
+    } catch (error: any) {
+      alert(error?.response?.data?.message || "Error al crear la postulación");
+    }
+  };
+
+  const handleSelectBeca = async () => {
+    if (!selectedBecaId) {
+      alert("Por favor selecciona una beca");
+      return;
+    }
+    if (!clienteDetail) {
+      alert("Error: No se ha seleccionado un cliente");
+      return;
+    }
+    if (!becaForm.periodo_academico) {
+      alert("Por favor ingresa el período académico");
+      return;
+    }
+    if (!becaForm.monto_otorgado) {
+      alert("Por favor ingresa el monto otorgado");
+      return;
+    }
+
+    try {
+      // Si ya existe una beca asignada, actualizarla; si no, crear una nueva
+      if (becaAsignada && becaAsignada.id_beca_estudiante) {
+        // Actualizar beca existente
+        await becaEstudianteService.updateBecaEstudiante(becaAsignada.id_beca_estudiante, {
+          id_beca: selectedBecaId,
+          periodo_academico: becaForm.periodo_academico,
+          monto_otorgado: becaForm.monto_otorgado,
+          estado: becaForm.estado,
+        });
+      } else {
+        // Crear nueva asignación de beca
+        await becaEstudianteService.createBecaEstudiante({
+          id_beca: selectedBecaId,
+          id_cliente: clienteDetail.id_cliente,
+          periodo_academico: becaForm.periodo_academico,
+          monto_otorgado: becaForm.monto_otorgado,
+          estado: becaForm.estado,
+          fecha_asignacion: new Date().toISOString().split('T')[0],
+        });
+      }
+
+      // Recargar datos del cliente
+      if (clienteDetail.id_cliente) {
+        await loadClienteDetail(clienteDetail.id_cliente);
+      }
+
+      setOpenBecaDialog(false);
+      alert("Beca asignada exitosamente");
+    } catch (error: any) {
+      console.error("Error al asignar beca:", error);
+      alert(error?.response?.data?.message || "Error al asignar la beca. Verifica que todos los campos estén completos.");
+    }
   };
 
   return (

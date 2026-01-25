@@ -2,7 +2,6 @@ import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typogra
 import { Link as RouterLink, useLocation } from "react-router-dom";
 import Person from "@mui/icons-material/Person";
 import Description from "@mui/icons-material/Description";
-import Assignment from "@mui/icons-material/Assignment";
 import Dashboard from "@mui/icons-material/Dashboard";
 import ExitToApp from "@mui/icons-material/ExitToApp";
 import { useAuth } from "../../context/AuthContext";
@@ -12,7 +11,6 @@ const base = "/aspirante";
 
 const links = [
   { to: `${base}/solicitud`, label: "Mi Solicitud", icon: <Dashboard /> },
-  { to: `${base}/formulario`, label: "Formulario", icon: <Assignment /> },
   { to: `${base}/documentos`, label: "Documentos", icon: <Description /> },
   { to: `${base}/perfil`, label: "Mi Perfil", icon: <Person /> },
 ];

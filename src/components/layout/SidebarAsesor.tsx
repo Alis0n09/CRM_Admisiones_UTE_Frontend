@@ -25,6 +25,7 @@ const links = [
 
 export default function SidebarAsesor() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout, user } = useAuth();
 
   const userInitials = user?.email
@@ -36,6 +37,11 @@ export default function SidebarAsesor() {
         .toUpperCase()
         .slice(0, 2) || "AS"
     : "AS";
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Box
@@ -193,6 +199,26 @@ export default function SidebarAsesor() {
             <ListItemText primary="Cerrar sesión" primaryTypographyProps={{ fontSize: "0.9rem" }} />
           </ListItemButton>
         </List>
+      </Box>
+
+      {/* Botón Cerrar Sesión */}
+      <Box sx={{ px: 1, pb: 2 }}>
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            color: "error.main",
+            "&:hover": {
+              bgcolor: "error.light",
+              color: "error.dark",
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <ExitToApp />
+          </ListItemIcon>
+          <ListItemText primary="Cerrar Sesión" />
+        </ListItemButton>
       </Box>
     </Box>
   );

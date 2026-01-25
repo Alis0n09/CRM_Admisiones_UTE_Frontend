@@ -38,6 +38,7 @@ interface DataTableProps<T extends { [k: string]: any }> {
   onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
+  onView?: (row: T) => void;
   search?: string;
   onSearchChange?: (v: string) => void;
   searchPlaceholder?: string;
@@ -57,6 +58,7 @@ export default function DataTable<T extends { [k: string]: any }>({
   onView,
   onEdit,
   onDelete,
+  onView,
   search,
   onSearchChange,
   searchPlaceholder = "Buscar...",
