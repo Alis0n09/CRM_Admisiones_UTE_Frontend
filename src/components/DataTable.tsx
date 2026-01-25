@@ -16,6 +16,7 @@ import {
 import Edit from "@mui/icons-material/Edit";
 import Delete from "@mui/icons-material/Delete";
 import Add from "@mui/icons-material/Add";
+import Visibility from "@mui/icons-material/Visibility";
 
 export interface Column<T> {
   id: keyof T | string;
@@ -36,6 +37,7 @@ interface DataTableProps<T extends { [k: string]: any }> {
   onAdd?: () => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
+  onView?: (row: T) => void;
   search?: string;
   onSearchChange?: (v: string) => void;
   searchPlaceholder?: string;
@@ -54,6 +56,7 @@ export default function DataTable<T extends { [k: string]: any }>({
   onAdd,
   onEdit,
   onDelete,
+  onView,
   search,
   onSearchChange,
   searchPlaceholder = "Buscar...",
@@ -96,7 +99,7 @@ export default function DataTable<T extends { [k: string]: any }>({
                     {col.label}
                   </TableCell>
                 ))}
-                {(onEdit || onDelete) && (
+                {(onEdit || onDelete || onView) && (
                   <TableCell sx={{ 
                     fontWeight: 700, 
                     width: 120,
@@ -115,7 +118,7 @@ export default function DataTable<T extends { [k: string]: any }>({
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + (onEdit || onDelete ? 1 : 0)} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={columns.length + (onEdit || onDelete || onView ? 1 : 0)} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       No hay datos disponibles
                     </Typography>
@@ -145,9 +148,21 @@ export default function DataTable<T extends { [k: string]: any }>({
                         {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
                       </TableCell>
                     ))}
-                    {(onEdit || onDelete) && (
+                    {(onEdit || onDelete || onView) && (
                       <TableCell>
                         <Box sx={{ display: "flex", gap: 0.5 }}>
+                          {onView && (
+                            <IconButton 
+                              size="small" 
+                              onClick={() => onView(row)}
+                              sx={{
+                                color: "#8b5cf6",
+                                "&:hover": { bgcolor: "#ede9fe", color: "#7c3aed" }
+                              }}
+                            >
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          )}
                           {onEdit && (
                             <IconButton 
                               size="small" 

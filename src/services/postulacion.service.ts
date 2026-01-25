@@ -23,7 +23,14 @@ function getData<T>(r: any): T {
   return r?.data ?? r;
 }
 
-export async function getPostulaciones(params?: { page?: number; limit?: number }) {
+export type GetPostulacionesParams = {
+  page?: number;
+  limit?: number;
+  /** Filtra por cliente. El backend debe soportar GET /postulacion?id_cliente=xxx */
+  id_cliente?: string;
+};
+
+export async function getPostulaciones(params?: GetPostulacionesParams) {
   const { data } = await api.get(base, { params });
   return getData<Paginated<Postulacion> | Postulacion[]>(data);
 }

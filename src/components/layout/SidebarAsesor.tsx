@@ -1,5 +1,5 @@
 import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar } from "@mui/material";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import People from "@mui/icons-material/People";
 import Assignment from "@mui/icons-material/Assignment";
 import School from "@mui/icons-material/School";
@@ -24,6 +24,7 @@ const links = [
 
 export default function SidebarAsesor() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout, user } = useAuth();
 
   const getInitials = (email?: string) => {
@@ -33,8 +34,13 @@ export default function SidebarAsesor() {
     return "A";
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
-    <Box sx={{ width: 280, bgcolor: "#1e293b", color: "white", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+    <Box sx={{ width: 280, bgcolor: "white", borderRight: "1px solid #eee", display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {/* Logo y título */}
       <Box sx={{ p: 3, textAlign: "center" }}>
         <Box
@@ -57,15 +63,15 @@ export default function SidebarAsesor() {
             };
           }}
         />
-        <Typography variant="h6" fontWeight={700} sx={{ color: "white", mb: 0.5 }}>
+        <Typography variant="h6" fontWeight={700} sx={{ color: "text.primary", mb: 0.5 }}>
           Sistema de Admisiones
         </Typography>
-        <Typography variant="body2" sx={{ color: "rgba(255, 255, 255, 0.7)" }}>
+        <Typography variant="body2" sx={{ color: "text.secondary" }}>
           Asesor
         </Typography>
       </Box>
 
-      <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)" }} />
+      <Divider />
 
       {/* Menú */}
       <List dense sx={{ flex: 1, px: 1, py: 2 }}>
@@ -78,16 +84,16 @@ export default function SidebarAsesor() {
             sx={{
               borderRadius: 2,
               mb: 0.5,
-              color: "rgba(255, 255, 255, 0.8)",
+              color: "text.primary",
               "&.Mui-selected": {
-                bgcolor: "rgba(59, 130, 246, 0.2)",
-                color: "white",
+                bgcolor: "transparent",
+                color: "text.primary",
                 "&:hover": {
-                  bgcolor: "rgba(59, 130, 246, 0.3)",
+                  bgcolor: "action.hover",
                 },
               },
               "&:hover": {
-                bgcolor: "rgba(255, 255, 255, 0.1)",
+                bgcolor: "action.hover",
               },
             }}
           >
@@ -97,13 +103,13 @@ export default function SidebarAsesor() {
         ))}
       </List>
 
-      <Divider sx={{ borderColor: "rgba(255, 255, 255, 0.1)" }} />
+      <Divider />
 
       {/* Perfil del usuario */}
       <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 2 }}>
         <Avatar
           sx={{
-            bgcolor: "#8b5cf6",
+            bgcolor: "primary.main",
             width: 40,
             height: 40,
             fontSize: "0.875rem",
@@ -112,13 +118,33 @@ export default function SidebarAsesor() {
           {getInitials(user?.email)}
         </Avatar>
         <Box sx={{ flex: 1, minWidth: 0 }}>
-          <Typography variant="body2" sx={{ color: "white", fontWeight: 500 }}>
+          <Typography variant="body2" sx={{ color: "text.primary", fontWeight: 500 }}>
             Asesor Usuario
           </Typography>
-          <Typography variant="caption" sx={{ color: "rgba(255, 255, 255, 0.7)", display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>
+          <Typography variant="caption" sx={{ color: "text.secondary", display: "block", overflow: "hidden", textOverflow: "ellipsis" }}>
             {user?.email || "usuario@universidad.edu"}
           </Typography>
         </Box>
+      </Box>
+
+      {/* Botón Cerrar Sesión */}
+      <Box sx={{ px: 1, pb: 2 }}>
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{
+            borderRadius: 2,
+            color: "error.main",
+            "&:hover": {
+              bgcolor: "error.light",
+              color: "error.dark",
+            },
+          }}
+        >
+          <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>
+            <ExitToApp />
+          </ListItemIcon>
+          <ListItemText primary="Cerrar Sesión" />
+        </ListItemButton>
       </Box>
     </Box>
   );
