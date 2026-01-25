@@ -35,6 +35,7 @@ interface DataTableProps<T extends { [k: string]: any }> {
   onPageChange: (p: number) => void;
   onRowsPerPageChange: (r: number) => void;
   onAdd?: () => void;
+  onView?: (row: T) => void;
   onEdit?: (row: T) => void;
   onDelete?: (row: T) => void;
   onView?: (row: T) => void;
@@ -54,6 +55,7 @@ export default function DataTable<T extends { [k: string]: any }>({
   onPageChange,
   onRowsPerPageChange,
   onAdd,
+  onView,
   onEdit,
   onDelete,
   onView,
@@ -65,129 +67,110 @@ export default function DataTable<T extends { [k: string]: any }>({
   return (
     <Box>
       <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 2, mb: 2 }}>
-        <Typography variant="h5" fontWeight={700}>{title}</Typography>
+        <Typography variant="h5" fontWeight={700} sx={{ color: "#1e293b" }}>{title}</Typography>
         <Box sx={{ display: "flex", gap: 1 }}>
           {onSearchChange && (
-            <TextField size="small" placeholder={searchPlaceholder} value={search ?? ""} onChange={(e) => onSearchChange(e.target.value)} sx={{ minWidth: 200 }} />
+            <TextField
+              size="small"
+              placeholder={searchPlaceholder}
+              value={search ?? ""}
+              onChange={(e) => onSearchChange(e.target.value)}
+              sx={{
+                minWidth: 200,
+                "& .MuiOutlinedInput-root": {
+                  borderRadius: 2,
+                  bgcolor: "#f5f5f5",
+                  "& fieldset": {
+                    borderColor: "#e5e7eb",
+                  },
+                },
+              }}
+            />
           )}
           {onAdd && (
-            <Button variant="contained" startIcon={<Add />} onClick={onAdd} sx={{ textTransform: "none", bgcolor: "#5b5bf7", "&:hover": { bgcolor: "#4a4ae6" } }}>
+            <Button
+              variant="contained"
+              startIcon={<Add />}
+              onClick={onAdd}
+              sx={{
+                textTransform: "none",
+                bgcolor: "#3b82f6",
+                fontWeight: 600,
+                borderRadius: 2,
+                "&:hover": { bgcolor: "#2563eb" },
+              }}
+            >
               Nuevo
             </Button>
           )}
         </Box>
       </Box>
-      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 3, boxShadow: 3, border: "1px solid #e5e7eb" }}>
+      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white" }}>
         <TableContainer sx={{ maxHeight: 520 }}>
-          <Table stickyHeader size="medium">
+          <Table stickyHeader size="small">
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
-                  <TableCell 
-                    key={String(col.id)} 
-                    sx={{ 
-                      fontWeight: 700, 
-                      minWidth: col.minWidth,
-                      bgcolor: "#f8fafc",
-                      color: "#1e293b",
-                      fontSize: "0.875rem",
-                      textTransform: "uppercase",
-                      letterSpacing: "0.5px",
-                      borderBottom: "2px solid #e2e8f0"
-                    }}
-                  >
-                    {col.label}
-                  </TableCell>
+                  <TableCell key={String(col.id)} sx={{ fontWeight: 700, minWidth: col.minWidth, color: "white", bgcolor: "#64748b", fontSize: "0.875rem" }}>{col.label}</TableCell>
                 ))}
-                {(onEdit || onDelete || onView) && (
-                  <TableCell sx={{ 
-                    fontWeight: 700, 
-                    width: 120,
-                    bgcolor: "#f8fafc",
-                    color: "#1e293b",
-                    fontSize: "0.875rem",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                    borderBottom: "2px solid #e2e8f0"
-                  }}>
-                    Acciones
-                  </TableCell>
-                )}
+                {(onView || onEdit || onDelete) && <TableCell sx={{ fontWeight: 700, width: onView && onEdit ? 140 : 100, color: "white", bgcolor: "#64748b", fontSize: "0.875rem" }}>ACCIONES</TableCell>}
               </TableRow>
             </TableHead>
             <TableBody>
               {rows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length + (onEdit || onDelete || onView ? 1 : 0)} align="center" sx={{ py: 4 }}>
+                  <TableCell colSpan={columns.length + (onView || onEdit || onDelete ? 1 : 0)} align="center" sx={{ py: 4 }}>
                     <Typography variant="body2" color="text.secondary">
                       No hay datos disponibles
                     </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                rows.map((row, idx) => (
-                  <TableRow 
-                    key={getId(row)} 
-                    hover
-                    sx={{
-                      "&:nth-of-type(even)": { bgcolor: "#f9fafb" },
-                      "&:hover": { bgcolor: "#f3f4f6", transform: "scale(1.01)", transition: "all 0.2s" },
-                      transition: "all 0.2s",
-                      borderLeft: idx % 2 === 0 ? "3px solid transparent" : "3px solid #e5e7eb"
-                    }}
-                  >
+                rows.map((row) => (
+                  <TableRow key={getId(row)} hover sx={{ "&:nth-of-type(even)": { bgcolor: "#f9fafb" } }}>
                     {columns.map((col) => (
-                      <TableCell 
-                        key={String(col.id)}
-                        sx={{
-                          fontSize: "0.875rem",
-                          color: "#374151",
-                          py: 1.5
-                        }}
-                      >
+                      <TableCell key={String(col.id)} sx={{ fontSize: "0.875rem" }}>
                         {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
                       </TableCell>
                     ))}
-                    {(onEdit || onDelete || onView) && (
+                    {(onView || onEdit || onDelete) && (
                       <TableCell>
-                        <Box sx={{ display: "flex", gap: 0.5 }}>
-                          {onView && (
-                            <IconButton 
-                              size="small" 
-                              onClick={() => onView(row)}
-                              sx={{
-                                color: "#8b5cf6",
-                                "&:hover": { bgcolor: "#ede9fe", color: "#7c3aed" }
-                              }}
-                            >
-                              <Visibility fontSize="small" />
-                            </IconButton>
-                          )}
-                          {onEdit && (
-                            <IconButton 
-                              size="small" 
-                              onClick={() => onEdit(row)}
-                              sx={{
-                                color: "#3b82f6",
-                                "&:hover": { bgcolor: "#dbeafe", color: "#2563eb" }
-                              }}
-                            >
-                              <Edit fontSize="small" />
-                            </IconButton>
-                          )}
-                          {onDelete && (
-                            <IconButton 
-                              size="small" 
-                              color="error" 
-                              onClick={() => onDelete(row)}
-                              sx={{
-                                "&:hover": { bgcolor: "#fee2e2" }
-                              }}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          )}
-                        </Box>
+                        {onView && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onView(row)}
+                            sx={{
+                              color: "#8b5cf6",
+                              "&:hover": { bgcolor: "rgba(139, 92, 246, 0.1)" },
+                            }}
+                          >
+                            <Visibility fontSize="small" />
+                          </IconButton>
+                        )}
+                        {onEdit && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onEdit(row)}
+                            sx={{
+                              color: "#3b82f6",
+                              "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
+                            }}
+                          >
+                            <Edit fontSize="small" />
+                          </IconButton>
+                        )}
+                        {onDelete && (
+                          <IconButton
+                            size="small"
+                            onClick={() => onDelete(row)}
+                            sx={{
+                              color: "#ef4444",
+                              "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                        )}
                       </TableCell>
                     )}
                   </TableRow>

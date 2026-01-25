@@ -21,6 +21,7 @@ import {
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import DocumentoViewModal from "../../components/DocumentoViewModal";
 import * as docService from "../../services/documentoPostulacion.service";
 import * as postulacionService from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
@@ -57,6 +58,7 @@ export default function DocumentosPage() {
   const [items, setItems] = useState<DocumentoPostulacion[]>([]);
   const [postulaciones, setPostulaciones] = useState<{ id_postulacion: string; cliente?: { nombres: string }; carrera?: { nombre_carrera: string } }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<DocumentoPostulacion | null>(null);
   const [form, setForm] = useState<{ id_postulacion: string; tipo_documento: string; nombre_archivo: string; url_archivo: string; estado_documento: string; observaciones: string }>({ id_postulacion: "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "", estado_documento: "Pendiente", observaciones: "" });
   const [page, setPage] = useState(1);
@@ -184,18 +186,8 @@ export default function DocumentosPage() {
     postulacionService.getPostulaciones({ limit: 500 }).then((r: any) => setPostulaciones(r?.items ?? (Array.isArray(r) ? r : []))).catch(() => setPostulaciones([]));
   }, []);
 
-  const openAdd = () => {
-    setSel(null);
-    setForm({
-      id_postulacion: postulaciones[0]?.id_postulacion || "",
-      tipo_documento: "Cédula",
-      nombre_archivo: "",
-      url_archivo: "",
-      estado_documento: "Pendiente",
-      observaciones: "",
-    });
-    setOpen(true);
-  };
+  const openAdd = () => { setSel(null); setForm({ id_postulacion: postulaciones[0]?.id_postulacion || "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "/uploads/doc.pdf", estado_documento: "Pendiente", observaciones: "" }); setOpen(true); };
+  const handleView = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
   const openEdit = (r: DocumentoPostulacion) => { setSel(r); setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
 
   const save = () => {
@@ -416,7 +408,7 @@ export default function DocumentosPage() {
     <>
       <DataTable title="Documentos de postulación" columns={cols} rows={items.slice((page - 1) * limit, page * limit)} total={items.length} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar documento" : "Nuevo documento"}</DialogTitle>
         <DialogContent>
@@ -474,50 +466,7 @@ export default function DocumentosPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
-
-      <Dialog open={previewOpen} onClose={handleClosePreview} maxWidth="md" fullWidth>
-        <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Typography fontWeight={800}>Vista previa del documento</Typography>
-          <IconButton onClick={handleClosePreview} size="small">
-            <CloseIcon />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent dividers sx={{ height: 600 }}>
-          {!previewUrl ? (
-            <Typography variant="body2" color="text.secondary">No hay documento para previsualizar.</Typography>
-          ) : (
-            <Box sx={{ width: "100%", height: "100%" }}>
-              {/\.(pdf)(\?|#|$)/i.test(previewUrl) ? (
-                <iframe title="Vista previa PDF" src={previewUrl} style={{ width: "100%", height: "100%", border: "none" }} />
-              ) : /\.(png|jpe?g|gif|webp)(\?|#|$)/i.test(previewUrl) ? (
-                <Box component="img" src={previewUrl} alt="Vista previa" sx={{ maxWidth: "100%", maxHeight: "100%", display: "block", mx: "auto" }} />
-              ) : (
-                <Box sx={{ textAlign: "center", py: 6 }}>
-                  <Typography variant="h6" sx={{ color: "#64748b", mb: 1 }}>Vista previa no disponible</Typography>
-                  <Typography variant="body2" sx={{ color: "#94a3b8", mb: 2 }}>
-                    Este tipo de archivo no se puede previsualizar. Puedes descargarlo.
-                  </Typography>
-                  <Button variant="contained" startIcon={<DownloadIcon />} onClick={() => handleDownload(previewUrl, "documento")} sx={{ textTransform: "none" }}>
-                    Descargar
-                  </Button>
-                </Box>
-              )}
-            </Box>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClosePreview} sx={{ textTransform: "none" }}>Cerrar</Button>
-          <Button variant="contained" startIcon={<DownloadIcon />} onClick={() => handleDownload(previewUrl, "documento")} sx={{ textTransform: "none" }} disabled={!previewUrl}>
-            Descargar
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      <Snackbar open={snackbar.open} autoHideDuration={6000} onClose={closeSnackbar} anchorOrigin={{ vertical: "bottom", horizontal: "right" }}>
-        <Alert onClose={closeSnackbar} severity={snackbar.severity} sx={{ width: "100%" }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <DocumentoViewModal open={openView} onClose={() => setOpenView(false)} documento={sel} />
     </>
   );
 }

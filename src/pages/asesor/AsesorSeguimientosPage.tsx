@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import SeguimientoViewModal from "../../components/SeguimientoViewModal";
 import * as seguimientoService from "../../services/seguimiento.service";
 import * as clienteService from "../../services/cliente.service";
 import type { Seguimiento } from "../../services/seguimiento.service";
@@ -105,6 +106,7 @@ export default function AsesorSeguimientosPage() {
   const [limit, setLimit] = useState(10);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Seguimiento | null>(null);
   const [form, setForm] = useState(empty);
 
@@ -130,6 +132,7 @@ export default function AsesorSeguimientosPage() {
       <DataTable title="Seguimientos" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm({ ...empty, id_cliente: clientes[0]?.id_cliente || "", fecha_contacto: new Date().toISOString().slice(0, 10) }); setOpen(true); }}
+        onView={(r) => { setSel(r); setOpenView(true); }}
         onEdit={(r) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", fecha_contacto: r.fecha_contacto?.toString().slice(0, 10) || "", medio: r.medio || "", comentarios: r.comentarios || "", proximo_paso: r.proximo_paso || "", fecha_proximo_contacto: r.fecha_proximo_contacto?.toString().slice(0, 10) || "" }); setOpen(true); }}
         getId={(r) => r.id_seguimiento} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
@@ -151,6 +154,7 @@ export default function AsesorSeguimientosPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <SeguimientoViewModal open={openView} onClose={() => setOpenView(false)} seguimiento={sel} />
     </>
   );
 }

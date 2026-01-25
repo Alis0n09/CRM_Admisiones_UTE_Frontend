@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField, Avatar, Box, Chip, Typography } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import TareaViewModal from "../../components/TareaViewModal";
 import * as tareaService from "../../services/tarea.service";
 import * as clienteService from "../../services/cliente.service";
 import type { TareaCrm } from "../../services/tarea.service";
@@ -118,6 +119,7 @@ export default function AsesorTareasPage() {
   const [limit, setLimit] = useState(10);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
   const [form, setForm] = useState<{ id_empleado: string; id_cliente: string; descripcion: string; fecha_asignacion: string; fecha_vencimiento: string; estado: string }>({ id_empleado: "", id_cliente: "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" });
 
@@ -136,6 +138,7 @@ export default function AsesorTareasPage() {
   useEffect(() => { if (user?.id_empleado) setForm((f) => ({ ...f, id_empleado: user.id_empleado! })); }, [user?.id_empleado]);
 
   const openAdd = () => { setSel(null); setForm({ id_empleado: user?.id_empleado || "", id_cliente: clientes[0]?.id_cliente || "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" }); setOpen(true); };
+  const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: user?.id_empleado || (r.empleado as any)?.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
 
   const save = () => {
@@ -150,7 +153,7 @@ export default function AsesorTareasPage() {
     <>
       <DataTable title="Mis tareas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} getId={(r) => r.id_tarea} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} getId={(r) => r.id_tarea} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar tarea" : "Nueva tarea"}</DialogTitle>
         <DialogContent>
@@ -169,6 +172,7 @@ export default function AsesorTareasPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <TareaViewModal open={openView} onClose={() => setOpenView(false)} tarea={sel} />
     </>
   );
 }

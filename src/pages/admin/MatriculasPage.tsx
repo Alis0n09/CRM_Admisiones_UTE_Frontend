@@ -1,6 +1,7 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, InputLabel, MenuItem, Select, TextField } from "@mui/material";
 import { useCallback, useEffect, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
+import MatriculaViewModal from "../../components/MatriculaViewModal";
 import * as matriculaService from "../../services/matricula.service";
 import * as clienteService from "../../services/cliente.service";
 import * as carreraService from "../../services/carrera.service";
@@ -22,6 +23,7 @@ export default function MatriculasPage() {
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
   const [carreras, setCarreras] = useState<{ id_carrera: string; nombre_carrera: string }[]>([]);
   const [open, setOpen] = useState(false);
+  const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Matricula | null>(null);
   const [form, setForm] = useState<{ id_cliente: string; id_carrera: string; periodo_academico: string; estado: string }>({ id_cliente: "", id_carrera: "", periodo_academico: "", estado: "Activa" });
 
@@ -39,6 +41,7 @@ export default function MatriculasPage() {
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_cliente: clientes[0]?.id_cliente || "", id_carrera: carreras[0]?.id_carrera || "", periodo_academico: new Date().getFullYear() + "-1", estado: "Activa" }); setOpen(true); };
+  const handleView = (r: Matricula) => { setSel(r); setOpenView(true); };
   const openEdit = (r: Matricula) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", id_carrera: (r.carrera as any)?.id_carrera || r.id_carrera || "", periodo_academico: (r as any).periodo_academico || "", estado: r.estado || "Activa" }); setOpen(true); };
 
   const save = () => {
@@ -57,7 +60,7 @@ export default function MatriculasPage() {
     <>
       <DataTable title="Matrículas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onEdit={openEdit} onDelete={del} getId={(r) => r.id_matricula} />
+        onAdd={openAdd} onView={handleView} onEdit={openEdit} onDelete={del} getId={(r) => r.id_matricula} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar matrícula" : "Nueva matrícula"}</DialogTitle>
         <DialogContent>
@@ -80,6 +83,7 @@ export default function MatriculasPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
+      <MatriculaViewModal open={openView} onClose={() => setOpenView(false)} matricula={sel} />
     </>
   );
 }
