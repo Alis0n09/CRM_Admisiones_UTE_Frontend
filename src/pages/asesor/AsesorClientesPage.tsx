@@ -84,6 +84,7 @@ export default function AsesorClientesPage() {
   const [search, setSearch] = useState(urlSearch);
   const [open, setOpen] = useState(false);
   const [openView, setOpenView] = useState(false);
+  const [openDetail, setOpenDetail] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
   const [clienteDetail, setClienteDetail] = useState<Cliente | null>(null);
