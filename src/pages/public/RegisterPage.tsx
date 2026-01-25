@@ -103,16 +103,26 @@ export default function RegisterPage() {
             backgroundImage: "url(/registro.png)",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            filter: "brightness(0.9) saturate(1.1)",
+            backgroundRepeat: "no-repeat",
+            filter: "brightness(0.95) saturate(1.2) contrast(1.05)",
+            transform: "scale(1)",
+            transition: "transform 0.3s ease",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.1)",
+            },
           }}
         />
-        {/* Overlay degradado */}
+        {/* Overlay degradado mejorado */}
         <Box
           sx={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(139, 92, 246, 0.85) 0%, rgba(99, 102, 241, 0.80) 50%, rgba(20, 184, 166, 0.78) 100%)",
+              "linear-gradient(135deg, rgba(139, 92, 246, 0.75) 0%, rgba(99, 102, 241, 0.70) 50%, rgba(20, 184, 166, 0.68) 100%)",
+            backdropFilter: "blur(0.5px)",
           }}
         />
 
