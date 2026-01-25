@@ -20,6 +20,7 @@ import {
   Favorite,
   Handshake,
   EmojiEvents,
+  Science,
   Search,
   Phone,
   Email,
@@ -50,6 +51,11 @@ const scholarships = [
     title: "Apoyo por deporte",
     description: "Beneficios para deportistas destacados",
   },
+  {
+    icon: <Science sx={{ fontSize: 36, color: "#a855f7" }} />,
+    title: "Beca STEAM para mujeres",
+    description: "Apoyo para mujeres en ciencia, tecnología e ingeniería",
+  },
 ];
 
 const careers = [
@@ -57,31 +63,26 @@ const careers = [
     title: "Tecnología en Desarrollo de Software",
     desc: "Programación, bases de datos, arquitectura y desarrollo web.",
     img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Mus Boot Sarfiobers",
   },
   {
     title: "Tecnología en Administración de Empresas",
     desc: "Gestión, liderazgo, emprendimiento y dirección estratégica.",
     img: "https://images.unsplash.com/photo-1521790797524-b2497295b8a0?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Mau Litine Acitnission",
   },
   {
     title: "Tecnología en Atención de Enfermería",
     desc: "Formación enfocada en el cuidado, atención y servicio.",
     img: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Ana María López",
   },
     {
     title: "Tecnología en Marketing Digital",
     desc: "Estrategia, análisis de datos, contenido y comunicación digital.",
     img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Carlos Rodríguez",
   },
   {
     title: "Tecnología en Asistente de Odontología",
     desc: "Apoyo técnico en procedimientos dentales y atención al paciente.",
     img: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1200&auto=format&fit=crop",
-    instructor: "María González",
   },
 ];
 
@@ -295,7 +296,7 @@ export default function HomePage() {
                   },
                 }}
               >
-                Conoce más &gt;
+                Contáctanos &gt;
           </Button>
               <Button
                 variant="contained"
@@ -341,17 +342,17 @@ export default function HomePage() {
             }}
           />
           <Typography
-            variant="h6"
             sx={{
               fontWeight: 600,
               color: "#1e293b",
               fontStyle: "italic",
-              maxWidth: "800px",
+              maxWidth: "100%",
               mx: "auto",
-              lineHeight: 1.5,
+              lineHeight: 1.3,
               position: "relative",
               zIndex: 1,
               p: 3,
+              fontSize: { xs: "0.9rem", sm: "1.1rem", md: "1.3rem", lg: "1.5rem" },
             }}
           >
             "La educación no cambia el mundo, cambia a las personas que van a cambiar el mundo."
@@ -390,7 +391,8 @@ export default function HomePage() {
               gridTemplateColumns: {
                 xs: "1fr",
                 sm: "repeat(2, 1fr)",
-                md: "repeat(4, 1fr)",
+                md: "repeat(3, 1fr)",
+                lg: "repeat(5, 1fr)",
               },
               gap: 2,
               mb: 2.5,
@@ -652,29 +654,9 @@ export default function HomePage() {
                     <Typography variant="h6" sx={{ fontWeight: 800, mb: 1, color: "#1e293b", fontSize: "1.1rem" }}>
                       {career.title}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: "#64748b", mb: 1.5, fontSize: "0.9rem" }}>
+                    <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.9rem" }}>
                       {career.desc}
                     </Typography>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Box
-                        sx={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: "50%",
-                          bgcolor: "#e0f2fe",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Typography variant="caption" sx={{ color: "#3b82f6", fontWeight: 700 }}>
-                          A
-                        </Typography>
-                      </Box>
-                      <Typography variant="body2" sx={{ color: "#64748b", fontSize: "0.85rem" }}>
-                        {career.instructor}
-                      </Typography>
-                    </Stack>
                   </CardContent>
                 </Card>
               </Box>

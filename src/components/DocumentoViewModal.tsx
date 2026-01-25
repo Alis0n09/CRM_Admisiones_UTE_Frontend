@@ -1,7 +1,8 @@
-import { Grid, Stack, Typography, Box } from "@mui/material";
+import { Grid, Stack, Typography, Box, Button, Dialog } from "@mui/material";
 import Description from "@mui/icons-material/Description";
 import AttachFile from "@mui/icons-material/AttachFile";
 import School from "@mui/icons-material/School";
+import DownloadIcon from "@mui/icons-material/Download";
 import ViewModalBase, { InfoCard } from "./ViewModalBase";
 import type { DocumentoPostulacion } from "../services/documentoPostulacion.service";
 
@@ -9,9 +10,10 @@ interface DocumentoViewModalProps {
   open: boolean;
   onClose: () => void;
   documento: DocumentoPostulacion | null;
+  onDownload?: (url: string, nombre: string) => void;
 }
 
-export default function DocumentoViewModal({ open, onClose, documento }: DocumentoViewModalProps) {
+export default function DocumentoViewModal({ open, onClose, documento, onDownload }: DocumentoViewModalProps) {
   if (!documento) return null;
 
   const tipoInitial = documento.tipo_documento?.[0]?.toUpperCase() || "D";
@@ -24,6 +26,22 @@ export default function DocumentoViewModal({ open, onClose, documento }: Documen
       subtitle="Información completa del documento"
       avatarContent={tipoInitial}
       status={documento.estado_documento || "Pendiente"}
+      actions={
+        documento.url_archivo && onDownload ? (
+          <Button
+            variant="contained"
+            startIcon={<DownloadIcon />}
+            onClick={() => onDownload(documento.url_archivo!, documento.nombre_archivo || "documento")}
+            sx={{
+              textTransform: "none",
+              bgcolor: "#3b82f6",
+              "&:hover": { bgcolor: "#2563eb" }
+            }}
+          >
+            Descargar archivo
+          </Button>
+        ) : undefined
+      }
     >
       <Box sx={{ mb: 3 }}>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>

@@ -17,6 +17,7 @@ import EmojiEvents from "@mui/icons-material/EmojiEvents";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import PersonIcon from "@mui/icons-material/Person";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
@@ -25,6 +26,7 @@ import * as tareaService from "../../services/tarea.service";
 import * as postulacionService from "../../services/postulacion.service";
 import * as carreraService from "../../services/carrera.service";
 import * as becaService from "../../services/beca.service";
+import * as usuarioService from "../../services/usuario.service";
 
 function toItems(res: any): number {
   if (Array.isArray(res)) return res.length;
@@ -40,6 +42,7 @@ export default function AdminDashboard() {
     postulaciones: 0,
     carreras: 0,
     becas: 0,
+    usuarios: 0,
   });
   const [postulacionStats, setPostulacionStats] = useState({
     aprobadas: 0,
@@ -58,7 +61,8 @@ export default function AdminDashboard() {
       postulacionService.getPostulaciones({ limit: 1000 }).catch(() => ({ items: [], meta: { totalItems: 0 } })),
       carreraService.getCarreras({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
       becaService.getBecas({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
-    ]).then(([c, e, t, p, car, b]) => {
+      usuarioService.getUsuarios().catch(() => []),
+    ]).then(([c, e, t, p, car, b, u]) => {
       const postulaciones = Array.isArray(p) ? p : (p as any)?.items ?? [];
       const totalPostulaciones = (p as any)?.meta?.totalItems ?? postulaciones.length;
       
@@ -90,6 +94,8 @@ export default function AdminDashboard() {
         total: totalPostulaciones,
       });
 
+      const usuarios = Array.isArray(u) ? u : [];
+      
       setCounts({
         clientes: (c as any)?.meta?.totalItems ?? toItems(c),
         empleados: (e as any)?.meta?.totalItems ?? toItems(e),
@@ -97,6 +103,7 @@ export default function AdminDashboard() {
         postulaciones: totalPostulaciones,
         carreras: (car as any)?.meta?.totalItems ?? toItems(car),
         becas: (b as any)?.meta?.totalItems ?? toItems(b),
+        usuarios: usuarios.length,
       });
     });
   }, []);
@@ -144,6 +151,13 @@ export default function AdminDashboard() {
       icon: <CheckCircleIcon sx={{ fontSize: 32 }} />,
       iconColor: "#3b82f6", // Azul
       route: "/admin/becas",
+    },
+    {
+      title: "Usuarios",
+      count: counts.usuarios,
+      icon: <PersonIcon sx={{ fontSize: 32 }} />,
+      iconColor: "#10b981", // Verde
+      route: "/admin/usuarios",
     },
   ];
 

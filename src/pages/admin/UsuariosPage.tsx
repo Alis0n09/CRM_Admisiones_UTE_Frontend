@@ -27,7 +27,7 @@ export default function UsuariosPage() {
   const [openView, setOpenView] = useState(false);
   const [openCreate, setOpenCreate] = useState(false);
   const [sel, setSel] = useState<Usuario | null>(null);
-  const [form, setForm] = useState<Partial<Usuario>>({ activo: true });
+  const [form, setForm] = useState<{ activo: boolean; rolesIds: string[] }>({ activo: true, rolesIds: [] });
   const [createForm, setCreateForm] = useState<{ tipo: "empleado" | "cliente"; id: string; email: string; password: string; rolesIds: string[] }>({ tipo: "empleado", id: "", email: "", password: "", rolesIds: [] });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
@@ -45,39 +45,83 @@ export default function UsuariosPage() {
     rolService.getRoles().then((r) => setRoles(Array.isArray(r) ? r : [])).catch(() => setRoles([]));
   }, []);
 
-  const save = () => {
+  const save = async () => {
     if (!sel) return;
     
-    // El backend está validando password aunque no se envíe en el body
-    // El problema es que el DTO de actualización del backend tiene validaciones estrictas
-    // Intentar enviar solo email usando PATCH para actualizaciones parciales
+    // Validar que haya al menos un rol seleccionado
+    if (!form.rolesIds || form.rolesIds.length === 0) {
+      alert("Debes asignar al menos un rol al usuario para que pueda iniciar sesión.");
+      return;
+    }
+    
+    // Verificar que los rolesIds sean válidos
+    const rolesValidos = roles.filter(r => form.rolesIds.includes(r.id_rol));
+    if (rolesValidos.length !== form.rolesIds.length) {
+      alert("Error: Algunos roles seleccionados no son válidos. Por favor, recarga la página e intenta nuevamente.");
+      return;
+    }
+    
+    // Preparar el body con el formato que espera el backend
     const bodyToSend = {
       email: sel.email,
+      activo: form.activo,
+      rolesIds: form.rolesIds, // Siempre incluir rolesIds para actualizar los roles
     };
     
-    // Intentar primero con PATCH (actualización parcial)
-    usuarioService.updateUsuarioParcial(sel.id_usuario, bodyToSend)
-      .then(() => { 
+    console.log("=== ACTUALIZANDO USUARIO ===");
+    console.log("Usuario ID:", sel.id_usuario);
+    console.log("Email:", sel.email);
+    console.log("Roles IDs seleccionados:", form.rolesIds);
+    console.log("Nombres de roles:", rolesValidos.map(r => r.nombre));
+    console.log("Body a enviar:", JSON.stringify(bodyToSend, null, 2));
+    
+    try {
+      // Intentar primero con PATCH (actualización parcial)
+      await usuarioService.updateUsuarioParcial(sel.id_usuario, bodyToSend as any);
+      console.log("✅ Usuario actualizado exitosamente con PATCH");
+      
+      // Verificar que los roles se actualizaron correctamente
+      try {
+        const usuarioActualizado = await usuarioService.getUsuario(sel.id_usuario);
+        const rolesActualizados = (usuarioActualizado as any).roles || [];
+        console.log("✅ Roles después de actualizar:", rolesActualizados);
+        console.log("Nombres de roles actualizados:", rolesActualizados.map((r: any) => r.nombre || r.nombre_rol || r.id_rol));
+      } catch (verifyError) {
+        console.warn("⚠️ No se pudo verificar los roles actualizados:", verifyError);
+      }
+      
+      setOpen(false); 
+      load(); 
+      alert("Usuario actualizado exitosamente.\n\nIMPORTANTE: El usuario debe cerrar sesión completamente e iniciar sesión nuevamente para que los cambios de roles surtan efecto.");
+    } catch (e: any) {
+      console.error("❌ Error con PATCH, intentando PUT:", e);
+      console.error("Error completo:", e?.response?.data || e);
+      
+      try {
+        // Si PATCH falla, intentar con PUT
+        await usuarioService.updateUsuario(sel.id_usuario, bodyToSend as any);
+        console.log("✅ Usuario actualizado exitosamente con PUT");
+        
+        // Verificar que los roles se actualizaron correctamente
+        try {
+          const usuarioActualizado = await usuarioService.getUsuario(sel.id_usuario);
+          const rolesActualizados = (usuarioActualizado as any).roles || [];
+          console.log("✅ Roles después de actualizar:", rolesActualizados);
+        } catch (verifyError) {
+          console.warn("⚠️ No se pudo verificar los roles actualizados:", verifyError);
+        }
+        
         setOpen(false); 
         load(); 
-      })
-      .catch((e) => {
-        // Si PATCH falla, intentar con PUT
-        usuarioService.updateUsuario(sel.id_usuario, bodyToSend)
-          .then(() => { 
-            setOpen(false); 
-            load(); 
-          })
-          .catch((err) => {
-            const errorData = err?.response?.data;
-            const errorMsg = errorData?.message || err?.message || "Error al actualizar usuario";
-            console.error("Error al actualizar usuario:", errorData);
-            
-            // El backend está validando password aunque no se envíe
-            // Esto requiere una modificación en el backend para permitir actualizaciones parciales
-            alert(`Error: ${errorMsg}\n\nNota: El backend está validando campos que no se están enviando. Para cambiar el estado "activo" de un usuario, el backend necesita ser modificado para aceptar actualizaciones parciales sin requerir password.`);
-          });
-      });
+        alert("Usuario actualizado exitosamente.\n\nIMPORTANTE: El usuario debe cerrar sesión completamente e iniciar sesión nuevamente para que los cambios de roles surtan efecto.");
+      } catch (err: any) {
+        const errorData = err?.response?.data;
+        const errorMsg = errorData?.message || err?.message || "Error al actualizar usuario";
+        console.error("❌ Error al actualizar usuario:", errorData);
+        console.error("Error completo:", err);
+        alert(`Error al actualizar usuario: ${errorMsg}\n\nRevisa la consola para más detalles.`);
+      }
+    }
   };
 
   const saveCreate = () => {
@@ -105,9 +149,43 @@ export default function UsuariosPage() {
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setCreateForm({ tipo: "empleado", id: "", email: "", password: "", rolesIds: [] }); setOpenCreate(true); }}
         onView={handleView}
-        onEdit={(r) => { setSel(r); setForm({ activo: r.activo }); setOpen(true); }}
+        onEdit={async (r) => { 
+          setSel(r); 
+          setForm({ activo: r.activo ?? true, rolesIds: [] }); 
+          setOpen(true);
+          
+          // Intentar obtener los roles del usuario
+          try {
+            console.log("Obteniendo roles del usuario:", r.id_usuario);
+            const usuarioCompleto = await usuarioService.getUsuario(r.id_usuario);
+            console.log("Usuario completo obtenido:", usuarioCompleto);
+            
+            const usuarioRoles = (usuarioCompleto as any).roles || [];
+            console.log("Roles del usuario:", usuarioRoles);
+            
+            // Intentar diferentes formatos de roles que el backend podría devolver
+            const rolesIds = usuarioRoles.map((rol: any) => {
+              // El rol podría venir como objeto con id_rol, id, o como string directamente
+              if (typeof rol === 'string') return rol;
+              return rol.id_rol || rol.id || rol.idRol || null;
+            }).filter(Boolean);
+            
+            console.log("IDs de roles extraídos:", rolesIds);
+            setForm({ activo: r.activo ?? true, rolesIds: rolesIds });
+          } catch (e) {
+            console.warn("No se pudieron obtener los roles del usuario, usando los del objeto:", e);
+            // Si no se pueden obtener los roles, usar los que vienen en el objeto
+            const usuarioRoles = (r as any).roles || [];
+            const rolesIds = usuarioRoles.map((rol: any) => {
+              if (typeof rol === 'string') return rol;
+              return rol.id_rol || rol.id || rol.idRol || null;
+            }).filter(Boolean);
+            console.log("IDs de roles del objeto original:", rolesIds);
+            setForm({ activo: r.activo ?? true, rolesIds: rolesIds });
+          }
+        }}
         onDelete={del} getId={(r) => r.id_usuario} />
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Editar usuario</DialogTitle>
         <DialogContent>
           <TextField margin="dense" fullWidth label="Email" value={sel?.email} InputProps={{ readOnly: true }} />
@@ -115,6 +193,20 @@ export default function UsuariosPage() {
             <InputLabel>Activo</InputLabel>
             <Select value={form.activo ? "1" : "0"} label="Activo" onChange={(e) => setForm({ ...form, activo: e.target.value === "1" })}>
               <MenuItem value="1">Sí</MenuItem><MenuItem value="0">No</MenuItem>
+            </Select>
+          </FormControl>
+          <FormControl fullWidth margin="dense">
+            <InputLabel>Roles</InputLabel>
+            <Select 
+              multiple 
+              value={form.rolesIds || []} 
+              label="Roles" 
+              onChange={(e) => setForm({ ...form, rolesIds: e.target.value as string[] })} 
+              renderValue={(v) => roles.filter((r) => v.includes(r.id_rol)).map((r) => r.nombre).join(", ") || "Selecciona roles"}
+            >
+              {roles.map((r) => (
+                <MenuItem key={r.id_rol} value={r.id_rol}>{r.nombre}</MenuItem>
+              ))}
             </Select>
           </FormControl>
         </DialogContent>

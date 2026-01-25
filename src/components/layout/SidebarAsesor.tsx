@@ -1,5 +1,5 @@
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Stack } from "@mui/material";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import People from "@mui/icons-material/People";
 import Assignment from "@mui/icons-material/Assignment";
 import School from "@mui/icons-material/School";

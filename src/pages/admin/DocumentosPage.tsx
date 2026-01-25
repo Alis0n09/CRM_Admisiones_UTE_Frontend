@@ -1,23 +1,20 @@
 import {
-  Alert,
-  Box,
   Button,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControl,
-  IconButton,
   InputLabel,
   MenuItem,
   Select,
-  Snackbar,
-  Stack,
   TextField,
-  Tooltip,
+  Box,
   Typography,
+  Alert,
+  Stack,
+  CircularProgress,
 } from "@mui/material";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataTable, { type Column } from "../../components/DataTable";
@@ -25,25 +22,13 @@ import DocumentoViewModal from "../../components/DocumentoViewModal";
 import * as docService from "../../services/documentoPostulacion.service";
 import * as postulacionService from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
-import AttachFile from "@mui/icons-material/AttachFile";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CloseIcon from "@mui/icons-material/Close";
-import DownloadIcon from "@mui/icons-material/Download";
-import LinkIcon from "@mui/icons-material/Link";
-import ThumbDownAltIcon from "@mui/icons-material/ThumbDownAlt";
-import ThumbUpAltIcon from "@mui/icons-material/ThumbUpAlt";
+import School from "@mui/icons-material/School";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import DownloadIcon from "@mui/icons-material/Download";
+import IconButton from "@mui/material/IconButton";
+import Tooltip from "@mui/material/Tooltip";
 import { api } from "../../services/api";
-
-function getTipoIcon(tipo?: string) {
-  const tipoLower = tipo?.toLowerCase() || "";
-  if (tipoLower.includes("cédula")) return "🆔";
-  if (tipoLower.includes("título")) return "🎓";
-  if (tipoLower.includes("certificado")) return "📜";
-  if (tipoLower.includes("foto")) return "📷";
-  return "📄";
-}
 
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
@@ -63,12 +48,218 @@ export default function DocumentosPage() {
   const [form, setForm] = useState<{ id_postulacion: string; tipo_documento: string; nombre_archivo: string; url_archivo: string; estado_documento: string; observaciones: string }>({ id_postulacion: "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "", estado_documento: "Pendiente", observaciones: "" });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState("");
-  const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" | "warning" | "info" });
+  const [uploadError, setUploadError] = useState<string>("");
 
-  const closeSnackbar = () => setSnackbar((s) => ({ ...s, open: false }));
+  const load = useCallback(() => {
+    docService.getDocumentosPostulacion()
+      .then((r) => {
+        const docs = Array.isArray(r) ? r : [];
+        setItems(docs);
+      })
+      .catch(() => setItems([]));
+  }, []);
+
+  useEffect(() => {
+    load();
+    const handleDocumentosUpdated = () => load();
+    window.addEventListener("documentosUpdated", handleDocumentosUpdated);
+    return () => window.removeEventListener("documentosUpdated", handleDocumentosUpdated);
+  }, [load]);
+
+  const loadPostulaciones = useCallback(async () => {
+    try {
+      const r: any = await postulacionService.getPostulaciones({ limit: 500 });
+      const posts = r?.items ?? (Array.isArray(r) ? r : []);
+      console.log("Postulaciones cargadas:", posts);
+      setPostulaciones(posts);
+      return posts;
+    } catch (error) {
+      setPostulaciones([]);
+      return [];
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPostulaciones();
+    
+    // Escuchar eventos de actualización de postulaciones
+    const handlePostulacionesUpdated = () => {
+      console.log("Evento de actualización de postulaciones recibido, recargando...");
+      loadPostulaciones();
+    };
+    
+    window.addEventListener("postulacionesUpdated", handlePostulacionesUpdated);
+    return () => window.removeEventListener("postulacionesUpdated", handlePostulacionesUpdated);
+  }, [loadPostulaciones]);
+
+  const openAdd = async () => { 
+    // Recargar postulaciones antes de abrir el modal para asegurar datos actualizados
+    const posts = await loadPostulaciones();
+    setSel(null);
+    setSelectedFile(null);
+    setUploadError("");
+    setForm({ id_postulacion: posts[0]?.id_postulacion || "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "", estado_documento: "Pendiente", observaciones: "" }); 
+    setOpen(true); 
+  };
+  const handleView = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
+  const openEdit = async (r: DocumentoPostulacion) => { 
+    // Recargar postulaciones antes de abrir el modal para asegurar datos actualizados
+    await loadPostulaciones();
+    setSel(r);
+    setSelectedFile(null);
+    setUploadError("");
+    setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); 
+    setOpen(true); 
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+      if (!validTypes.includes(file.type)) {
+        setUploadError("Solo se permiten archivos PDF, JPG o PNG");
+        return;
+      }
+      
+      // Validar tamaño (5 MB máximo)
+      const maxSize = 5 * 1024 * 1024; // 5 MB en bytes
+      if (file.size > maxSize) {
+        setUploadError("El archivo no puede ser mayor a 5 MB");
+        return;
+      }
+      
+      setSelectedFile(file);
+      setUploadError("");
+      // Actualizar el nombre del archivo automáticamente
+      setForm({ ...form, nombre_archivo: file.name });
+    }
+  };
+
+  const uploadFile = async (file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      // Intentar primero con /documentos-postulacion/upload
+      const { data } = await api.post("/documentos-postulacion/upload", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      const url = data.url || data.path || data.fileUrl || data.filename || "";
+      if (!url) {
+        throw new Error("El servidor no devolvió una URL para el archivo");
+      }
+      return url;
+    } catch (error: any) {
+      // Si el endpoint /documentos-postulacion/upload no existe, intentar con /upload
+      try {
+        const { data } = await api.post("/upload", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        });
+        const url = data.url || data.path || data.fileUrl || data.filename || "";
+        if (!url) {
+          throw new Error("El servidor no devolvió una URL para el archivo");
+        }
+        return url;
+      } catch (error2: any) {
+        const errorMessage = error2?.response?.data?.message || error?.response?.data?.message || "Error al subir el archivo";
+        const status = error2?.response?.status || error?.response?.status;
+        
+        console.error("Error al subir archivo:", {
+          status,
+          message: errorMessage,
+          data: error2?.response?.data || error?.response?.data
+        });
+        
+        // Si el error es 404, significa que el endpoint no existe
+        if (status === 404) {
+          throw new Error("El servicio de carga de archivos no está disponible. Por favor contacta al administrador.");
+        }
+        
+        throw new Error(errorMessage || "Error al subir el archivo. Por favor intenta nuevamente.");
+      }
+    }
+  };
+
+  const save = async () => {
+    if (!form.id_postulacion || !form.tipo_documento || !form.nombre_archivo) {
+      alert("Completa los campos requeridos: Postulación, Tipo y Nombre archivo");
+      return;
+    }
+
+    // Si es un documento nuevo, debe tener un archivo seleccionado o una URL
+    if (!sel && !selectedFile && !form.url_archivo) {
+      setUploadError("Por favor selecciona un archivo para subir o ingresa una URL");
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+
+    try {
+      // Subir el archivo si hay uno seleccionado
+      let urlArchivo = form.url_archivo;
+      
+      if (selectedFile) {
+        try {
+          urlArchivo = await uploadFile(selectedFile);
+          if (!urlArchivo || urlArchivo.trim() === "") {
+            throw new Error("El servidor no devolvió una URL válida");
+          }
+        } catch (uploadError: any) {
+          console.error("Error al subir archivo:", uploadError);
+          setUploadError(uploadError?.message || "Error al subir el archivo. Por favor intenta nuevamente.");
+          setUploading(false);
+          return;
+        }
+      }
+
+      // Validar que tenemos URL del archivo
+      if (!urlArchivo || urlArchivo.trim() === "") {
+        setUploadError("La URL del archivo es requerida");
+        setUploading(false);
+        return;
+      }
+      
+      const documentoData = {
+        id_postulacion: form.id_postulacion,
+        tipo_documento: form.tipo_documento,
+        nombre_archivo: form.nombre_archivo,
+        url_archivo: urlArchivo,
+        estado_documento: form.estado_documento || "Pendiente",
+        observaciones: form.observaciones || "",
+      };
+
+      await (sel 
+        ? docService.updateDocumentoPostulacion(sel.id_documento, documentoData)
+        : docService.createDocumentoPostulacion(documentoData)
+      );
+      
+      setOpen(false);
+      setSelectedFile(null);
+      setUploadError("");
+      load();
+      window.dispatchEvent(new CustomEvent("documentosUpdated"));
+    } catch (e: any) {
+      console.error("Error al guardar documento:", e);
+      setUploadError(e?.response?.data?.message || e?.message || "Error al guardar el documento");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const del = (row: DocumentoPostulacion) => {
+    if (!confirm("¿Eliminar este documento?")) return;
+    docService.deleteDocumentoPostulacion(row.id_documento)
+      .then(() => load())
+      .catch((e) => alert(e?.response?.data?.message || "Error"));
+  };
 
   const resolveUrl = (url?: string) => {
     const raw = String(url || "").trim();
@@ -80,393 +271,301 @@ export default function DocumentosPage() {
     return `${baseURL}/${raw}`;
   };
 
-  const canPreview = (url?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return false;
-    if (u.includes("/temp/")) return false;
-    return true;
+  const buildCandidateUrls = (url?: string) => {
+    const raw = String(url || "").trim();
+    const baseURL = String(api.defaults.baseURL || "").replace(/\/$/, "");
+    if (!raw) return [] as string[];
+    if (/^https?:\/\//i.test(raw)) return [raw];
+    if (!baseURL) return [raw];
+
+    // Si es path absoluto relativo
+    if (raw.startsWith("/")) {
+      const noSlash = raw.replace(/^\/+/, "");
+      return [
+        `${baseURL}/${noSlash}`,
+        `${baseURL}/uploads/${noSlash}`,
+        `${baseURL}/files/${noSlash}`,
+      ];
+    }
+
+    // Si es solo filename (sin slashes), probar rutas comunes
+    if (!raw.includes("/")) {
+      return [
+        `${baseURL}/${raw}`,
+        `${baseURL}/uploads/${raw}`,
+        `${baseURL}/files/${raw}`,
+      ];
+    }
+
+    // Si es path relativo con carpetas
+    return [
+      `${baseURL}/${raw.replace(/^\/+/, "")}`,
+      `${baseURL}/uploads/${raw.replace(/^\/+/, "")}`,
+      `${baseURL}/files/${raw.replace(/^\/+/, "")}`,
+    ];
   };
 
-  const handlePreview = (url?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    setPreviewUrl(u);
-    setPreviewOpen(true);
-  };
+  const handleDownload = async (url: string, nombre: string) => {
+    if (!url) {
+      alert("No hay URL disponible para descargar");
+      return;
+    }
+    
+    const candidates = buildCandidateUrls(url);
+    const filename = nombre || "documento";
 
-  const handleClosePreview = () => {
-    setPreviewOpen(false);
-    setPreviewUrl("");
-  };
-
-  const handleDownload = (url?: string, nombre?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    const link = document.createElement("a");
-    link.href = u;
-    link.download = nombre || "documento";
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const uploadFile = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      const { data } = await api.post("/documentos-postulacion/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      const url = data?.url || data?.path || data?.fileUrl || data?.filename || "";
-      if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
-      return url;
-    } catch (error1: any) {
+    // Preferir descarga autenticada (blob) para soportar endpoints protegidos
+    for (const candidate of candidates) {
       try {
-        const { data } = await api.post("/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        const url = data?.url || data?.path || data?.fileUrl || data?.filename || "";
-        if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
-        return url;
-      } catch (error2: any) {
-        const status = error2?.response?.status || error1?.response?.status;
-        const timestamp = Date.now();
-        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-        const tempUrl = `https://docs.plataforma.edu/postulaciones/temp/${timestamp}_${sanitizedName}`;
-
-        console.warn("⚠️ Admin: Upload no disponible, usando URL temporal", { status, tempUrl });
-        return tempUrl;
-      }
-    }
-  };
-
-  const load = useCallback(() => {
-    docService.getDocumentosPostulacion()
-      .then((r) => {
-        const docs = Array.isArray(r) ? r : [];
-        console.log("📊 Admin: Documentos cargados (sin filtros - todos los documentos):", {
-          total: docs.length,
-          documentos: docs.map(d => ({
-            id: d.id_documento,
-            tipo: d.tipo_documento,
-            id_postulacion: d.id_postulacion,
-            url_archivo: d.url_archivo,
-            tiene_url: !!d.url_archivo
-          }))
-        });
-        setItems(docs);
-      })
-      .catch((err) => {
-        console.error("❌ Error cargando documentos en admin:", err);
-        setItems([]);
-      });
-  }, []);
-
-  useEffect(() => {
-    load();
-    
-    // Escuchar eventos de actualización de documentos para actualizar automáticamente
-    // Cuando un aspirante sube un documento, admin/asesor también lo verán (mismo registro en BD)
-    const handleDocumentosUpdated = (event: Event) => {
-      const customEvent = event as CustomEvent;
-      console.log("📄 Admin: Evento de actualización de documentos recibido", customEvent.detail);
-      console.log("📄 Admin: Recargando documentos para mostrar el nuevo documento subido por el aspirante");
-      load();
-    };
-
-    window.addEventListener("documentosUpdated", handleDocumentosUpdated);
-
-    return () => {
-      window.removeEventListener("documentosUpdated", handleDocumentosUpdated);
-    };
-  }, [load]);
-  useEffect(() => {
-    postulacionService.getPostulaciones({ limit: 500 }).then((r: any) => setPostulaciones(r?.items ?? (Array.isArray(r) ? r : []))).catch(() => setPostulaciones([]));
-  }, []);
-
-  const openAdd = () => { setSel(null); setForm({ id_postulacion: postulaciones[0]?.id_postulacion || "", tipo_documento: "Cédula", nombre_archivo: "", url_archivo: "/uploads/doc.pdf", estado_documento: "Pendiente", observaciones: "" }); setOpen(true); };
-  const handleViewRow = (r: DocumentoPostulacion) => { setSel(r); setOpenView(true); };
-  const openEdit = (r: DocumentoPostulacion) => { setSel(r); setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
-
-  const save = () => {
-    // Validación de campos requeridos (alineado con CreateDocumentosPostulacionDto)
-    if (!form.id_postulacion || !form.tipo_documento || !form.nombre_archivo || !form.url_archivo) {
-      setSnackbar({ open: true, severity: "error", message: "Completa los campos requeridos: Postulación, Tipo, Nombre archivo y URL archivo" });
-      return; 
-    }
-    
-    // Estructura del documento (alineada con el backend)
-    const documentoData = {
-      id_postulacion: form.id_postulacion,
-      tipo_documento: form.tipo_documento,
-      nombre_archivo: form.nombre_archivo,
-      url_archivo: form.url_archivo,
-      estado_documento: form.estado_documento || "Pendiente",
-      observaciones: form.observaciones || "",
-    };
-
-    console.log("📤 Admin/Asesor: Enviando documento al backend:", documentoData);
-    console.log("📤 Este documento aparecerá para todos los roles (mismo registro en BD)");
-
-    (sel 
-      ? docService.updateDocumentoPostulacion(sel.id_documento, documentoData)
-      : docService.createDocumentoPostulacion(documentoData)
-    )
-      .then((documentoGuardado) => {
-        console.log("✅ Admin/Asesor: Documento guardado exitosamente:", documentoGuardado);
-        console.log("✅ Este documento será visible para admin, asesor y aspirante (mismo registro)");
-        setOpen(false);
-        load();
-        
-        // Disparar evento para actualizar otras páginas
-        window.dispatchEvent(new CustomEvent("documentosUpdated", {
-          detail: { 
-            documentoGuardado,
-            tipoDocumento: documentoData.tipo_documento,
-            mensaje: "Documento creado/actualizado por admin/asesor - visible para todos los roles"
-          }
-        }));
-
-        setSnackbar({ open: true, severity: "success", message: sel ? "Documento actualizado exitosamente" : "Documento guardado exitosamente" });
-      })
-      .catch((e) => {
-        console.error("❌ Admin/Asesor: Error al guardar documento:", e?.response?.data || e);
-        setSnackbar({ open: true, severity: "error", message: e?.response?.data?.message || "Error al guardar el documento" });
-      });
-  };
-
-  const del = (row: DocumentoPostulacion) => {
-    if (!confirm("¿Eliminar este documento?")) return;
-    docService.deleteDocumentoPostulacion(row.id_documento)
-      .then(() => {
-        load();
-        setSnackbar({ open: true, severity: "success", message: "Documento eliminado" });
-      })
-      .catch((e) => setSnackbar({ open: true, severity: "error", message: e?.response?.data?.message || "Error" }));
-  };
-
-  const setEstadoRapido = async (row: DocumentoPostulacion, estado: "Aprobado" | "Rechazado") => {
-    try {
-      const observaciones = estado === "Rechazado"
-        ? (prompt("Motivo de rechazo (observaciones):") || "").trim()
-        : (row.observaciones || "");
-
-      if (estado === "Rechazado" && !observaciones) {
-        setSnackbar({ open: true, severity: "warning", message: "Para rechazar, ingresa observaciones." });
+        const res = await api.get(candidate, { responseType: "blob" });
+        const blob: Blob = res.data;
+        if (!blob || blob.size === 0) continue;
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        try { URL.revokeObjectURL(objectUrl); } catch {}
         return;
+      } catch (error: any) {
+        // Intentar siguiente candidato
+        console.log(`Error al descargar desde ${candidate}:`, error?.response?.status);
       }
+    }
 
-      await docService.updateDocumentoPostulacion(row.id_documento, {
-        estado_documento: estado,
-        observaciones,
-      });
-      setSnackbar({ open: true, severity: "success", message: `Documento ${estado.toLowerCase()} exitosamente` });
-      load();
-
-      window.dispatchEvent(new CustomEvent("documentosUpdated", {
-        detail: {
-          documentoGuardado: { ...row, estado_documento: estado, observaciones },
-          tipoDocumento: row.tipo_documento,
-          mensaje: "Documento validado por admin/asesor - visible para todos los roles",
-        },
-      }));
-    } catch (e: any) {
-      setSnackbar({ open: true, severity: "error", message: e?.response?.data?.message || "Error al validar documento" });
+    // Fallback directo
+    const u = resolveUrl(url);
+    if (!u) {
+      alert("No se pudo construir la URL para descargar el archivo");
+      return;
+    }
+    
+    try {
+      const link = document.createElement("a");
+      link.href = u;
+      link.download = filename;
+      link.target = "_blank";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error al descargar archivo:", error);
+      alert("Error al descargar el archivo. Por favor intenta nuevamente.");
     }
   };
 
   const cols = useMemo<Column<DocumentoPostulacion>[]>(() => [
     {
       id: "tipo_documento",
-      label: "Tipo de Documento",
-      minWidth: 200,
-      format: (v, r) => (
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-          <Typography variant="h6">{getTipoIcon(v)}</Typography>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography variant="body2" fontWeight={700} sx={{ color: "#111827", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {v || "-"}
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#6b7280", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 260 }}>
-              {r.url_archivo ? (r.url_archivo.includes("/temp/") ? "Archivo en proceso (URL temporal)" : "Archivo cargado") : "Sin archivo"}
-            </Typography>
-          </Box>
-        </Box>
-      ),
+      label: "TIPO DE DOCUMENTO",
+      minWidth: 180,
     },
     {
       id: "nombre_archivo",
-      label: "Archivo",
-      minWidth: 260,
+      label: "ARCHIVO",
+      minWidth: 200,
       format: (v, r) => (
-        <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
-            <AttachFile sx={{ color: "#6b7280", fontSize: 18 }} />
-            <Typography variant="body2" sx={{ maxWidth: 220, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {v || "-"}
-            </Typography>
-          </Box>
-          <Stack direction="row" spacing={0.5} alignItems="center">
-            <Tooltip title="Copiar URL">
-              <span>
-                <IconButton
-                  size="small"
-                  disabled={!r.url_archivo}
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(resolveUrl(r.url_archivo));
-                      setSnackbar({ open: true, severity: "success", message: "URL copiada al portapapeles" });
-                    } catch {
-                      setSnackbar({ open: true, severity: "error", message: "No se pudo copiar la URL" });
-                    }
-                  }}
-                >
-                  <LinkIcon fontSize="small" />
-                </IconButton>
-              </span>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="body2" sx={{ flex: 1 }}>
+            {v || "-"}
+          </Typography>
+          {r.url_archivo && (
+            <Tooltip title="Descargar archivo">
+              <IconButton
+                size="small"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDownload(r.url_archivo, r.nombre_archivo || "documento");
+                }}
+                sx={{
+                  color: "#3b82f6",
+                  "&:hover": {
+                    bgcolor: "rgba(59, 130, 246, 0.1)",
+                    color: "#2563eb",
+                  },
+                }}
+              >
+                <DownloadIcon fontSize="small" />
+              </IconButton>
             </Tooltip>
-            <Tooltip title={canPreview(r.url_archivo) ? "Visualizar" : "No disponible para URL temporal"}>
-              <span>
-                <IconButton size="small" disabled={!canPreview(r.url_archivo)} onClick={() => handlePreview(r.url_archivo)}>
-                  <VisibilityIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-            <Tooltip title="Descargar">
-              <span>
-                <IconButton size="small" disabled={!r.url_archivo} onClick={() => handleDownload(r.url_archivo, r.nombre_archivo)}>
-                  <DownloadIcon fontSize="small" />
-                </IconButton>
-              </span>
-            </Tooltip>
-          </Stack>
+          )}
         </Box>
       ),
     },
     {
       id: "postulacion",
-      label: "Postulación",
-      minWidth: 180,
+      label: "POSTULACIÓN",
+      minWidth: 200,
       format: (_, r) => r.postulacion ? (
-        <Chip
-          label={`#${(r.postulacion as any).id_postulacion?.slice(0, 8)} · ${r.postulacion?.carrera?.nombre_carrera || "—"}`}
-          size="small"
-          sx={{ bgcolor: "#e0e7ff", color: "#4338ca", fontWeight: 700 }}
-        />
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <School sx={{ color: "#8b5cf6", fontSize: 20 }} />
+          <Box>
+            <Typography variant="body2" fontWeight={600}>
+              {r.postulacion?.carrera?.nombre_carrera || "-"}
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              ID: {String((r.postulacion as any).id_postulacion || r.id_postulacion || "").slice(0, 8)}
+            </Typography>
+          </Box>
+        </Box>
       ) : (
-        <Chip label={`#${String(r.id_postulacion || "").slice(0, 8)}`} size="small" sx={{ bgcolor: "#f1f5f9", color: "#0f172a", fontWeight: 700 }} />
+        <Typography variant="body2">#{String(r.id_postulacion || "").slice(0, 8)}</Typography>
       ),
     },
     {
       id: "estado_documento",
-      label: "Estado",
-      minWidth: 200,
-      format: (v, r) => (
-        <Stack direction="row" spacing={1} alignItems="center">
-          <Chip label={v || "Pendiente"} size="small" color={getEstadoColor(v) as any} sx={{ fontWeight: 700 }} />
-          <Tooltip title="Aprobar">
-            <span>
-              <IconButton size="small" onClick={() => setEstadoRapido(r, "Aprobado")} sx={{ color: "#16a34a" }}>
-                <ThumbUpAltIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Tooltip title="Rechazar">
-            <span>
-              <IconButton size="small" onClick={() => setEstadoRapido(r, "Rechazado")} sx={{ color: "#dc2626" }}>
-                <ThumbDownAltIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          {String(v || "").toLowerCase().includes("aprobado") && <CheckCircleIcon sx={{ fontSize: 18, color: "#10b981" }} />}
-        </Stack>
+      label: "ESTADO",
+      minWidth: 140,
+      format: (v) => (
+        <Chip 
+          label={v || "Pendiente"} 
+          size="small" 
+          color={getEstadoColor(v) as any}
+          sx={{ fontWeight: 600 }}
+        />
       ),
     },
-  ], [items, postulaciones]);
-
-  const handleFilePicked = async (file: File) => {
-    setUploading(true);
-    try {
-      setForm((f) => ({ ...f, nombre_archivo: file.name }));
-      const url = await uploadFile(file);
-      setForm((f) => ({ ...f, url_archivo: url }));
-      if (String(url).includes("/temp/")) {
-        setSnackbar({ open: true, severity: "warning", message: "Upload no disponible: se usará URL temporal (no previsualizable)." });
-      } else {
-        setSnackbar({ open: true, severity: "success", message: "Archivo cargado. Ahora puedes guardar el documento." });
-      }
-    } catch (e: any) {
-      setSnackbar({ open: true, severity: "error", message: e?.message || "Error al subir archivo" });
-    } finally {
-      setUploading(false);
-    }
-  };
+  ], []);
 
   return (
     <>
-      <DataTable title="Documentos de postulación" columns={cols} rows={items.slice((page - 1) * limit, page * limit)} total={items.length} page={page} rowsPerPage={limit}
-        onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
-        onAdd={openAdd} onView={handleViewRow} onEdit={openEdit} onDelete={del} getId={(r) => r.id_documento} />
-      <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
+      <DataTable 
+        title="Documentos de postulación" 
+        columns={cols} 
+        rows={items.slice((page - 1) * limit, page * limit)} 
+        total={items.length} 
+        page={page} 
+        rowsPerPage={limit}
+        onPageChange={setPage} 
+        onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
+        onAdd={openAdd} 
+        onView={handleView} 
+        onEdit={openEdit} 
+        onDelete={del} 
+        getId={(r) => r.id_documento} 
+      />
+      <Dialog open={open} onClose={() => { setOpen(false); setSelectedFile(null); setUploadError(""); }} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar documento" : "Nuevo documento"}</DialogTitle>
         <DialogContent>
-          <Box sx={{ mt: 1, mb: 1.5, p: 1.5, borderRadius: 2, bgcolor: "#f8fafc", border: "1px solid #e2e8f0" }}>
-            <Typography variant="body2" fontWeight={700} sx={{ mb: 0.5, color: "#0f172a" }}>
-              Subir archivo (opcional)
-            </Typography>
-            <Typography variant="caption" sx={{ color: "#64748b", display: "block", mb: 1 }}>
-              Si el backend tiene endpoint de carga, se generará una URL real. Si no, se usará URL temporal.
-            </Typography>
-            <Stack direction="row" spacing={1} alignItems="center">
-              <Button
-                variant="outlined"
-                component="label"
-                startIcon={uploading ? <CircularProgress size={16} /> : <UploadFileIcon />}
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <FormControl fullWidth margin="dense">
+              <InputLabel>Postulación</InputLabel>
+              <Select value={form.id_postulacion} label="Postulación" onChange={(e) => setForm({ ...form, id_postulacion: e.target.value })} required>
+                {postulaciones.map((p) => {
+                  const carreraNombre = p.carrera?.nombre_carrera || (p as any).carrera?.nombre || "Sin carrera";
+                  return (
+                    <MenuItem key={p.id_postulacion} value={p.id_postulacion}>
+                      Post. {p.id_postulacion.slice(0, 8)} - {carreraNombre}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+            </FormControl>
+            <TextField margin="dense" fullWidth select label="Tipo" value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })}>
+              <MenuItem value="Cédula">Cédula</MenuItem>
+              <MenuItem value="Título">Título</MenuItem>
+              <MenuItem value="Certificado">Certificado</MenuItem>
+              <MenuItem value="Foto">Foto</MenuItem>
+              <MenuItem value="Otro">Otro</MenuItem>
+            </TextField>
+            <TextField margin="dense" fullWidth label="Nombre archivo" value={form.nombre_archivo} onChange={(e) => setForm({ ...form, nombre_archivo: e.target.value })} required disabled={!!selectedFile} placeholder={selectedFile ? "El nombre se completará automáticamente" : "Nombre del archivo"} />
+            
+            {/* Selector de archivo */}
+            <Box>
+              <Typography variant="body2" sx={{ mb: 1, color: "text.secondary", fontWeight: 500 }}>
+                Archivo {!sel && <span style={{ color: "#d32f2f" }}>*</span>}
+              </Typography>
+              <input
+                accept=".pdf,.jpg,.jpeg,.png"
+                style={{ display: "none" }}
+                id="file-upload-admin"
+                type="file"
+                onChange={handleFileChange}
                 disabled={uploading}
-                sx={{ textTransform: "none" }}
-              >
-                {uploading ? "Subiendo..." : "Seleccionar archivo"}
-                <input
-                  hidden
-                  type="file"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void handleFilePicked(f);
+              />
+              <label htmlFor="file-upload-admin">
+                <Button
+                  variant="outlined"
+                  component="span"
+                  fullWidth
+                  startIcon={selectedFile ? <CheckCircleIcon /> : <UploadFileIcon />}
+                  disabled={uploading}
+                  sx={{
+                    textTransform: "none",
+                    py: 1.5,
+                    borderColor: selectedFile ? "#10b981" : "#3b82f6",
+                    color: selectedFile ? "#10b981" : "#3b82f6",
+                    borderWidth: 2,
+                    borderStyle: "dashed",
+                    "&:hover": {
+                      borderColor: selectedFile ? "#059669" : "#2563eb",
+                      bgcolor: selectedFile ? "#f0fdf4" : "#eff6ff",
+                      borderWidth: 2,
+                    },
                   }}
-                />
-              </Button>
-              {form.url_archivo && (
-                <Chip
-                  size="small"
-                  icon={form.url_archivo.includes("/temp/") ? <CloseIcon /> : <CheckCircleIcon />}
-                  label={form.url_archivo.includes("/temp/") ? "URL temporal" : "URL generada"}
-                  color={form.url_archivo.includes("/temp/") ? "warning" : "success"}
-                  sx={{ fontWeight: 700 }}
-                />
+                >
+                  {selectedFile ? `Archivo seleccionado: ${selectedFile.name}` : "Seleccionar archivo desde tu computadora"}
+                </Button>
+              </label>
+              {selectedFile && (
+                <Box sx={{ mt: 1, display: "flex", alignItems: "center", gap: 1 }}>
+                  <Typography variant="caption" sx={{ color: "text.secondary" }}>
+                    Tamaño: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={() => {
+                      setSelectedFile(null);
+                      setForm({ ...form, nombre_archivo: "" });
+                    }}
+                    sx={{ textTransform: "none", minWidth: "auto", p: 0.5 }}
+                  >
+                    Cambiar
+                  </Button>
+                </Box>
               )}
-            </Stack>
-          </Box>
-          <FormControl fullWidth margin="dense">
-            <InputLabel>Postulación</InputLabel>
-            <Select value={form.id_postulacion} label="Postulación" onChange={(e) => setForm({ ...form, id_postulacion: e.target.value })} required>
-              {postulaciones.map((p) => <MenuItem key={p.id_postulacion} value={p.id_postulacion}>Post. {p.id_postulacion.slice(0, 8)} - {p.carrera?.nombre_carrera}</MenuItem>)}
-            </Select>
-          </FormControl>
-          <TextField margin="dense" fullWidth select label="Tipo" value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })}>
-            <MenuItem value="Cédula">Cédula</MenuItem><MenuItem value="Título">Título</MenuItem><MenuItem value="Certificado">Certificado</MenuItem><MenuItem value="Foto">Foto</MenuItem><MenuItem value="Otro">Otro</MenuItem>
-          </TextField>
-          <TextField margin="dense" fullWidth label="Nombre archivo" value={form.nombre_archivo} onChange={(e) => setForm({ ...form, nombre_archivo: e.target.value })} required />
-          <TextField margin="dense" fullWidth label="URL archivo" value={form.url_archivo} onChange={(e) => setForm({ ...form, url_archivo: e.target.value })} required helperText={form.url_archivo ? `Se guardará en: ${resolveUrl(form.url_archivo)}` : ""} />
-          <TextField margin="dense" fullWidth select label="Estado" value={form.estado_documento} onChange={(e) => setForm({ ...form, estado_documento: e.target.value })}>
-            <MenuItem value="Pendiente">Pendiente</MenuItem><MenuItem value="Aprobado">Aprobado</MenuItem><MenuItem value="Rechazado">Rechazado</MenuItem>
-          </TextField>
-          <TextField margin="dense" fullWidth label="Observaciones" multiline value={form.observaciones} onChange={(e) => setForm({ ...form, observaciones: e.target.value })} />
+              {uploadError && (
+                <Alert severity="error" sx={{ mt: 1 }}>
+                  {uploadError}
+                </Alert>
+              )}
+            </Box>
+
+            {/* Mostrar URL actual si es edición y no hay nuevo archivo */}
+            {sel && !selectedFile && (
+              <TextField
+                margin="dense"
+                fullWidth
+                label="URL del Archivo Actual"
+                value={form.url_archivo}
+                disabled
+                helperText="Para cambiar el archivo, selecciona uno nuevo arriba"
+              />
+            )}
+
+            {/* Campo URL archivo (opcional si hay archivo seleccionado) */}
+            {!sel && !selectedFile && (
+              <TextField margin="dense" fullWidth label="URL archivo (opcional si subes un archivo)" value={form.url_archivo} onChange={(e) => setForm({ ...form, url_archivo: e.target.value })} helperText="O ingresa una URL manualmente si no subes un archivo" />
+            )}
+
+            <TextField margin="dense" fullWidth select label="Estado" value={form.estado_documento} onChange={(e) => setForm({ ...form, estado_documento: e.target.value })}>
+              <MenuItem value="Pendiente">Pendiente</MenuItem>
+              <MenuItem value="Aprobado">Aprobado</MenuItem>
+              <MenuItem value="Rechazado">Rechazado</MenuItem>
+            </TextField>
+            <TextField margin="dense" fullWidth label="Observaciones" multiline rows={3} value={form.observaciones} onChange={(e) => setForm({ ...form, observaciones: e.target.value })} />
+          </Stack>
         </DialogContent>
-        <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
+        <DialogActions>
+          <Button onClick={() => { setOpen(false); setSelectedFile(null); setUploadError(""); }}>Cancelar</Button>
+          <Button variant="contained" onClick={save} disabled={uploading} startIcon={uploading ? <CircularProgress size={16} color="inherit" /> : null}>
+            {uploading ? "Subiendo..." : "Guardar"}
+          </Button>
+        </DialogActions>
       </Dialog>
-      <DocumentoViewModal open={openView} onClose={() => setOpenView(false)} documento={sel} />
+      <DocumentoViewModal open={openView} onClose={() => setOpenView(false)} documento={sel} onDownload={handleDownload} />
     </>
   );
 }
