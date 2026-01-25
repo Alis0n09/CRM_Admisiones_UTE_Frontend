@@ -1,5 +1,5 @@
 import { Dialog, DialogActions, DialogContent, DialogTitle, Button, MenuItem, TextField, Avatar, Chip, Box, Stack, Typography } from "@mui/material";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { useSearchParams } from "react-router-dom";
 import DataTable, { type Column } from "../../components/DataTable";
 import ClienteViewModal from "../../components/ClienteViewModal";
@@ -13,18 +13,7 @@ import * as carreraService from "../../services/carrera.service";
 import type { Postulacion } from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
 import type { BecaEstudiante } from "../../services/becaEstudiante.service";
-import SchoolIcon from "@mui/icons-material/School";
-import DescriptionIcon from "@mui/icons-material/Description";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import PersonIcon from "@mui/icons-material/Person";
-import EmailIcon from "@mui/icons-material/Email";
-import PhoneIcon from "@mui/icons-material/Phone";
-import BadgeIcon from "@mui/icons-material/Badge";
-import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
-import LocationOnIcon from "@mui/icons-material/LocationOn";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
-import AddIcon from "@mui/icons-material/Add";
 import { api } from "../../services/api";
 
 const cols: Column<Cliente>[] = [
@@ -83,7 +72,6 @@ export default function AsesorClientesPage() {
   const urlSearch = searchParams.get("search") || "";
   const [search, setSearch] = useState(urlSearch);
   const [open, setOpen] = useState(false);
-  const [openView, setOpenView] = useState(false);
   const [openDetail, setOpenDetail] = useState(false);
   const [sel, setSel] = useState<Cliente | null>(null);
   const [form, setForm] = useState<Partial<Cliente>>(empty);
@@ -93,9 +81,12 @@ export default function AsesorClientesPage() {
   const [becas, setBecas] = useState<any[]>([]);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
+  const [selectedPostulacionId, setSelectedPostulacionId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [uploadedUrl, setUploadedUrl] = useState("");
+  const [uploadedName, setUploadedName] = useState("");
   const [documentoForm, setDocumentoForm] = useState({
     tipo_documento: "",
     observaciones: "",
@@ -116,6 +107,13 @@ export default function AsesorClientesPage() {
     monto_otorgado: "",
     estado: "Vigente",
   });
+
+  const currentPostulacionId = useMemo(() => {
+    if (selectedPostulacionId) return selectedPostulacionId;
+    return postulaciones[0]?.id_postulacion || "";
+  }, [postulaciones, selectedPostulacionId]);
+
+  // (estadoChip) ya no se usa aquí: el modal con diseño maneja chips.
 
   // Sincronizar el estado de búsqueda con el parámetro de la URL cuando cambia la URL
   useEffect(() => {
@@ -159,8 +157,6 @@ export default function AsesorClientesPage() {
     }
   };
 
-  const handleView = (row: Cliente) => { setSel(row); setOpenView(true); };
-
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
     (sel ? s.updateCliente(sel.id_cliente, form) : s.createCliente(form as any))
@@ -176,30 +172,45 @@ export default function AsesorClientesPage() {
       const clienteCompleto = await s.getCliente(clienteId);
       setClienteDetail(clienteCompleto);
   
-      // Cargar postulaciones del cliente. El backend filtra por id_cliente cuando se envía el parámetro
+      // Cargar postulaciones. El backend NO filtra por id_cliente en query (valida QueryDto),
+      // así que traemos paginado normal y filtramos aquí por seguridad.
       const postuls = await postulacionService.getPostulaciones({
-        id_cliente: clienteId,
+        page: 1,
         limit: 500,
       });
-      // El backend ya filtra por id_cliente, confiamos en su respuesta
-      const postulsList = Array.isArray(postuls)
+      // Soportar varias formas de respuesta y filtrar por seguridad
+      const postulsListRaw = Array.isArray(postuls)
         ? postuls
-        : (postuls as any)?.items || [];
+        : (Array.isArray((postuls as any)?.items)
+            ? (postuls as any).items
+            : (Array.isArray((postuls as any)?.data?.items) ? (postuls as any).data.items : []));
+      const postulsList = postulsListRaw.filter((p: any) =>
+        p.id_cliente === clienteId || p?.cliente?.id_cliente === clienteId
+      );
       setPostulaciones(postulsList);
   
-      // Cargar documentos de las postulaciones
-      const docs = await documentoService.getDocumentosPostulacion();
-      const docsList = Array.isArray(docs) ? docs : [];
-      const postulacionIds = postulsList.map((p: Postulacion) => p.id_postulacion);
-      const docsCliente = docsList.filter((d: DocumentoPostulacion) => 
-        postulacionIds.includes(d.id_postulacion)
-      );
-      setDocumentos(docsCliente);
+      // Cargar documentos por postulación (endpoint directo del backend)
+      if (postulsList.length === 0) {
+        setDocumentos([]);
+      } else {
+        const docsByPost = await Promise.all(
+          postulsList.map((p: Postulacion) =>
+            documentoService.getDocumentosPorPostulacion(p.id_postulacion).catch(() => [])
+          )
+        );
+        const flat = docsByPost.flat().filter(Boolean) as DocumentoPostulacion[];
+        setDocumentos(flat);
+      }
   
       // Cargar becas disponibles
-      const becasData = await becaService.getBecas({ limit: 100 });
-      const becasList = (becasData as any)?.items || [];
-      setBecas(becasList);
+      try {
+        const becasData = await becaService.getBecas({ page: 1, limit: 100 });
+        const becasList = Array.isArray(becasData) ? becasData : ((becasData as any)?.items ?? []);
+        setBecas(becasList);
+      } catch (e) {
+        console.error("Error cargando becas:", e);
+        setBecas([]);
+      }
   
       // Cargar becas asignadas al cliente desde el endpoint correcto
       try {
@@ -240,6 +251,7 @@ export default function AsesorClientesPage() {
 
   const handleViewDetail = async (cliente: Cliente) => {
     setClienteDetail(cliente);
+    setSel(cliente);
     setOpenDetail(true);
     await loadClienteDetail(cliente.id_cliente);
   };
@@ -259,54 +271,107 @@ export default function AsesorClientesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openDetail]);
 
-  const uploadFile = async (file: File): Promise<string> => {
+  const uploadFile = async (file: File): Promise<{ url: string; nombre_archivo: string }> => {
     const formData = new FormData();
     formData.append("file", file);
+
+    const normalizeUploadedUrl = (rawUrl: string) => {
+      const raw = String(rawUrl || "").trim();
+      if (!raw) return "";
+      if (/^https?:\/\//i.test(raw)) return raw;
+      // si viene solo "archivo.pdf" o "/archivo.pdf", asumimos carpeta /uploads
+      if (/^[^/]+\.[a-z0-9]+$/i.test(raw)) return `/uploads/${raw}`;
+      if (/^\/[^/]+\.[a-z0-9]+$/i.test(raw)) return `/uploads/${raw.slice(1)}`;
+      if (/^uploads\/[^/]+/i.test(raw)) return `/${raw}`;
+      return raw;
+    };
     
     try {
-      const { data } = await api.post("/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      // Intento 1: endpoint específico de documentos (como DocumentosPage)
+      const { data } = await api.post("/documentos-postulacion/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
-      return data.url || data.path || data.fileUrl || "";
-    } catch (error: any) {
+      // Soportar respuestas envueltas tipo SuccessResponseDto { message, data: { url } }
+      const payload = data?.data ?? data;
+      // Tu backend devuelve: { url_archivo, url_segura, nombre_archivo, filename, ... }
+      const urlRaw =
+        payload?.url_segura ||
+        payload?.url_archivo ||
+        payload?.url ||
+        payload?.path ||
+        payload?.fileUrl ||
+        payload?.filename ||
+        "";
+      const url = normalizeUploadedUrl(urlRaw);
+      const nombre_archivo = String(payload?.nombre_archivo || file.name || "documento");
+      if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
+      return { url, nombre_archivo };
+    } catch (error1: any) {
       try {
-        const { data } = await api.post("/documentos-postulacion/upload", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
+        // Intento 2: endpoint genérico
+        const { data } = await api.post("/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         });
-        return data.url || data.path || data.fileUrl || "";
+        const payload = data?.data ?? data;
+        const urlRaw =
+          payload?.url_segura ||
+          payload?.url_archivo ||
+          payload?.url ||
+          payload?.path ||
+          payload?.fileUrl ||
+          payload?.filename ||
+          "";
+        const url = normalizeUploadedUrl(urlRaw);
+        const nombre_archivo = String(payload?.nombre_archivo || file.name || "documento");
+        if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
+        return { url, nombre_archivo };
       } catch (error2: any) {
-        throw new Error(error2?.response?.data?.message || "Error al subir el archivo");
+        // Fallback: URL temporal (permite guardar registro aunque no haya upload disponible)
+        const timestamp = Date.now();
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+        const tempUrl = `https://docs.plataforma.edu/postulaciones/temp/${timestamp}_${sanitizedName}`;
+        console.warn("⚠️ Upload no disponible, usando URL temporal", { tempUrl, error1, error2 });
+        return { url: tempUrl, nombre_archivo: file.name || "documento" };
       }
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
-      if (!validTypes.includes(file.type)) {
-        setUploadError("Solo se permiten archivos PDF, JPG o PNG");
-        return;
+  const validatePickedFile = (file: File) => {
+    const validTypes = ["application/pdf", "image/jpeg", "image/jpg", "image/png"];
+    if (!validTypes.includes(file.type)) return "Solo se permiten archivos PDF, JPG o PNG";
+    const maxSize = 5 * 1024 * 1024;
+    if (file.size > maxSize) return "El archivo no puede ser mayor a 5 MB";
+    return "";
+  };
+
+  const handleFilePicked = async (file: File) => {
+    const err = validatePickedFile(file);
+    if (err) {
+      setUploadError(err);
+      return;
+    }
+
+    setUploading(true);
+    setUploadError("");
+    setSelectedFile(file);
+    setUploadedName(file.name);
+    setUploadedUrl("");
+
+    try {
+      const res = await uploadFile(file);
+      setUploadedUrl(res.url);
+      setUploadedName(res.nombre_archivo);
+      if (String(res.url).includes("/temp/")) {
+        setUploadError("Upload no disponible: se usará URL temporal (no previsualizable).");
       }
-      const maxSize = 5 * 1024 * 1024;
-      if (file.size > maxSize) {
-        setUploadError("El archivo no puede ser mayor a 5 MB");
-        return;
-      }
-      setSelectedFile(file);
-      setUploadError("");
+    } catch (e: any) {
+      setUploadError(e?.message || "Error al subir archivo");
+    } finally {
+      setUploading(false);
     }
   };
 
   const handleUploadDocument = async () => {
-    if (!selectedFile) {
-      setUploadError("Por favor selecciona un archivo");
-      return;
-    }
     if (!documentoForm.tipo_documento) {
       setUploadError("Por favor especifica el tipo de documento");
       return;
@@ -315,35 +380,40 @@ export default function AsesorClientesPage() {
       setUploadError("El aspirante no tiene postulaciones. Debe crear una postulación primero.");
       return;
     }
+    if (!uploadedUrl) {
+      setUploadError("Primero selecciona un archivo para subir (o ingresa una URL).");
+      return;
+    }
 
     setUploading(true);
     setUploadError("");
 
     try {
-      const urlArchivo = await uploadFile(selectedFile);
-      const postulacionActiva = postulaciones[0];
+      const id_postulacion = currentPostulacionId || postulaciones[0]?.id_postulacion;
+      if (!id_postulacion) {
+        setUploadError("No hay una postulación seleccionada");
+        return;
+      }
       
       await documentoService.createDocumentoPostulacion({
-        id_postulacion: postulacionActiva.id_postulacion,
+        id_postulacion,
         tipo_documento: documentoForm.tipo_documento,
-        nombre_archivo: selectedFile.name,
-        url_archivo: urlArchivo,
+        nombre_archivo: uploadedName || selectedFile?.name || "documento",
+        url_archivo: uploadedUrl,
         estado_documento: "Pendiente",
         observaciones: documentoForm.observaciones || "",
       });
 
-      // Recargar documentos
-      const docs = await documentoService.getDocumentosPostulacion();
-      const docsList = Array.isArray(docs) ? docs : [];
-      const postulacionIds = postulaciones.map((p: Postulacion) => p.id_postulacion);
-      const docsCliente = docsList.filter((d: DocumentoPostulacion) => 
-        postulacionIds.includes(d.id_postulacion)
-      );
-      setDocumentos(docsCliente);
+      // Recargar todo el detalle (misma lógica que DocumentosPage: guardar y refrescar)
+      const clienteId = clienteDetail?.id_cliente || sel?.id_cliente;
+      if (clienteId) await loadClienteDetail(clienteId);
 
       // Limpiar formulario
       setSelectedFile(null);
       setDocumentoForm({ tipo_documento: "", observaciones: "" });
+      setSelectedPostulacionId("");
+      setUploadedUrl("");
+      setUploadedName("");
       setOpenUploadDialog(false);
     } catch (error: any) {
       setUploadError(error?.message || "Error al subir el documento");
@@ -372,9 +442,8 @@ export default function AsesorClientesPage() {
       });
 
       // Recargar datos del cliente
-      if (clienteDetail.id_cliente) {
-        await loadClienteDetail(clienteDetail.id_cliente);
-      }
+      const id = clienteDetail?.id_cliente || sel?.id_cliente;
+      if (id) await loadClienteDetail(id);
 
       // Limpiar formulario y cerrar diálogo
       setPostulacionForm({
@@ -385,6 +454,7 @@ export default function AsesorClientesPage() {
       });
       setOpenPostulacionDialog(false);
     } catch (error: any) {
+      console.error("Error creando postulación:", error?.response?.data || error);
       alert(error?.response?.data?.message || "Error al crear la postulación");
     }
   };
@@ -430,9 +500,8 @@ export default function AsesorClientesPage() {
       }
 
       // Recargar datos del cliente
-      if (clienteDetail.id_cliente) {
-        await loadClienteDetail(clienteDetail.id_cliente);
-      }
+      const id = clienteDetail?.id_cliente || sel?.id_cliente;
+      if (id) await loadClienteDetail(id);
 
       setOpenBecaDialog(false);
       alert("Beca asignada exitosamente");
@@ -461,7 +530,7 @@ export default function AsesorClientesPage() {
           setForm(empty);
           setOpen(true);
         }}
-        onView={handleView}
+        onView={(r) => { void handleViewDetail(r); }}
         onEdit={(r) => {
           setSel(r);
           setForm({ ...r });
@@ -490,7 +559,240 @@ export default function AsesorClientesPage() {
         </DialogContent>
         <DialogActions><Button onClick={() => setOpen(false)}>Cancelar</Button><Button variant="contained" onClick={save}>Guardar</Button></DialogActions>
       </Dialog>
-      <ClienteViewModal open={openView} onClose={() => setOpenView(false)} cliente={sel} />
+
+      <ClienteViewModal
+        open={openDetail}
+        onClose={() => {
+          setOpenDetail(false);
+          setOpenUploadDialog(false);
+          setOpenPostulacionDialog(false);
+          setOpenBecaDialog(false);
+          setSelectedFile(null);
+          setUploadError("");
+          setSelectedPostulacionId("");
+        }}
+        cliente={clienteDetail ?? sel}
+        postulaciones={postulaciones}
+        documentos={documentos}
+        becasDisponibles={becas}
+        becaAsignada={becaAsignada}
+        loadingDetail={loadingDetail}
+        onCrearPostulacionClick={() => {
+          const currentYear = new Date().getFullYear();
+          setPostulacionForm((p) => ({
+            ...p,
+            id_carrera: p.id_carrera || carreras[0]?.id_carrera || "",
+            periodo_academico: p.periodo_academico || `${currentYear}-1`,
+            estado_postulacion: p.estado_postulacion || "Pendiente",
+          }));
+          setOpenPostulacionDialog(true);
+        }}
+        onSubirDocumentoClick={() => {
+          setUploadError("");
+          setSelectedFile(null);
+          setSelectedPostulacionId(postulaciones[0]?.id_postulacion || "");
+          setOpenUploadDialog(true);
+        }}
+        onAsignarBecaClick={() => {
+          if (!selectedBecaId && becas.length > 0) setSelectedBecaId((becas as any)[0]?.id_beca || "");
+          setOpenBecaDialog(true);
+        }}
+      />
+
+      {/* Crear postulación */}
+      <Dialog open={openPostulacionDialog} onClose={() => setOpenPostulacionDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Nueva postulación</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            fullWidth
+            select
+            label="Carrera"
+            value={postulacionForm.id_carrera}
+            onChange={(e) => setPostulacionForm({ ...postulacionForm, id_carrera: e.target.value })}
+          >
+            {carreras.map((c) => (
+              <MenuItem key={c.id_carrera} value={c.id_carrera}>
+                {c.nombre_carrera}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Período académico"
+            value={postulacionForm.periodo_academico}
+            onChange={(e) => setPostulacionForm({ ...postulacionForm, periodo_academico: e.target.value })}
+            placeholder="2026-1"
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            select
+            label="Estado"
+            value={postulacionForm.estado_postulacion}
+            onChange={(e) => setPostulacionForm({ ...postulacionForm, estado_postulacion: e.target.value })}
+          >
+            <MenuItem value="Pendiente">Pendiente</MenuItem>
+            <MenuItem value="En revisión">En revisión</MenuItem>
+            <MenuItem value="Aprobada">Aprobada</MenuItem>
+            <MenuItem value="Rechazada">Rechazada</MenuItem>
+          </TextField>
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Observaciones"
+            multiline
+            minRows={3}
+            value={postulacionForm.observaciones}
+            onChange={(e) => setPostulacionForm({ ...postulacionForm, observaciones: e.target.value })}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenPostulacionDialog(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={() => { void handleCreatePostulacion(); }}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Subir documento */}
+      <Dialog open={openUploadDialog} onClose={() => setOpenUploadDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Subir documento</DialogTitle>
+        <DialogContent>
+          {postulaciones.length > 0 && (
+            <TextField
+              margin="dense"
+              fullWidth
+              select
+              label="Postulación"
+              value={currentPostulacionId}
+              onChange={(e) => setSelectedPostulacionId(e.target.value)}
+            >
+              {postulaciones.map((p) => (
+                <MenuItem key={p.id_postulacion} value={p.id_postulacion}>
+                  #{String(p.id_postulacion).slice(0, 8)} · {p.carrera?.nombre_carrera || String(p.id_carrera).slice(0, 8)}
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Tipo de documento"
+            value={documentoForm.tipo_documento}
+            onChange={(e) => setDocumentoForm({ ...documentoForm, tipo_documento: e.target.value })}
+            placeholder="Ej: Cédula / Certificado / Foto"
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            label="URL del archivo"
+            value={uploadedUrl}
+            onChange={(e) => setUploadedUrl(e.target.value)}
+            placeholder="Se llena automáticamente al subir"
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Observaciones"
+            value={documentoForm.observaciones}
+            onChange={(e) => setDocumentoForm({ ...documentoForm, observaciones: e.target.value })}
+          />
+          <Box sx={{ mt: 1 }}>
+            <Button
+              component="label"
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              disabled={uploading}
+              sx={{ textTransform: "none" }}
+            >
+              {uploading ? "Subiendo..." : "Seleccionar y subir archivo"}
+              <input
+                hidden
+                type="file"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void handleFilePicked(f);
+                }}
+              />
+            </Button>
+            {(uploadedName || selectedFile?.name) && (
+              <Typography variant="caption" sx={{ display: "block", mt: 0.5, color: "#64748b" }}>
+                Archivo: {uploadedName || selectedFile?.name}
+              </Typography>
+            )}
+            {uploadedUrl && (
+              <Typography variant="caption" sx={{ display: "block", mt: 0.25, color: "#64748b" }}>
+                URL: {uploadedUrl}
+              </Typography>
+            )}
+            {uploadError && (
+              <Typography variant="caption" sx={{ display: "block", mt: 0.75, color: "#ef4444", fontWeight: 700 }}>
+                {uploadError}
+              </Typography>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenUploadDialog(false)}>Cancelar</Button>
+          <Button variant="contained" disabled={uploading} onClick={() => { void handleUploadDocument(); }}>
+            Guardar documento
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Asignar beca */}
+      <Dialog open={openBecaDialog} onClose={() => setOpenBecaDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>{becaAsignada ? "Actualizar beca" : "Asignar beca"}</DialogTitle>
+        <DialogContent>
+          <TextField
+            margin="dense"
+            fullWidth
+            select
+            label="Beca"
+            value={selectedBecaId}
+            onChange={(e) => setSelectedBecaId(e.target.value)}
+          >
+            {becas.map((b: any) => (
+              <MenuItem key={b.id_beca} value={b.id_beca}>
+                {b.nombre_beca} ({b.tipo_beca})
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Período académico"
+            value={becaForm.periodo_academico}
+            onChange={(e) => setBecaForm({ ...becaForm, periodo_academico: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            label="Monto otorgado"
+            value={becaForm.monto_otorgado}
+            onChange={(e) => setBecaForm({ ...becaForm, monto_otorgado: e.target.value })}
+          />
+          <TextField
+            margin="dense"
+            fullWidth
+            select
+            label="Estado"
+            value={becaForm.estado}
+            onChange={(e) => setBecaForm({ ...becaForm, estado: e.target.value })}
+          >
+            <MenuItem value="Vigente">Vigente</MenuItem>
+            <MenuItem value="Inactiva">Inactiva</MenuItem>
+          </TextField>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenBecaDialog(false)}>Cancelar</Button>
+          <Button variant="contained" onClick={() => { void handleSelectBeca(); }}>
+            Guardar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

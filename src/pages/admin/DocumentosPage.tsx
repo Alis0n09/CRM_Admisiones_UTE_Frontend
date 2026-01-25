@@ -102,13 +102,28 @@ export default function DocumentosPage() {
   const handleDownload = (url?: string, nombre?: string) => {
     const u = resolveUrl(url);
     if (!u) return;
-    const link = document.createElement("a");
-    link.href = u;
-    link.download = nombre || "documento";
-    link.target = "_blank";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Descargar autenticado (tu endpoint seguro requiere Bearer token)
+    const token = localStorage.getItem("token");
+    fetch(u, {
+      method: "GET",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = nombre || "documento";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      })
+      .catch(() => {
+        // Fallback: abrir directo si es público
+        window.open(u, "_blank", "noopener,noreferrer");
+      });
   };
 
   const uploadFile = async (file: File): Promise<string> => {
@@ -119,7 +134,9 @@ export default function DocumentosPage() {
       const { data } = await api.post("/documentos-postulacion/upload", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      const url = data?.url || data?.path || data?.fileUrl || data?.filename || "";
+      // Tu backend devuelve { url_archivo, url_segura, nombre_archivo, filename, ... }
+      const payload = (data as any)?.data ?? data;
+      const url = payload?.url_segura || payload?.url_archivo || payload?.url || payload?.path || payload?.fileUrl || "";
       if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
       return url;
     } catch (error1: any) {
@@ -127,7 +144,8 @@ export default function DocumentosPage() {
         const { data } = await api.post("/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
-        const url = data?.url || data?.path || data?.fileUrl || data?.filename || "";
+        const payload = (data as any)?.data ?? data;
+        const url = payload?.url_segura || payload?.url_archivo || payload?.url || payload?.path || payload?.fileUrl || "";
         if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
         return url;
       } catch (error2: any) {
