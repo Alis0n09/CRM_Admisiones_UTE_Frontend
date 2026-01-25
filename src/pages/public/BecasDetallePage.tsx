@@ -15,6 +15,7 @@ import {
   Favorite,
   Handshake,
   EmojiEvents,
+  Science,
   CheckCircle,
   ArrowBack,
 } from "@mui/icons-material";
@@ -111,6 +112,29 @@ const becasDetalle = [
       "Cumplir con los requisitos de admisión académica",
     ],
     porcentaje: "Hasta 40%",
+  },
+  {
+    icon: <Science sx={{ fontSize: 40, color: "#a855f7" }} />,
+    title: "Beca STEAM para mujeres",
+    description: "Apoyo para mujeres en ciencia, tecnología e ingeniería",
+    color: "#a855f7",
+    bgColor: "#f3e8ff",
+    informacion: [
+      "Programa diseñado para promover la participación de mujeres en áreas STEAM",
+      "Descuentos especiales para mujeres que estudien carreras de ciencia, tecnología, ingeniería, artes o matemáticas",
+      "Mentoría y acompañamiento durante toda la carrera",
+      "Acceso a programas de desarrollo profesional y networking",
+      "Apoyo para proyectos de investigación y emprendimiento",
+    ],
+    requisitos: [
+      "Ser mujer y estar inscrita o postularse a una carrera STEAM",
+      "Promedio académico mínimo de 7.5/10 en estudios previos",
+      "Carta de motivación explicando interés en áreas STEAM",
+      "Carta de recomendación (opcional pero valorada)",
+      "Compromiso de participar en actividades del programa STEAM",
+      "Cumplir con los requisitos de admisión académica",
+    ],
+    porcentaje: "Hasta 50%",
   },
 ];
 

@@ -103,9 +103,9 @@ export default function DataTable<T extends { [k: string]: any }>({
           )}
         </Box>
       </Box>
-      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white" }}>
-        <TableContainer sx={{ maxHeight: 520 }}>
-          <Table stickyHeader size="small">
+      <Paper sx={{ width: "100%", overflow: "hidden", borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white", pointerEvents: "auto" }}>
+        <TableContainer sx={{ maxHeight: 520, pointerEvents: "auto" }}>
+          <Table stickyHeader size="small" sx={{ pointerEvents: "auto" }}>
             <TableHead>
               <TableRow>
                 {columns.map((col) => (
@@ -125,50 +125,94 @@ export default function DataTable<T extends { [k: string]: any }>({
                 </TableRow>
               ) : (
                 rows.map((row) => (
-                  <TableRow key={getId(row)} hover sx={{ "&:nth-of-type(even)": { bgcolor: "#f9fafb" } }}>
+                  <TableRow 
+                    key={getId(row)} 
+                    hover 
+                    sx={{ "&:nth-of-type(even)": { bgcolor: "#f9fafb" } }}
+                  >
                     {columns.map((col) => (
                       <TableCell key={String(col.id)} sx={{ fontSize: "0.875rem" }}>
                         {col.format ? col.format((row as any)[col.id], row) : String((row as any)[col.id] ?? "")}
                       </TableCell>
                     ))}
                     {(onView || onEdit || onDelete) && (
-                      <TableCell>
-                        {onView && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onView(row)}
-                            sx={{
-                              color: "#8b5cf6",
-                              "&:hover": { bgcolor: "rgba(139, 92, 246, 0.1)" },
-                            }}
-                          >
-                            <Visibility fontSize="small" />
-                          </IconButton>
-                        )}
-                        {onEdit && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onEdit(row)}
-                            sx={{
-                              color: "#3b82f6",
-                              "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
-                            }}
-                          >
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        )}
-                        {onDelete && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onDelete(row)}
-                            sx={{
-                              color: "#ef4444",
-                              "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        )}
+                      <TableCell 
+                        sx={{ 
+                          position: "relative",
+                          pointerEvents: "auto",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            gap: 0.5,
+                            alignItems: "center",
+                            justifyContent: "flex-start",
+                            pointerEvents: "auto",
+                          }}
+                        >
+                          {onView && (
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                e.nativeEvent.stopImmediatePropagation();
+                                console.log("View clicked for row:", row);
+                                console.log("onView function:", onView);
+                                try {
+                                  onView(row);
+                                  console.log("onView executed successfully");
+                                } catch (error) {
+                                  console.error("Error executing onView:", error);
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                e.nativeEvent.stopImmediatePropagation();
+                              }}
+                              sx={{
+                                color: "#8b5cf6",
+                                cursor: "pointer",
+                                pointerEvents: "auto",
+                                "&:hover": { bgcolor: "rgba(139, 92, 246, 0.1)" },
+                              }}
+                            >
+                              <Visibility fontSize="small" />
+                            </IconButton>
+                          )}
+                          {onEdit && (
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEdit(row);
+                              }}
+                              sx={{
+                                color: "#3b82f6",
+                                cursor: "pointer",
+                                "&:hover": { bgcolor: "rgba(59, 130, 246, 0.1)" },
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          )}
+                          {onDelete && (
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDelete(row);
+                              }}
+                              sx={{
+                                color: "#ef4444",
+                                cursor: "pointer",
+                                "&:hover": { bgcolor: "rgba(239, 68, 68, 0.1)" },
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          )}
+                        </Box>
                       </TableCell>
                     )}
                   </TableRow>

@@ -33,9 +33,17 @@ const becasPorDefecto: Partial<Beca>[] = [
   },
   {
     nombre_beca: "Apoyo por deporte",
-    tipo_beca: "Mérito",
+    tipo_beca: "Deporte",
     descripcion: "Beneficios para deportistas destacados",
     porcentaje_cobertura: 40,
+    fecha_inicio: new Date().toISOString().slice(0, 10),
+    estado: "Activa",
+  },
+  {
+    nombre_beca: "Beca STEAM para mujeres",
+    tipo_beca: "STEAM",
+    descripcion: "Apoyo para mujeres en ciencia, tecnología e ingeniería",
+    porcentaje_cobertura: 50,
     fecha_inicio: new Date().toISOString().slice(0, 10),
     estado: "Activa",
   },
@@ -238,7 +246,11 @@ export default function BecasPage() {
         <DialogContent>
           <TextField margin="dense" fullWidth label="Nombre" value={form.nombre_beca ?? ""} onChange={(e) => setForm({ ...form, nombre_beca: e.target.value })} required />
           <TextField margin="dense" fullWidth select label="Tipo" value={form.tipo_beca ?? "Mérito"} onChange={(e) => setForm({ ...form, tipo_beca: e.target.value })}>
-            <MenuItem value="Mérito">Mérito</MenuItem><MenuItem value="Socioeconómica">Socioeconómica</MenuItem><MenuItem value="Convenio">Convenio</MenuItem>
+            <MenuItem value="Mérito">Mérito</MenuItem>
+            <MenuItem value="Socioeconómica">Socioeconómica</MenuItem>
+            <MenuItem value="Convenio">Convenio</MenuItem>
+            <MenuItem value="Deporte">Deporte</MenuItem>
+            <MenuItem value="STEAM">STEAM para mujeres</MenuItem>
           </TextField>
           <TextField margin="dense" fullWidth label="Descripción" multiline value={form.descripcion ?? ""} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
           <TextField margin="dense" fullWidth type="number" label="% Cobertura" value={form.porcentaje_cobertura ?? 0} onChange={(e) => {

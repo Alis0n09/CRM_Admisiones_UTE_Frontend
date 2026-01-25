@@ -3,8 +3,12 @@ import {
   Box,
   Button,
   Checkbox,
+  FormControl,
   FormControlLabel,
+  InputLabel,
   Link,
+  MenuItem,
+  Select,
   Stack,
   TextField,
   Typography,
@@ -27,8 +31,10 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, checked, type } = e.target;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { name: string; value: unknown } }) => {
+    const { name, value } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    const type = (e.target as HTMLInputElement).type;
     setFormData((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -44,8 +50,8 @@ export default function RegisterPage() {
       return;
     }
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+    if (!formData.password) {
+      setError("Debes ingresar una contraseña");
       return;
     }
 
@@ -54,17 +60,26 @@ export default function RegisterPage() {
       return;
     }
 
+    if (formData.password !== formData.confirmPassword) {
+      setError("¡Las contraseñas no coinciden");
+      return;
+    }
+
+    if (!formData.numero_identificacion || formData.numero_identificacion.trim() === "") {
+      setError("Debes ingresar tu número de identificación");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Crear el cliente
+      // Crear el cliente - NO incluir 'estado' ya que el backend no lo acepta
       const clienteData = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
         correo: formData.correo,
-        tipo_identificacion: "Cédula",
-        numero_identificacion: "", // Se puede agregar un campo para esto si es necesario
+        tipo_identificacion: formData.tipo_identificacion,
+        numero_identificacion: formData.numero_identificacion.trim(),
         origen: "Formulario Web",
-        estado: "Nuevo",
       };
 
       const cliente = await clienteService.createClientePublico(clienteData);
@@ -103,16 +118,26 @@ export default function RegisterPage() {
             backgroundImage: "url(/registro.png)",
             backgroundSize: "cover",
             backgroundPosition: "center",
-            filter: "brightness(0.9) saturate(1.1)",
+            backgroundRepeat: "no-repeat",
+            filter: "brightness(0.95) saturate(1.2) contrast(1.05)",
+            transform: "scale(1)",
+            transition: "transform 0.3s ease",
+            "&::before": {
+              content: '""',
+              position: "absolute",
+              inset: 0,
+              background: "rgba(0, 0, 0, 0.1)",
+            },
           }}
         />
-        {/* Overlay degradado */}
+        {/* Overlay degradado mejorado */}
         <Box
           sx={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(135deg, rgba(139, 92, 246, 0.85) 0%, rgba(99, 102, 241, 0.80) 50%, rgba(20, 184, 166, 0.78) 100%)",
+              "linear-gradient(135deg, rgba(139, 92, 246, 0.75) 0%, rgba(99, 102, 241, 0.70) 50%, rgba(20, 184, 166, 0.68) 100%)",
+            backdropFilter: "blur(0.5px)",
           }}
         />
 
@@ -252,6 +277,40 @@ export default function RegisterPage() {
                 }}
               />
 
+              <FormControl fullWidth size="small">
+                <InputLabel>Tipo de identificación</InputLabel>
+                <Select
+                  name="tipo_identificacion"
+                  value={formData.tipo_identificacion}
+                  label="Tipo de identificación"
+                  onChange={handleChange}
+                  required
+                  sx={{
+                    borderRadius: 2,
+                  }}
+                >
+                  <MenuItem value="Cédula">Cédula</MenuItem>
+                  <MenuItem value="Pasaporte">Pasaporte</MenuItem>
+                  <MenuItem value="RUC">RUC</MenuItem>
+                </Select>
+              </FormControl>
+
+              <TextField
+                name="numero_identificacion"
+                label="Número de identificación"
+                variant="outlined"
+                fullWidth
+                size="small"
+                value={formData.numero_identificacion}
+                onChange={handleChange}
+                required
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+
               <TextField
                 name="password"
                 label="Contraseña"
@@ -260,6 +319,23 @@ export default function RegisterPage() {
                 fullWidth
                 size="small"
                 value={formData.password}
+                onChange={handleChange}
+                required
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+
+              <TextField
+                name="confirmPassword"
+                label="Confirmar contraseña"
+                type="password"
+                variant="outlined"
+                fullWidth
+                size="small"
+                value={formData.confirmPassword}
                 onChange={handleChange}
                 required
                 sx={{

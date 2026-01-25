@@ -113,12 +113,22 @@ export default function PostulacionesPage() {
         observaciones: form.observaciones,
       };
       postulacionService.updatePostulacion(sel.id_postulacion, updateData)
-        .then(() => { setOpen(false); load(); })
+        .then(() => { 
+          setOpen(false); 
+          load();
+          // Disparar evento para actualizar otras páginas que usan postulaciones
+          window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
+        })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     } else {
       // Para crear, enviar todos los campos necesarios
       postulacionService.createPostulacion(form)
-        .then(() => { setOpen(false); load(); })
+        .then(() => { 
+          setOpen(false); 
+          load();
+          // Disparar evento para actualizar otras páginas que usan postulaciones
+          window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
+        })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }
   };
