@@ -25,14 +25,12 @@ import * as documentoService from "../../services/documentoPostulacion.service";
 import type { Cliente } from "../../services/cliente.service";
 import type { Postulacion } from "../../services/postulacion.service";
 import type { DocumentoPostulacion } from "../../services/documentoPostulacion.service";
-
 interface StepData {
   label: string;
   date?: string;
   status: "completed" | "in-progress" | "pending";
   description?: string;
 }
-
 export default function ProcesoAdmisionPage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -40,12 +38,10 @@ export default function ProcesoAdmisionPage() {
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [postulacion, setPostulacion] = useState<Postulacion | null>(null);
   const [documentos, setDocumentos] = useState<DocumentoPostulacion[]>([]);
-
   const normalizeKey = (v: unknown) => {
     const s = String(v ?? "").trim().toLowerCase();
     return s.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   };
-
   const tipoAliases: Record<string, string> = {
     "cedula": "cedula de identidad",
     "cedula de identidad": "cedula de identidad",
@@ -58,48 +54,38 @@ export default function ProcesoAdmisionPage() {
     "foto tamano carnet": "foto tamano carnet",
     "foto tamaño carnet": "foto tamano carnet",
   };
-
   const tipoKey = (v: unknown) => {
     const k = normalizeKey(v);
     return tipoAliases[k] ?? k;
   };
-
   const getPostulacionClienteId = (p: Partial<Postulacion> | null | undefined) => {
     const anyP = p as any;
     return String(anyP?.id_cliente ?? anyP?.cliente?.id_cliente ?? "").trim();
   };
-
   const getDocPostulacionId = (d: Partial<DocumentoPostulacion> | null | undefined) => {
     const anyD = d as any;
     return String(anyD?.id_postulacion ?? anyD?.postulacion?.id_postulacion ?? "").trim();
   };
-
   const loadData = useCallback(async () => {
     if (!user?.id_cliente) {
       setLoading(false);
       return;
     }
-
     try {
       const [clienteRes, postulacionesRes, docsRes] = await Promise.all([
         clienteService.getCliente(user.id_cliente).catch(() => null as any),
         postulacionService.getPostulaciones().catch(() => [] as any),
         documentoService.getDocumentosPostulacion().catch(() => [] as any),
       ]);
-
       setCliente(clienteRes || null);
-
       const postulacionesList: Postulacion[] = Array.isArray(postulacionesRes)
         ? postulacionesRes
         : (postulacionesRes as any)?.items || [];
-
       const docsList: DocumentoPostulacion[] = Array.isArray(docsRes) ? docsRes : [];
-
       const userClienteId = String(user.id_cliente).trim();
       const postulacionesCliente = postulacionesList.filter(
         (p: Postulacion) => getPostulacionClienteId(p) === userClienteId
       );
-
       const postulacionActiva = postulacionesCliente.length > 0
         ? [...postulacionesCliente].sort((a: Postulacion, b: Postulacion) => {
             const fa = a.fecha_postulacion ? new Date(a.fecha_postulacion).getTime() : 0;
@@ -107,16 +93,12 @@ export default function ProcesoAdmisionPage() {
             return fb - fa;
           })[0]
         : postulacionesList[0];
-
       setPostulacion(postulacionActiva || null);
-
       const idPostulacionActiva = String(postulacionActiva?.id_postulacion || "").trim();
       const docsPostulacion = idPostulacionActiva
         ? docsList.filter((d) => getDocPostulacionId(d) === idPostulacionActiva)
         : [];
-
       setDocumentos(docsPostulacion);
-
       console.log("📊 Mi Solicitud: documentos cargados:", {
         id_postulacion: idPostulacionActiva,
         total: docsPostulacion.length,
@@ -128,43 +110,34 @@ export default function ProcesoAdmisionPage() {
       setLoading(false);
     }
   }, [user?.id_cliente]);
-
   useEffect(() => {
     loadData();
   }, [loadData]);
-
   useEffect(() => {
     const handleVisibilityChange = () => { if (!document.hidden) loadData(); };
     const handleFocus = () => loadData();
     const handleDocumentUpdate = () => loadData();
-
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
     window.addEventListener("documentosUpdated", handleDocumentUpdate);
-
     return () => {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
       window.removeEventListener("documentosUpdated", handleDocumentUpdate);
     };
   }, [loadData]);
-
   const documentosRequeridos = useMemo(() => {
     if (!postulacion) return [];
-
     const requeridosEstandar = [
       "Cédula de identidad",
       "Acta de grado",
       "Título de bachiller",
       "Foto tamaño carnet",
     ];
-
     const tiposDocumentosExistentes = documentos.map((d) => d.tipo_documento);
-
     const todosTipos = tiposDocumentosExistentes.length > 0
       ? [...new Set([...tiposDocumentosExistentes, ...requeridosEstandar])]
       : requeridosEstandar;
-
     return todosTipos.map((tipo) => {
       const docExistente = documentos.find((d) => tipoKey(d.tipo_documento) === tipoKey(tipo)) || null;
       const urlOk = !!docExistente?.url_archivo && String(docExistente.url_archivo).trim() !== "";
@@ -180,37 +153,27 @@ export default function ProcesoAdmisionPage() {
       return 0;
     });
   }, [postulacion, documentos]);
-
   const docsProgreso = useMemo(() => {
     const total = documentosRequeridos.length || 4;
     const cargados = documentosRequeridos.filter((d) => d.existe && !!d.documento?.url_archivo).length;
     const porcentaje = total > 0 ? Math.round((cargados / total) * 100) : 0;
     return { cargados, total, porcentaje };
   }, [documentosRequeridos]);
-
   const steps = useMemo<StepData[]>(() => {
     const fechaRegistro = cliente?.fecha_registro
       ? new Date(cliente.fecha_registro).toISOString().split("T")[0]
       : undefined;
-
     const fechaPostulacion = postulacion?.fecha_postulacion
       ? new Date(postulacion.fecha_postulacion).toISOString().split("T")[0]
       : undefined;
-
     const docsCompleted = docsProgreso.cargados;
     const docsTotal = docsProgreso.total;
     const docsInProgress = docsCompleted > 0 && docsCompleted < docsTotal;
-
     const estadoPostulacion = String(postulacion?.estado_postulacion || "").toLowerCase();
-
-    // Regla de coherencia del flujo:
-    // - No puede haber entrevista/resultado si aún no se completan documentos.
     const documentosOk = docsTotal > 0 && docsCompleted >= docsTotal;
-
     const hasFinalResult = /(aprob|rechaz|admit|no admit|finaliz|cancel)/i.test(estadoPostulacion);
     const hasInterview = /entrevista/i.test(estadoPostulacion);
     const interviewDone = /(entrevista).*(realiz|complet|finaliz)/i.test(estadoPostulacion) || (hasFinalResult && hasInterview);
-
     const entrevistaStatus: StepData["status"] = !documentosOk
       ? "pending"
       : interviewDone
@@ -218,7 +181,6 @@ export default function ProcesoAdmisionPage() {
       : hasInterview
       ? "in-progress"
       : "pending";
-
     const entrevistaDescription = !documentosOk
       ? "Pendiente"
       : interviewDone
@@ -226,17 +188,11 @@ export default function ProcesoAdmisionPage() {
       : hasInterview
       ? "En progreso"
       : "Pendiente";
-
-    // Regla: Resultado SOLO puede mostrarse completado cuando:
-    // - Documentos están completos
-    // - Entrevista está completada
-    // - Existe un estado final real en la postulación
     const resultadoListo = documentosOk && entrevistaStatus === "completed" && hasFinalResult;
     const resultadoStatus: StepData["status"] = resultadoListo ? "completed" : "pending";
     const resultadoDescription = resultadoListo
       ? (postulacion?.estado_postulacion || "Completado")
       : "Pendiente";
-
     return [
       { label: "Registro", date: fechaRegistro, status: cliente ? "completed" : "pending" },
       { label: "Formulario de admisión", date: fechaPostulacion, status: postulacion ? "completed" : "pending" },
@@ -249,13 +205,11 @@ export default function ProcesoAdmisionPage() {
       { label: "Resultado", status: resultadoStatus, description: resultadoDescription },
     ];
   }, [cliente, postulacion, docsProgreso]);
-
   const completedSteps = steps.filter((s) => s.status === "completed").length;
   const inProgressSteps = steps.filter((s) => s.status === "in-progress").length;
   const overallProgress = steps.length > 0
     ? Math.round(((completedSteps + (inProgressSteps * 0.5)) / steps.length) * 100)
     : 0;
-
   const currentStepIndex = Math.max(0, steps.findIndex((s) => s.status === "in-progress"));
   const estadoActual = useMemo(() => {
     if (!postulacion) return "Sin postulación";
@@ -263,7 +217,6 @@ export default function ProcesoAdmisionPage() {
     if (steps[2]?.status === "completed") return "Documentos completados";
     return postulacion.estado_postulacion || "En proceso";
   }, [postulacion, steps]);
-
   const getStepIcon = (status: StepData["status"]) => {
     switch (status) {
       case "completed":
@@ -274,7 +227,6 @@ export default function ProcesoAdmisionPage() {
         return <ErrorOutlineIcon sx={{ color: "#9ca3af", fontSize: 20 }} />;
     }
   };
-
   const getStatusLabel = (status: StepData["status"]) => {
     switch (status) {
       case "completed":
@@ -285,7 +237,6 @@ export default function ProcesoAdmisionPage() {
         return "Pendiente";
     }
   };
-
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
@@ -293,7 +244,6 @@ export default function ProcesoAdmisionPage() {
       </Box>
     );
   }
-
   if (!postulacion) {
     return (
       <Alert severity="warning">
@@ -301,10 +251,9 @@ export default function ProcesoAdmisionPage() {
       </Alert>
     );
   }
-
   return (
     <Box sx={{ maxWidth: 1200, mx: "auto" }}>
-      {/* Header */}
+      {}
       <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, mb: 1.5 }}>
         <Box sx={{ minWidth: 0 }}>
           <Typography variant="h5" sx={{ fontWeight: 800, mb: 0.25 }}>
@@ -315,8 +264,7 @@ export default function ProcesoAdmisionPage() {
           </Typography>
         </Box>
       </Box>
-
-      {/* Progreso principal */}
+      {}
       <Card sx={{ borderRadius: 3, boxShadow: 2, mb: 2, overflow: "hidden" }}>
         <Box
           sx={{
@@ -447,15 +395,13 @@ export default function ProcesoAdmisionPage() {
           </Box>
         </CardContent>
       </Card>
-
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 2, alignItems: "start" }}>
-        {/* Timeline */}
+        {}
         <Card sx={{ borderRadius: 3, boxShadow: 2, alignSelf: "start" }}>
           <CardContent sx={{ p: 2 }}>
             <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
               Proceso de Admisión
             </Typography>
-
             <Box sx={{ position: "relative" }}>
               {steps.map((step, index) => (
                 <Box
@@ -481,7 +427,6 @@ export default function ProcesoAdmisionPage() {
                       }}
                     />
                   )}
-
                   <Box
                     sx={{
                       width: 24,
@@ -498,18 +443,15 @@ export default function ProcesoAdmisionPage() {
                   >
                     {getStepIcon(step.status)}
                   </Box>
-
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography variant="body2" sx={{ fontWeight: 800, lineHeight: 1.2 }}>
                       {step.label}
                     </Typography>
-
-                    {/* Segunda línea fija para que el spacing sea equitativo */}
+                    {}
                     <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mt: 0.25 }}>
                       {step.date || getStatusLabel(step.status)}
                     </Typography>
-
-                    {/* Chip siempre en la misma posición */}
+                    {}
                     <Box sx={{ mt: 0.5, display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                       <Chip
                         label={step.description || getStatusLabel(step.status)}
@@ -540,15 +482,13 @@ export default function ProcesoAdmisionPage() {
             </Box>
           </CardContent>
         </Card>
-
-        {/* Sidebar */}
+        {}
         <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
           <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
             <CardContent sx={{ p: 2 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
                 Información Personal
               </Typography>
-
               <Stack spacing={1.25}>
                 <Box>
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
@@ -558,9 +498,7 @@ export default function ProcesoAdmisionPage() {
                     {cliente ? `${cliente.nombres} ${cliente.apellidos}` : "—"}
                   </Typography>
                 </Box>
-
                 <Divider />
-
                 <Box>
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
                     Programa
@@ -569,9 +507,7 @@ export default function ProcesoAdmisionPage() {
                     {postulacion?.carrera?.nombre_carrera || "—"}
                   </Typography>
                 </Box>
-
                 <Divider />
-
                 <Box>
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
                     Email
@@ -580,9 +516,7 @@ export default function ProcesoAdmisionPage() {
                     {cliente?.correo || user?.email || "—"}
                   </Typography>
                 </Box>
-
                 <Divider />
-
                 <Box>
                   <Typography variant="caption" sx={{ color: "text.secondary" }}>
                     Teléfono
@@ -591,7 +525,6 @@ export default function ProcesoAdmisionPage() {
                     {cliente?.celular || cliente?.telefono || "—"}
                   </Typography>
                 </Box>
-
                 <Button
                   variant="outlined"
                   fullWidth
@@ -604,18 +537,15 @@ export default function ProcesoAdmisionPage() {
               </Stack>
             </CardContent>
           </Card>
-
           <Card sx={{ borderRadius: 3, boxShadow: 2 }}>
             <CardContent sx={{ p: 2 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1.25 }}>
                 Documentos Requeridos
               </Typography>
-
               <Stack spacing={1}>
                 {documentosRequeridos.map((req, index) => {
                   const doc = req.documento;
                   const isUploaded = !!req.existe && !!doc?.url_archivo && String(doc.url_archivo).trim() !== "";
-
                   return (
                     <Box
                       key={`${req.tipo_documento}-${index}`}
@@ -648,7 +578,6 @@ export default function ProcesoAdmisionPage() {
                             <UploadFileIcon sx={{ color: "#94a3b8" }} />
                           )}
                         </Box>
-
                         <Box sx={{ minWidth: 0 }}>
                           <Typography variant="body2" sx={{ fontWeight: 700, color: "#0f172a" }} noWrap>
                             {req.tipo_documento}
@@ -658,7 +587,6 @@ export default function ProcesoAdmisionPage() {
                           </Typography>
                         </Box>
                       </Box>
-
                       {!isUploaded && (
                         <Button
                           size="small"

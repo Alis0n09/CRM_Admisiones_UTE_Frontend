@@ -29,8 +29,6 @@ import type { Postulacion } from "../services/postulacion.service";
 import type { DocumentoPostulacion } from "../services/documentoPostulacion.service";
 import type { Beca } from "../services/beca.service";
 import type { BecaEstudiante } from "../services/becaEstudiante.service";
-import { api } from "../services/api";
-
 interface ClienteViewModalProps {
   open: boolean;
   onClose: () => void;
@@ -45,7 +43,6 @@ interface ClienteViewModalProps {
   onSubirDocumentoClick?: () => void;
   onAsignarBecaClick?: () => void;
 }
-
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
   try {
@@ -58,20 +55,17 @@ function formatDate(dateStr?: string): string {
     return dateStr;
   }
 }
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 interface InfoCardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
   iconColor: string;
 }
-
 function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
   return (
     <Card
@@ -117,159 +111,8 @@ function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
     </Card>
   );
 }
-
-export default function ClienteViewModal({
-  open,
-  onClose,
-  cliente,
-  postulaciones,
-  documentos,
-  becasDisponibles,
-  becaAsignada,
-  loadingDetail,
-  onCrearPostulacionClick,
-  onSubirDocumentoClick,
-  onAsignarBecaClick,
-}: ClienteViewModalProps) {
+export default function ClienteViewModal({ open, onClose, cliente }: ClienteViewModalProps) {
   const [postulacionesCount, setPostulacionesCount] = useState(0);
-  const [fileError, setFileError] = useState<string>("");
-
-  const resolveUrl = (url?: string) => {
-    let raw = String(url || "").trim();
-    if (!raw) return "";
-    const toSecureByFilename = (filename: string) => `/documentos-postulacion/files/${filename}`;
-
-    // Si viene URL absoluta apuntando a /uploads, convertirla a la ruta segura real
-    // (porque el archivo se guarda en public/documentos-postulacion y se sirve por /documentos-postulacion/files/:filename)
-    if (/^https?:\/\//i.test(raw) && raw.includes("/uploads/")) {
-      return raw.replace("/uploads/", "/documentos-postulacion/files/");
-    }
-    if (/^https?:\/\//i.test(raw)) return raw;
-
-    // Si viene solo "archivo.pdf" o "/archivo.pdf"
-    if (/^[^/]+\.[a-z0-9]+$/i.test(raw)) raw = toSecureByFilename(raw);
-    if (/^\/[^/]+\.[a-z0-9]+$/i.test(raw)) raw = toSecureByFilename(raw.slice(1));
-
-    // Si viene como "/uploads/archivo.pdf" o "uploads/archivo.pdf", mapear a endpoint seguro
-    if (raw.startsWith("/uploads/")) raw = toSecureByFilename(raw.replace(/^\/uploads\//, ""));
-    if (raw.startsWith("uploads/")) raw = toSecureByFilename(raw.replace(/^uploads\//, ""));
-
-    const baseURL = String(api.defaults.baseURL || "").replace(/\/$/, "");
-    if (!baseURL) return raw;
-    if (raw.startsWith("/")) return `${baseURL}${raw}`;
-    return `${baseURL}/${raw}`;
-  };
-
-  const isSameOriginAsApi = (absoluteUrl: string) => {
-    try {
-      const apiBase = String(api.defaults.baseURL || "").trim();
-      if (!apiBase) return false;
-      const a = new URL(absoluteUrl);
-      const b = new URL(apiBase);
-      return a.origin === b.origin;
-    } catch {
-      return false;
-    }
-  };
-
-  const canPreview = (url?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return false;
-    // URLs temporales de fallback no son previsualizables/descargables reales
-    if (u.includes("/temp/")) return false;
-    return true;
-  };
-
-  const downloadWithAuth = async (url?: string, nombre?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    // Si es un URL externo, abrir directo (CORS/auth fuera de nuestro control)
-    if (!isSameOriginAsApi(u)) {
-      window.open(u, "_blank", "noopener,noreferrer");
-      return;
-    }
-    try {
-      const res = await api.get(u, { responseType: "arraybuffer", timeout: 20000 });
-      const contentType = String((res as any)?.headers?.["content-type"] || "application/octet-stream");
-      const blob = new Blob([res.data as ArrayBuffer], { type: contentType });
-      const blobUrl = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = nombre || "documento";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    } catch (e) {
-      const status = (e as any)?.response?.status;
-      let msg = (e as any)?.response?.data?.message || (e as any)?.message || "Error";
-      const data = (e as any)?.response?.data;
-      if (data instanceof ArrayBuffer) {
-        try {
-          const text = new TextDecoder().decode(new Uint8Array(data));
-          const parsed = JSON.parse(text);
-          msg = parsed?.message || text || msg;
-        } catch {
-          // ignore
-        }
-      }
-      setFileError(`No se pudo descargar (HTTP ${status || "?"}). ${msg}. URL: ${u}`);
-    }
-  };
-
-  const previewWithAuth = async (url?: string, nombre?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    // Si es un URL externo, abrir directo (CORS/auth fuera de nuestro control)
-    if (!isSameOriginAsApi(u)) {
-      window.open(u, "_blank", "noopener,noreferrer");
-      return;
-    }
-    let w: Window | null = null;
-    try {
-      // Abrir la pestaña inmediatamente (evita bloqueo de popup por await)
-      w = window.open("about:blank", "_blank");
-      if (!w) throw new Error("El navegador bloqueó la ventana emergente");
-
-      w.document.title = nombre || "Documento";
-      w.document.body.innerHTML = "<p style='font-family: system-ui; padding: 16px;'>Cargando documento...</p>";
-
-      const res = await api.get(u, { responseType: "arraybuffer", timeout: 20000 });
-      const contentType = String((res as any)?.headers?.["content-type"] || "application/pdf");
-      const blob = new Blob([res.data as ArrayBuffer], { type: contentType });
-      const blobUrl = URL.createObjectURL(blob);
-      // Navegar la pestaña ya abierta al blob
-      w.location.href = blobUrl;
-      // no revocamos inmediatamente para no romper la pestaña; revocar luego
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (e) {
-      const status = (e as any)?.response?.status;
-      let msg = (e as any)?.response?.data?.message || (e as any)?.message || "Error";
-      const data = (e as any)?.response?.data;
-      if (data instanceof ArrayBuffer) {
-        try {
-          const text = new TextDecoder().decode(new Uint8Array(data));
-          const parsed = JSON.parse(text);
-          msg = parsed?.message || text || msg;
-        } catch {
-          // ignore
-        }
-      }
-      setFileError(`No se pudo previsualizar (HTTP ${status || "?"}). ${msg}. URL: ${u}`);
-      if (w && !w.closed) {
-        w.document.title = "Error";
-        w.document.body.innerHTML = `
-          <div style="font-family: system-ui; padding: 16px;">
-            <h3 style="margin: 0 0 8px;">No se pudo previsualizar</h3>
-            <p style="margin: 0 0 12px;">${String(msg)}</p>
-            <p style="margin: 0 0 12px;">HTTP: ${String(status || "?")}</p>
-            <a href="${u}" target="_blank" rel="noreferrer">Abrir enlace directo</a>
-          </div>
-        `;
-      }
-    }
-  };
-
   useEffect(() => {
     if (Array.isArray(postulaciones)) {
       setPostulacionesCount(postulaciones.length);
@@ -287,13 +130,10 @@ export default function ClienteViewModal({
         })
         .catch(() => setPostulacionesCount(0));
     }
-  }, [cliente?.id_cliente, postulaciones]);
-
+  }, [cliente?.id_cliente]);
   if (!cliente) return null;
-
   const initials = getInitials(cliente.nombres, cliente.apellidos);
   const nombreCompleto = `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim();
-
   return (
     <Dialog
       open={open}
@@ -308,7 +148,7 @@ export default function ClienteViewModal({
         },
       }}
     >
-      {/* Header con gradiente morado */}
+      {}
       <Box
         sx={{
           background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
@@ -363,10 +203,9 @@ export default function ClienteViewModal({
           />
         </Stack>
       </Box>
-
-      {/* Contenido */}
+      {}
       <Box sx={{ p: 3, bgcolor: "#f9fafb", maxHeight: "calc(90vh - 200px)", overflowY: "auto" }}>
-        {/* Información Personal */}
+        {}
         <Box sx={{ mb: 3 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <Person sx={{ color: "#3b82f6", fontSize: 20 }} />
@@ -479,8 +318,7 @@ export default function ClienteViewModal({
             </Grid>
           </Grid>
         </Box>
-
-        {/* Postulaciones */}
+        {}
         <Box>
           <Box
             sx={{
@@ -743,8 +581,7 @@ export default function ClienteViewModal({
           )}
         </Box>
       </Box>
-
-      {/* Footer */}
+      {}
       <Box
         sx={{
           p: 2,

@@ -2,7 +2,6 @@ import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import SidebarAsesor from "../components/layout/SidebarAsesor";
 import TopbarAsesor from "../components/layout/TopbarAsesor";
-
 export default function AsesorLayout() {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#EBEBEB" }}>

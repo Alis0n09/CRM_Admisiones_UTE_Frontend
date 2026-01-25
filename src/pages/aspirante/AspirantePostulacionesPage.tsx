@@ -17,7 +17,6 @@ const cols: Column<Postulacion>[] = [
   { id: "fecha_postulacion", label: "Fecha", minWidth: 100 },
   { id: "estado_postulacion", label: "Estado", minWidth: 110 },
 ];
-
 export default function AspirantePostulacionesPage() {
   const { user } = useAuth();
   const [items, setItems] = useState<Postulacion[]>([]);

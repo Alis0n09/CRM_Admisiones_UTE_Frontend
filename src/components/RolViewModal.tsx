@@ -2,18 +2,14 @@ import { Grid, Stack, Typography, Box } from "@mui/material";
 import AdminPanelSettings from "@mui/icons-material/AdminPanelSettings";
 import ViewModalBase, { InfoCard } from "./ViewModalBase";
 import type { Rol } from "../services/rol.service";
-
 interface RolViewModalProps {
   open: boolean;
   onClose: () => void;
   rol: Rol | null;
 }
-
 export default function RolViewModal({ open, onClose, rol }: RolViewModalProps) {
   if (!rol) return null;
-
   const nombreInitial = rol.nombre?.[0]?.toUpperCase() || "R";
-
   return (
     <ViewModalBase
       open={open}

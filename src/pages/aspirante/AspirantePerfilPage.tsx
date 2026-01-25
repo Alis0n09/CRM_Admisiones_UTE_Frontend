@@ -23,14 +23,12 @@ import BadgeIcon from "@mui/icons-material/Badge";
 import CalendarTodayIcon from "@mui/icons-material/CalendarToday";
 import PublicIcon from "@mui/icons-material/Public";
 import SaveIcon from "@mui/icons-material/Save";
-
 export default function AspirantePerfilPage() {
   const { user } = useAuth();
   const [form, setForm] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" as "success" | "error" });
-
   useEffect(() => {
     if (!user?.id_cliente) {
       setLoading(false);
@@ -41,15 +39,12 @@ export default function AspirantePerfilPage() {
       .catch(() => setForm({}))
       .finally(() => setLoading(false));
   }, [user?.id_cliente]);
-
   const save = () => {
     if (!user?.id_cliente || !form.nombres || !form.apellidos || !form.numero_identificacion) {
       setSnackbar({ open: true, message: "Por favor completa los campos requeridos", severity: "error" });
       return;
     }
     setSaving(true);
-    // Enviar solo campos permitidos por el DTO de actualización (evita errores tipo:
-    // "property id_cliente/fecha_registro/estado should not exist")
     const origen = String(form.origen ?? "").trim() || "Web";
     const updatePayload = {
       nombres: form.nombres,
@@ -63,7 +58,6 @@ export default function AspirantePerfilPage() {
       fecha_nacimiento: form.fecha_nacimiento,
       origen,
     };
-
     clienteService.updateCliente(user.id_cliente, updatePayload)
       .then(() => {
         setSnackbar({ open: true, message: "Perfil actualizado exitosamente", severity: "success" });
@@ -73,7 +67,6 @@ export default function AspirantePerfilPage() {
       })
       .finally(() => setSaving(false));
   };
-
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: 400 }}>
@@ -81,7 +74,6 @@ export default function AspirantePerfilPage() {
       </Box>
     );
   }
-
   if (!form.id_cliente) {
     return (
       <Alert severity="warning">
@@ -89,7 +81,6 @@ export default function AspirantePerfilPage() {
       </Alert>
     );
   }
-
   const nombreCompleto = `${form.nombres || ""} ${form.apellidos || ""}`.trim() || "Usuario";
   const iniciales = nombreCompleto
     .split(" ")
@@ -97,10 +88,9 @@ export default function AspirantePerfilPage() {
     .join("")
     .toUpperCase()
     .slice(0, 2) || "U";
-
   return (
     <Box>
-      {/* Header con Avatar (como estaba) */}
+      {}
       <Card sx={{ borderRadius: 2, boxShadow: 2, mb: 2, background: "linear-gradient(135deg, #3b82f6 0%, #10b981 100%)" }}>
         <CardContent sx={{ p: 2.5 }}>
           <Stack direction="row" spacing={2} alignItems="center">
@@ -131,10 +121,9 @@ export default function AspirantePerfilPage() {
           </Stack>
         </CardContent>
       </Card>
-
-      {/* Formulario de Edición - Organizado en secciones */}
+      {}
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-        {/* Sección: Datos Básicos */}
+        {}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
@@ -187,8 +176,7 @@ export default function AspirantePerfilPage() {
             </Box>
           </CardContent>
         </Card>
-
-        {/* Sección: Identificación */}
+        {}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
@@ -243,8 +231,7 @@ export default function AspirantePerfilPage() {
             </Box>
           </CardContent>
         </Card>
-
-        {/* Sección: Información de Contacto */}
+        {}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
@@ -315,8 +302,7 @@ export default function AspirantePerfilPage() {
             </Box>
           </CardContent>
         </Card>
-
-        {/* Sección: Información Adicional */}
+        {}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
             <Box sx={{ display: "flex", alignItems: "center", mb: 1.5 }}>
@@ -367,8 +353,7 @@ export default function AspirantePerfilPage() {
             </Box>
           </CardContent>
         </Card>
-
-        {/* Botones de Acción */}
+        {}
         <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
           <CardContent sx={{ p: 1.5, "&:last-child": { pb: 1.5 } }}>
             <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
@@ -415,8 +400,7 @@ export default function AspirantePerfilPage() {
           </CardContent>
         </Card>
       </Box>
-
-      {/* Snackbar para notificaciones */}
+      {}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}

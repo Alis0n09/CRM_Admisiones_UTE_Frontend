@@ -1,5 +1,4 @@
 import { Box, Typography } from "@mui/material";
-
 export default function AsesorEvaluacionesPage() {
   return (
     <Box>

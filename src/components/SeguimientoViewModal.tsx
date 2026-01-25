@@ -5,19 +5,15 @@ import CalendarToday from "@mui/icons-material/CalendarToday";
 import Phone from "@mui/icons-material/Phone";
 import ViewModalBase, { InfoCard, formatDate, getInitials } from "./ViewModalBase";
 import type { Seguimiento } from "../services/seguimiento.service";
-
 interface SeguimientoViewModalProps {
   open: boolean;
   onClose: () => void;
   seguimiento: Seguimiento | null;
 }
-
 export default function SeguimientoViewModal({ open, onClose, seguimiento }: SeguimientoViewModalProps) {
   if (!seguimiento) return null;
-
   const clienteNombre = seguimiento.cliente ? `${seguimiento.cliente.nombres} ${seguimiento.cliente.apellidos}` : "Cliente";
   const initials = seguimiento.cliente ? getInitials(seguimiento.cliente.nombres, seguimiento.cliente.apellidos) : "S";
-
   return (
     <ViewModalBase
       open={open}

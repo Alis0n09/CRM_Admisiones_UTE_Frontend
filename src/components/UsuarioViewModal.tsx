@@ -4,18 +4,14 @@ import CheckCircle from "@mui/icons-material/CheckCircle";
 import Person from "@mui/icons-material/Person";
 import ViewModalBase, { InfoCard } from "./ViewModalBase";
 import type { Usuario } from "../services/usuario.service";
-
 interface UsuarioViewModalProps {
   open: boolean;
   onClose: () => void;
   usuario: Usuario | null;
 }
-
 export default function UsuarioViewModal({ open, onClose, usuario }: UsuarioViewModalProps) {
   if (!usuario) return null;
-
   const emailInitial = usuario.email?.[0]?.toUpperCase() || "U";
-
   return (
     <ViewModalBase
       open={open}

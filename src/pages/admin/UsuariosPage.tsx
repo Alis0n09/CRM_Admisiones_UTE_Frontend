@@ -10,14 +10,12 @@ import type { Usuario } from "../../services/usuario.service";
 import type { Empleado } from "../../services/empleado.service";
 import type { Cliente } from "../../services/cliente.service";
 import type { Rol } from "../../services/rol.service";
-
 const cols: Column<Usuario>[] = [
   { id: "email", label: "Email", minWidth: 180 },
   { id: "activo", label: "Activo", minWidth: 80, format: (v) => v ? "Sí" : "No" },
   { id: "empleado", label: "Empleado", minWidth: 140, format: (_, r) => r.empleado ? `${r.empleado.nombres} ${r.empleado.apellidos}` : (r.id_empleado || "-") },
   { id: "cliente", label: "Cliente", minWidth: 140, format: (_, r) => r.cliente ? `${r.cliente.nombres} ${r.cliente.apellidos}` : (r.id_cliente || "-") },
 ];
-
 export default function UsuariosPage() {
   const [items, setItems] = useState<Usuario[]>([]);
   const [empleados, setEmpleados] = useState<Empleado[]>([]);
@@ -31,56 +29,42 @@ export default function UsuariosPage() {
   const [createForm, setCreateForm] = useState<{ tipo: "empleado" | "cliente"; id: string; email: string; password: string; rolesIds: string[] }>({ tipo: "empleado", id: "", email: "", password: "", rolesIds: [] });
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
-
   const load = useCallback(() => {
     usuarioService.getUsuarios().then((r) => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([]));
     empleadoService.getEmpleados({ limit: 500 }).then((r: any) => setEmpleados(r?.items ?? [])).catch(() => setEmpleados([]));
     clienteService.getClientes({ limit: 500 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
   }, []);
-
   useEffect(() => {
     usuarioService.getUsuarios().then((r) => setItems(Array.isArray(r) ? r : [])).catch(() => setItems([]));
     empleadoService.getEmpleados({ limit: 500 }).then((r: any) => setEmpleados(r?.items ?? [])).catch(() => setEmpleados([]));
     clienteService.getClientes({ limit: 500 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
     rolService.getRoles().then((r) => setRoles(Array.isArray(r) ? r : [])).catch(() => setRoles([]));
   }, []);
-
   const save = async () => {
     if (!sel) return;
-    
-    // Validar que haya al menos un rol seleccionado
     if (!form.rolesIds || form.rolesIds.length === 0) {
       alert("Debes asignar al menos un rol al usuario para que pueda iniciar sesión.");
       return;
     }
-    
-    // Verificar que los rolesIds sean válidos
     const rolesValidos = roles.filter(r => form.rolesIds.includes(r.id_rol));
     if (rolesValidos.length !== form.rolesIds.length) {
       alert("Error: Algunos roles seleccionados no son válidos. Por favor, recarga la página e intenta nuevamente.");
       return;
     }
-    
-    // Preparar el body con el formato que espera el backend
     const bodyToSend = {
       email: sel.email,
       activo: form.activo,
       rolesIds: form.rolesIds, // Siempre incluir rolesIds para actualizar los roles
     };
-    
     console.log("=== ACTUALIZANDO USUARIO ===");
     console.log("Usuario ID:", sel.id_usuario);
     console.log("Email:", sel.email);
     console.log("Roles IDs seleccionados:", form.rolesIds);
     console.log("Nombres de roles:", rolesValidos.map(r => r.nombre));
     console.log("Body a enviar:", JSON.stringify(bodyToSend, null, 2));
-    
     try {
-      // Intentar primero con PATCH (actualización parcial)
       await usuarioService.updateUsuarioParcial(sel.id_usuario, bodyToSend as any);
       console.log("✅ Usuario actualizado exitosamente con PATCH");
-      
-      // Verificar que los roles se actualizaron correctamente
       try {
         const usuarioActualizado = await usuarioService.getUsuario(sel.id_usuario);
         const rolesActualizados = (usuarioActualizado as any).roles || [];
@@ -89,20 +73,15 @@ export default function UsuariosPage() {
       } catch (verifyError) {
         console.warn("⚠️ No se pudo verificar los roles actualizados:", verifyError);
       }
-      
       setOpen(false); 
       load(); 
       alert("Usuario actualizado exitosamente.\n\nIMPORTANTE: El usuario debe cerrar sesión completamente e iniciar sesión nuevamente para que los cambios de roles surtan efecto.");
     } catch (e: any) {
       console.error("❌ Error con PATCH, intentando PUT:", e);
       console.error("Error completo:", e?.response?.data || e);
-      
       try {
-        // Si PATCH falla, intentar con PUT
         await usuarioService.updateUsuario(sel.id_usuario, bodyToSend as any);
         console.log("✅ Usuario actualizado exitosamente con PUT");
-        
-        // Verificar que los roles se actualizaron correctamente
         try {
           const usuarioActualizado = await usuarioService.getUsuario(sel.id_usuario);
           const rolesActualizados = (usuarioActualizado as any).roles || [];
@@ -110,7 +89,6 @@ export default function UsuariosPage() {
         } catch (verifyError) {
           console.warn("⚠️ No se pudo verificar los roles actualizados:", verifyError);
         }
-        
         setOpen(false); 
         load(); 
         alert("Usuario actualizado exitosamente.\n\nIMPORTANTE: El usuario debe cerrar sesión completamente e iniciar sesión nuevamente para que los cambios de roles surtan efecto.");
@@ -123,7 +101,6 @@ export default function UsuariosPage() {
       }
     }
   };
-
   const saveCreate = () => {
     if (!createForm.email || !createForm.id) { alert("Completa email y " + (createForm.tipo === "empleado" ? "empleado" : "cliente")); return; }
     if (!createForm.password || createForm.password.length < 6) { alert("La contraseña es obligatoria y debe tener al menos 6 caracteres."); return; }
@@ -133,16 +110,12 @@ export default function UsuariosPage() {
     fn().then(() => { setOpenCreate(false); setCreateForm({ tipo: "empleado", id: "", email: "", password: "", rolesIds: [] }); load(); })
       .catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const handleView = (row: Usuario) => { setSel(row); setOpenView(true); };
-
   const del = (row: Usuario) => {
     if (!confirm("¿Eliminar este usuario?")) return;
     usuarioService.deleteUsuario(row.id_usuario).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const paginated = items.slice((page - 1) * limit, page * limit);
-
   return (
     <>
       <DataTable title="Usuarios" columns={cols} rows={paginated} total={items.length} page={page} rowsPerPage={limit}
@@ -153,28 +126,20 @@ export default function UsuariosPage() {
           setSel(r); 
           setForm({ activo: r.activo ?? true, rolesIds: [] }); 
           setOpen(true);
-          
-          // Intentar obtener los roles del usuario
           try {
             console.log("Obteniendo roles del usuario:", r.id_usuario);
             const usuarioCompleto = await usuarioService.getUsuario(r.id_usuario);
             console.log("Usuario completo obtenido:", usuarioCompleto);
-            
             const usuarioRoles = (usuarioCompleto as any).roles || [];
             console.log("Roles del usuario:", usuarioRoles);
-            
-            // Intentar diferentes formatos de roles que el backend podría devolver
             const rolesIds = usuarioRoles.map((rol: any) => {
-              // El rol podría venir como objeto con id_rol, id, o como string directamente
               if (typeof rol === 'string') return rol;
               return rol.id_rol || rol.id || rol.idRol || null;
             }).filter(Boolean);
-            
             console.log("IDs de roles extraídos:", rolesIds);
             setForm({ activo: r.activo ?? true, rolesIds: rolesIds });
           } catch (e) {
             console.warn("No se pudieron obtener los roles del usuario, usando los del objeto:", e);
-            // Si no se pueden obtener los roles, usar los que vienen en el objeto
             const usuarioRoles = (r as any).roles || [];
             const rolesIds = usuarioRoles.map((rol: any) => {
               if (typeof rol === 'string') return rol;

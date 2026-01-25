@@ -27,12 +27,10 @@ import * as postulacionService from "../../services/postulacion.service";
 import * as carreraService from "../../services/carrera.service";
 import * as becaService from "../../services/beca.service";
 import * as usuarioService from "../../services/usuario.service";
-
 function toItems(res: any): number {
   if (Array.isArray(res)) return res.length;
   return res?.items?.length ?? res?.meta?.totalItems ?? 0;
 }
-
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const [counts, setCounts] = useState({
@@ -52,7 +50,6 @@ export default function AdminDashboard() {
     total: 0,
   });
   const [timeRange, setTimeRange] = useState("daily");
-
   useEffect(() => {
     Promise.all([
       clienteService.getClientes({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
@@ -65,8 +62,6 @@ export default function AdminDashboard() {
     ]).then(([c, e, t, p, car, b, u]) => {
       const postulaciones = Array.isArray(p) ? p : (p as any)?.items ?? [];
       const totalPostulaciones = (p as any)?.meta?.totalItems ?? postulaciones.length;
-      
-      // Calcular estadísticas por estado
       const aprobadas = postulaciones.filter((post: any) => 
         post.estado_postulacion?.toLowerCase().includes("aprob") || 
         post.estado_postulacion === "Aprobada"
@@ -85,7 +80,6 @@ export default function AdminDashboard() {
         post.estado_postulacion?.toLowerCase().includes("rechaz") ||
         post.estado_postulacion === "Rechazada"
       ).length;
-
       setPostulacionStats({
         aprobadas,
         enProceso,
@@ -93,9 +87,7 @@ export default function AdminDashboard() {
         rechazadas,
         total: totalPostulaciones,
       });
-
       const usuarios = Array.isArray(u) ? u : [];
-      
       setCounts({
         clientes: (c as any)?.meta?.totalItems ?? toItems(c),
         empleados: (e as any)?.meta?.totalItems ?? toItems(e),
@@ -107,8 +99,6 @@ export default function AdminDashboard() {
       });
     });
   }, []);
-
-  // Tarjetas navegables con diseño estilo estadísticas
   const navigationCards = [
     {
       title: "Clientes",
@@ -160,25 +150,19 @@ export default function AdminDashboard() {
       route: "/admin/usuarios",
     },
   ];
-
-
-  // Estadísticas de tareas
   const taskStats = {
     completed: { value: 10, total: 75, color: "#10b981" }, // Verde
     inProgress: { value: 45, total: 75, color: "#3b82f6" }, // Azul
     notStarted: { value: 20, total: 75, color: "#8b5cf6" }, // Morado
   };
-
   const totalHours = "36h 29 min";
-
   return (
     <Box sx={{ width: "100%", maxWidth: "100%", mx: -3, px: 3 }}>
-      {/* Header */}
+      {}
       <Typography variant="h4" fontWeight={800} sx={{ mb: 1, color: "#1e293b" }}>
         Dashboard
       </Typography>
-
-      {/* Navigation Cards - Diseño estilo estadísticas */}
+      {}
       <Box sx={{ display: "flex", gap: 1.5, mb: 4, flexWrap: "wrap" }}>
         {navigationCards.map((card, index) => (
           <Card
@@ -201,7 +185,7 @@ export default function AdminDashboard() {
             <CardContent sx={{ p: 2.5 }}>
               <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
                 <Box sx={{ flex: 1 }}>
-                  {/* Título pequeño arriba */}
+                  {}
                   <Typography 
                     variant="body2" 
                     sx={{ 
@@ -214,7 +198,7 @@ export default function AdminDashboard() {
                   >
                     {card.title}
                   </Typography>
-                  {/* Número grande en color */}
+                  {}
                   <Typography 
                     variant="h4" 
                     sx={{ 
@@ -227,7 +211,7 @@ export default function AdminDashboard() {
                     {card.count}
                   </Typography>
                 </Box>
-                {/* Icono a la derecha en el mismo color */}
+                {}
                 <Box sx={{ color: card.iconColor, display: "flex", alignItems: "center" }}>
                   {card.icon}
                 </Box>
@@ -236,10 +220,9 @@ export default function AdminDashboard() {
           </Card>
         ))}
       </Box>
-
-      {/* Main Content - Statistics Cards */}
+      {}
       <Box sx={{ display: "flex", gap: 1.5, width: "100%", flexWrap: { xs: "wrap", md: "nowrap" } }}>
-        {/* Left Column - Postulaciones Statistics */}
+        {}
         <Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", width: { xs: "100%", md: "50%" } }}>
           <Card sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white", width: "100%", display: "flex", flexDirection: "column", minHeight: "100%" }}>
             <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3 }}>
@@ -255,8 +238,7 @@ export default function AdminDashboard() {
                   </Select>
                 </FormControl>
               </Stack>
-
-              {/* Progress Bars */}
+              {}
               <Stack spacing={2.5} sx={{ mb: 3 }}>
                 <Box>
                   <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -331,8 +313,7 @@ export default function AdminDashboard() {
                   />
                 </Box>
               </Stack>
-
-              {/* Donut Chart Representation */}
+              {}
               <Box
                 sx={{
                   width: 200,
@@ -367,15 +348,13 @@ export default function AdminDashboard() {
                   </Typography>
                 </Box>
               </Box>
-
               <Typography variant="body2" sx={{ textAlign: "center", color: "#64748b", fontWeight: 600 }}>
                 Postulaciones registradas
               </Typography>
             </CardContent>
           </Card>
         </Box>
-
-        {/* Right Column - Task Statistics */}
+        {}
         <Box sx={{ flex: "1 1 0", minWidth: 0, display: "flex", width: { xs: "100%", md: "50%" } }}>
           <Card sx={{ borderRadius: 2, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", bgcolor: "white", width: "100%", display: "flex", flexDirection: "column", minHeight: "100%" }}>
             <CardContent sx={{ flex: 1, display: "flex", flexDirection: "column", p: 3 }}>
@@ -391,8 +370,7 @@ export default function AdminDashboard() {
                   </Select>
                 </FormControl>
               </Stack>
-
-              {/* Progress Bars */}
+              {}
               <Stack spacing={2.5} sx={{ mb: 3 }}>
                 <Box>
                   <Stack direction="row" justifyContent="space-between" sx={{ mb: 1 }}>
@@ -449,8 +427,7 @@ export default function AdminDashboard() {
                   />
                 </Box>
               </Stack>
-
-              {/* Donut Chart Representation with Segmented Colors */}
+              {}
               <Box
                 sx={{
                   width: 200,
@@ -464,7 +441,7 @@ export default function AdminDashboard() {
                 }}
               >
                 <svg width="200" height="200" style={{ position: "absolute" }}>
-                  {/* Background circle */}
+                  {}
                   <circle
                     cx="100"
                     cy="100"
@@ -473,7 +450,7 @@ export default function AdminDashboard() {
                     stroke="#e5e7eb"
                     strokeWidth="20"
                   />
-                  {/* Segmented circles with individual colors */}
+                  {}
                   {(() => {
                     const total = taskStats.completed.total;
                     const completed = taskStats.completed.value;
@@ -483,17 +460,13 @@ export default function AdminDashboard() {
                     const circumference = 2 * Math.PI * radius;
                     const centerX = 100;
                     const centerY = 100;
-                    
-                    // Calculate percentages
                     const completedPercent = completed / total;
                     const inProgressPercent = inProgress / total;
                     const notStartedPercent = notStarted / total;
-                    
                     let currentOffset = 0;
-                    
                     return (
                       <>
-                        {/* Completed segment (Verde) */}
+                        {}
                         {completed > 0 && (
                           <circle
                             cx={centerX}
@@ -508,7 +481,7 @@ export default function AdminDashboard() {
                             transform={`rotate(-90 ${centerX} ${centerY})`}
                           />
                         )}
-                        {/* In Progress segment (Azul) */}
+                        {}
                         {inProgress > 0 && (
                           <circle
                             cx={centerX}
@@ -523,7 +496,7 @@ export default function AdminDashboard() {
                             transform={`rotate(${-90 + completedPercent * 360} ${centerX} ${centerY})`}
                           />
                         )}
-                        {/* Not Started segment (Morado) */}
+                        {}
                         {notStarted > 0 && (
                           <circle
                             cx={centerX}
@@ -551,14 +524,12 @@ export default function AdminDashboard() {
                   </Typography>
                 </Box>
               </Box>
-
               <Typography variant="body2" sx={{ textAlign: "center", color: "#64748b", fontWeight: 600 }}>
                 Tiempo total: {totalHours}
               </Typography>
             </CardContent>
           </Card>
         </Box>
-
       </Box>
     </Box>
   );

@@ -1,7 +1,6 @@
 import { AppBar, Button, Stack, Toolbar, Box } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 import Logo from "./Logo";
-
 export default function TopbarPublic() {
   return (
     <AppBar
@@ -14,12 +13,11 @@ export default function TopbarPublic() {
       }}
     >
       <Toolbar sx={{ justifyContent: "space-between", py: 1.5 }}>
-        {/* Logo - Horizontal layout */}
+        {}
         <Box component="a" href="/" sx={{ textDecoration: "none" }}>
           <Logo size="small" showText={true} horizontal={true} />
         </Box>
-
-        {/* Navigation Menu */}
+        {}
         <Stack
           direction="row"
           spacing={2}
@@ -84,8 +82,7 @@ export default function TopbarPublic() {
             Contacto
           </Button>
         </Stack>
-
-        {/* Buttons */}
+        {}
         <Stack direction="row" spacing={1}>
           <Button
             component={RouterLink}

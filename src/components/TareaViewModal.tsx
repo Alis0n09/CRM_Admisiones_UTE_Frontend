@@ -5,13 +5,11 @@ import CalendarToday from "@mui/icons-material/CalendarToday";
 import Event from "@mui/icons-material/Event";
 import ViewModalBase, { InfoCard, formatDate, getInitials } from "./ViewModalBase";
 import type { TareaCrm } from "../services/tarea.service";
-
 interface TareaViewModalProps {
   open: boolean;
   onClose: () => void;
   tarea: TareaCrm | null;
 }
-
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
   const estadoLower = estado.toLowerCase();
@@ -20,13 +18,10 @@ function getEstadoColor(estado?: string) {
   if (estadoLower.includes("completada")) return "success";
   return "default";
 }
-
 export default function TareaViewModal({ open, onClose, tarea }: TareaViewModalProps) {
   if (!tarea) return null;
-
   const descripcionInitial = tarea.descripcion?.[0]?.toUpperCase() || "T";
   const estadoColor = getEstadoColor(tarea.estado);
-
   return (
     <ViewModalBase
       open={open}

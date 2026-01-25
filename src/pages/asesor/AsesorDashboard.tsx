@@ -9,7 +9,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import * as clienteService from "../../services/cliente.service";
 import * as postulacionService from "../../services/postulacion.service";
-
 function toItems(res: any): number {
   if (Array.isArray(res)) return res.length;
   return res?.items?.length ?? res?.meta?.totalItems ?? 0;
@@ -44,7 +43,6 @@ export default function AsesorDashboard() {
   const [clientesTotal, setClientesTotal] = useState(0);
   const [clientesPreview, setClientesPreview] = useState<clienteService.Cliente[]>([]);
   const [postulaciones, setPostulaciones] = useState<postulacionService.Postulacion[]>([]);
-
   useEffect(() => {
     setLoading(true);
     Promise.all([

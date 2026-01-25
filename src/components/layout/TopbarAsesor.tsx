@@ -1,10 +1,8 @@
 import { Box, IconButton, InputBase, Stack, Button, Badge } from "@mui/material";
 import { Search, Notifications, Home } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-
 export default function TopbarAsesor() {
   const navigate = useNavigate();
-
   return (
     <Box
       sx={{
@@ -17,7 +15,7 @@ export default function TopbarAsesor() {
         justifyContent: "space-between",
       }}
     >
-      {/* Search Bar */}
+      {}
       <Box
         sx={{
           display: "flex",
@@ -36,10 +34,9 @@ export default function TopbarAsesor() {
           sx={{ flex: 1, fontSize: "0.9rem", color: "#1e293b" }}
         />
       </Box>
-
-      {/* Right Side - Home and Notifications */}
+      {}
       <Stack direction="row" spacing={1.5} alignItems="center">
-        {/* Home Button with Icon and Text */}
+        {}
         <Button
           onClick={() => navigate("/asesor")}
           startIcon={<Home />}
@@ -57,8 +54,7 @@ export default function TopbarAsesor() {
         >
           Inicio
         </Button>
-
-        {/* Notifications with Badge */}
+        {}
         <IconButton
           sx={{
             bgcolor: "#f5f5f5",

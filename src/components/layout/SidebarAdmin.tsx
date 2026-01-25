@@ -1,5 +1,6 @@
-import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Stack } from "@mui/material";
+import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material";
 import { Link as RouterLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import People from "@mui/icons-material/People";
 import Badge from "@mui/icons-material/Badge";
 import Person from "@mui/icons-material/Person";
@@ -14,9 +15,8 @@ import Dashboard from "@mui/icons-material/Dashboard";
 import ExitToApp from "@mui/icons-material/ExitToApp";
 import Home from "@mui/icons-material/Home";
 import { useAuth } from "../../context/AuthContext";
-
+import * as empleadoService from "../../services/empleado.service";
 const base = "/admin";
-
 const links = [
   { to: base, label: "Dashboard", icon: <Dashboard /> },
   { to: `${base}/clientes`, label: "Clientes", icon: <People /> },
@@ -31,21 +31,22 @@ const links = [
   { to: `${base}/roles`, label: "Roles", icon: <AdminPanelSettings /> },
   { to: `${base}/seguimientos`, label: "Seguimientos", icon: <Timeline /> },
 ];
-
 export default function SidebarAdmin() {
   const location = useLocation();
   const { logout, user } = useAuth();
-
-  const userInitials = user?.email
-    ? user.email
-        .split("@")[0]
-        .split(".")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "AD"
-    : "AD";
-
+  const [empleadoInfo, setEmpleadoInfo] = useState<{ nombres?: string; apellidos?: string } | null>(null);
+  useEffect(() => {
+    if (user?.id_empleado) {
+      empleadoService.getEmpleado(user.id_empleado)
+        .then((empleado) => {
+          setEmpleadoInfo({ nombres: empleado.nombres, apellidos: empleado.apellidos });
+        })
+        .catch(() => {
+          setEmpleadoInfo(null);
+        });
+    }
+  }, [user?.id_empleado]);
+  const nombreCompleto = empleadoInfo ? `${empleadoInfo.nombres || ""} ${empleadoInfo.apellidos || ""}`.trim() : null;
   return (
     <Box
       sx={{
@@ -76,8 +77,7 @@ export default function SidebarAdmin() {
         },
       }}
     >
-      {/* Logo/Brand Section */}
-      <Box sx={{ p: 3, borderBottom: "1px solid #e5e7eb", textAlign: "center", flexShrink: 0 }}>
+      <Box sx={{ p: 3, borderBottom: "1px solid #e5e7eb", flexShrink: 0 }}>
         <Box
           component="img"
           src="/logo.png"
@@ -86,7 +86,7 @@ export default function SidebarAdmin() {
             width: 140,
             height: 140,
             objectFit: "contain",
-            mb: 1.5,
+            mb: 2,
             mx: "auto",
             display: "block",
           }}
@@ -94,30 +94,17 @@ export default function SidebarAdmin() {
             (e.currentTarget as HTMLImageElement).style.display = "none";
           }}
         />
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            fontSize: "1rem",
-            color: "#1e293b",
-            mb: 0.5,
-          }}
-        >
-          Sistema de Admisiones
-        </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 400,
-            fontSize: "0.875rem",
-            color: "#64748b",
-          }}
-        >
-          Administrador
-        </Typography>
+        <Box sx={{ px: 1 }}>
+          <Typography variant="body1" fontWeight={700} sx={{ color: "#1e293b", fontSize: "0.95rem", lineHeight: 1.3 }}>
+            {nombreCompleto || user?.email?.split("@")[0] || ""}
+          </Typography>
+          {user?.email && (
+            <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.8rem", lineHeight: 1.3 }}>
+              {user.email}
+            </Typography>
+          )}
+        </Box>
       </Box>
-
-      {/* Navigation Links */}
       <Box sx={{ py: 2, flexShrink: 0 }}>
         <List dense sx={{ px: 1.5 }}>
           {links.map(({ to, label, icon }) => {
@@ -151,48 +138,7 @@ export default function SidebarAdmin() {
           })}
         </List>
       </Box>
-
-      {/* User Info Section */}
-      <Box sx={{ borderTop: "1px solid #e5e7eb", p: 2, flexShrink: 0 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: "#8b5cf6",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-            }}
-          >
-            {userInitials}
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: "#1e293b",
-                fontSize: "0.875rem",
-                lineHeight: 1.2,
-              }}
-            >
-              {user?.email?.split("@")[0] || "Administrador"} Usuario
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "#64748b",
-                fontSize: "0.75rem",
-                display: "block",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {user?.email || "admin@correo.com"}
-            </Typography>
-          </Box>
-        </Stack>
+      <Box sx={{ borderTop: "1px solid #e5e7eb", p: 2, flexShrink: 0, mt: "auto" }}>
         <List dense>
           <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 2, color: "#64748b", py: 1.25, "&:hover": { bgcolor: "#f5f5f5" } }}>
             <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><Home /></ListItemIcon>

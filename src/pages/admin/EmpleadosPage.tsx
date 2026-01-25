@@ -4,7 +4,6 @@ import DataTable, { type Column } from "../../components/DataTable";
 import EmpleadoViewModal from "../../components/EmpleadoViewModal";
 import * as s from "../../services/empleado.service";
 import type { Empleado } from "../../services/empleado.service";
-
 const cols: Column<Empleado>[] = [
   {
     id: "empleado",
@@ -32,9 +31,7 @@ const cols: Column<Empleado>[] = [
   { id: "numero_identificacion", label: "CÉDULA", minWidth: 120 },
   { id: "departamento", label: "DEPARTAMENTO", minWidth: 140 },
 ];
-
 const empty: Partial<Empleado> = { nombres: "", apellidos: "", tipo_identificacion: "Cédula", numero_identificacion: "" };
-
 export default function EmpleadosPage() {
   const [items, setItems] = useState<Empleado[]>([]);
   const [total, setTotal] = useState(0);
@@ -44,7 +41,6 @@ export default function EmpleadosPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Empleado | null>(null);
   const [form, setForm] = useState<Partial<Empleado>>(empty);
-
   const load = useCallback(() => {
     s.getEmpleados({ page, limit }).then((r) => {
       const list = (r as any).items ?? [];
@@ -52,14 +48,10 @@ export default function EmpleadosPage() {
       setTotal((r as any).meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
-
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion) return;
-    
     if (sel) {
-      // Al actualizar, excluir id_empleado del body ya que va en la URL
       const { id_empleado, ...updateData } = form;
       s.updateEmpleado(sel.id_empleado, updateData)
         .then(() => { setOpen(false); load(); })
@@ -70,14 +62,11 @@ export default function EmpleadosPage() {
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }
   };
-
   const del = (row: Empleado) => {
     if (!confirm("¿Eliminar este empleado?")) return;
     s.deleteEmpleado(row.id_empleado).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const handleView = (row: Empleado) => { setSel(row); setOpenView(true); };
-
   return (
     <>
       <DataTable 

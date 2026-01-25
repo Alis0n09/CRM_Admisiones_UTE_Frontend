@@ -1,5 +1,4 @@
 import { api } from "./api";
-
 export type PublicPostDto = {
   id: string;
   title: string;
@@ -8,7 +7,6 @@ export type PublicPostDto = {
   category?: any;
   createdAt?: string;
 };
-
 export type Paginated<T> = {
   items: T[];
   page: number;
@@ -16,7 +14,6 @@ export type Paginated<T> = {
   total: number;
   totalPages: number;
 };
-
 export async function getPublicPosts(params?: {
   q?: string;
   page?: number;
@@ -31,7 +28,6 @@ export async function getPublicPosts(params?: {
   });
   return data;
 }
-
 export async function getPublicPostById(id: string): Promise<PublicPostDto> {
   const { data } = await api.get<PublicPostDto>(`/posts/${id}`);
   return data;

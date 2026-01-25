@@ -4,19 +4,15 @@ import Person from "@mui/icons-material/Person";
 import CalendarToday from "@mui/icons-material/CalendarToday";
 import ViewModalBase, { InfoCard, formatDate, getInitials } from "./ViewModalBase";
 import type { Matricula } from "../services/matricula.service";
-
 interface MatriculaViewModalProps {
   open: boolean;
   onClose: () => void;
   matricula: Matricula | null;
 }
-
 export default function MatriculaViewModal({ open, onClose, matricula }: MatriculaViewModalProps) {
   if (!matricula) return null;
-
   const clienteNombre = matricula.cliente ? `${matricula.cliente.nombres} ${matricula.cliente.apellidos}` : "Cliente";
   const initials = matricula.cliente ? getInitials(matricula.cliente.nombres, matricula.cliente.apellidos) : "M";
-
   return (
     <ViewModalBase
       open={open}

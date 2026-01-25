@@ -1,5 +1,4 @@
 import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material";
-import { Box, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Stack } from "@mui/material";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import People from "@mui/icons-material/People";
 import Assignment from "@mui/icons-material/Assignment";
@@ -11,9 +10,7 @@ import CalendarToday from "@mui/icons-material/CalendarToday";
 import ExitToApp from "@mui/icons-material/ExitToApp";
 import Home from "@mui/icons-material/Home";
 import { useAuth } from "../../context/AuthContext";
-
 const base = "/asesor";
-
 const links = [
   { to: base, label: "Dashboard", icon: <Dashboard /> },
   { to: `${base}/clientes`, label: "Mis Aspirantes", icon: <People /> },
@@ -23,17 +20,14 @@ const links = [
   { to: `${base}/documentos`, label: "Documentos", icon: <Description /> },
   { to: `${base}/seguimientos`, label: "Seguimientos", icon: <Timeline /> },
 ];
-
 export default function SidebarAsesor() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
-
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
-
   return (
     <Box
       sx={{
