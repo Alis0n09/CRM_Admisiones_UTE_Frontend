@@ -48,7 +48,23 @@ export default function AspirantePerfilPage() {
       return;
     }
     setSaving(true);
-    clienteService.updateCliente(user.id_cliente, form)
+    // Enviar solo campos permitidos por el DTO de actualización (evita errores tipo:
+    // "property id_cliente/fecha_registro/estado should not exist")
+    const origen = String(form.origen ?? "").trim() || "Web";
+    const updatePayload = {
+      nombres: form.nombres,
+      apellidos: form.apellidos,
+      tipo_identificacion: form.tipo_identificacion,
+      numero_identificacion: form.numero_identificacion,
+      correo: form.correo,
+      telefono: form.telefono,
+      celular: form.celular,
+      nacionalidad: form.nacionalidad,
+      fecha_nacimiento: form.fecha_nacimiento,
+      origen,
+    };
+
+    clienteService.updateCliente(user.id_cliente, updatePayload)
       .then(() => {
         setSnackbar({ open: true, message: "Perfil actualizado exitosamente", severity: "success" });
       })

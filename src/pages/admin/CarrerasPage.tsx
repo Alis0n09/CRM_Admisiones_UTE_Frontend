@@ -169,7 +169,7 @@ export default function CarrerasPage() {
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
         onView={(r) => { setSel(r); setOpenView(true); }}
-        onEdit={(r) => { setSel(r); setForm({ ...r }); setOpen(true); }}
+        onEdit={(r) => { setSel(r); setForm({ ...r, nivel_grado: "Tecnología" }); setOpen(true); }}
         onDelete={del} getId={(r) => r.id_carrera} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar carrera" : "Nueva carrera"}</DialogTitle>
@@ -178,7 +178,7 @@ export default function CarrerasPage() {
           <TextField margin="dense" fullWidth label="Facultad" value={form.facultad ?? ""} onChange={(e) => setForm({ ...form, facultad: e.target.value })} required />
           <TextField margin="dense" fullWidth type="number" label="Duración (semestres)" value={form.duracion_semestres ?? 8} onChange={(e) => setForm({ ...form, duracion_semestres: parseInt(e.target.value) || 0 })} />
           <TextField margin="dense" fullWidth select label="Nivel" value={form.nivel_grado ?? "Tecnología"} onChange={(e) => setForm({ ...form, nivel_grado: e.target.value })}>
-            <MenuItem value="Tecnología">Tecnología</MenuItem><MenuItem value="Pregrado">Pregrado</MenuItem><MenuItem value="Posgrado">Posgrado</MenuItem>
+            <MenuItem value="Tecnología">Tecnología</MenuItem>
           </TextField>
           <TextField margin="dense" fullWidth type="number" label="Cupos disponibles" value={form.cupos_disponibles ?? 50} onChange={(e) => setForm({ ...form, cupos_disponibles: parseInt(e.target.value) || 0 })} />
         </DialogContent>

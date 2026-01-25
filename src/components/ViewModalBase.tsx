@@ -20,6 +20,7 @@ interface ViewModalBaseProps {
   status?: string;
   statusColor?: string;
   children: React.ReactNode;
+  actions?: React.ReactNode;
 }
 
 export function InfoCard({ icon, label, value, iconColor }: { icon: React.ReactNode; label: string; value: string; iconColor: string }) {
@@ -96,6 +97,7 @@ export default function ViewModalBase({
   status,
   statusColor = "rgba(255,255,255,0.25)",
   children,
+  actions,
 }: ViewModalBaseProps) {
   return (
     <Dialog
@@ -180,10 +182,16 @@ export default function ViewModalBase({
           p: 2,
           borderTop: "1px solid #e5e7eb",
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
+          alignItems: "center",
           bgcolor: "white",
         }}
       >
+        {actions && (
+          <Box>
+            {actions}
+          </Box>
+        )}
         <Button
           onClick={onClose}
           sx={{
@@ -191,6 +199,7 @@ export default function ViewModalBase({
             fontWeight: 600,
             textTransform: "none",
             fontSize: "0.9rem",
+            ml: actions ? "auto" : 0,
             "&:hover": {
               bgcolor: "rgba(59, 130, 246, 0.1)",
             },

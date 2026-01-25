@@ -26,7 +26,6 @@ const carrerasDetalle = [
     title: "Tecnología en Desarrollo de Software",
     desc: "Programación, bases de datos, arquitectura y desarrollo web.",
     img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Mus Boot Sarfiobers",
     color: "#3b82f6",
     bgColor: "#dbeafe",
     duracion: "6 semestres",
@@ -59,7 +58,6 @@ const carrerasDetalle = [
     title: "Tecnología en Administración de Empresas",
     desc: "Gestión, liderazgo, emprendimiento y dirección estratégica.",
     img: "https://images.unsplash.com/photo-1521790797524-b2497295b8a0?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Mau Litine Acitnission",
     color: "#10b981",
     bgColor: "#d1fae5",
     duracion: "6 semestres",
@@ -92,7 +90,6 @@ const carrerasDetalle = [
     title: "Tecnología en Atención de Enfermería",
     desc: "Formación enfocada en el cuidado, atención y servicio.",
     img: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Ana María López",
     color: "#ef4444",
     bgColor: "#fee2e2",
     duracion: "6 semestres",
@@ -125,7 +122,6 @@ const carrerasDetalle = [
     title: "Tecnología en Marketing Digital",
     desc: "Estrategia, análisis de datos, contenido y comunicación digital.",
     img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
-    instructor: "Carlos Rodríguez",
     color: "#8b5cf6",
     bgColor: "#ede9fe",
     duracion: "6 semestres",
@@ -158,7 +154,6 @@ const carrerasDetalle = [
     title: "Tecnología en Asistente de Odontología",
     desc: "Apoyo técnico en procedimientos dentales y atención al paciente.",
     img: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1200&auto=format&fit=crop",
-    instructor: "María González",
     color: "#f59e0b",
     bgColor: "#fef3c7",
     duracion: "6 semestres",
@@ -322,16 +317,6 @@ export default function CarrerasDetallePage() {
                           bgcolor: carrera.color,
                           color: "white",
                           fontWeight: 600,
-                        }}
-                      />
-                      <Chip
-                        icon={<People sx={{ fontSize: 16 }} />}
-                        label={`Instructor: ${carrera.instructor}`}
-                        sx={{
-                          bgcolor: "white",
-                          color: carrera.color,
-                          fontWeight: 600,
-                          border: `1px solid ${carrera.color}`,
                         }}
                       />
                     </Stack>
