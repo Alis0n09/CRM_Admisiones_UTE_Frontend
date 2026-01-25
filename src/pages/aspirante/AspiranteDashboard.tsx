@@ -15,7 +15,7 @@ function toNum(r: any): number {
 export default function AspiranteDashboard() {
   const [counts, setCounts] = useState({ postulaciones: 0, documentos: 0, tareas: 0 });
 
-  useEffect(() => {
+  const loadCounts = () => {
     Promise.all([
       postulacionService.getPostulaciones({ limit: 1 }).catch(() => ({ meta: { totalItems: 0 } })),
       docService.getDocumentosPostulacion().catch(() => []),
@@ -27,6 +27,22 @@ export default function AspiranteDashboard() {
         tareas: (t as any)?.meta?.totalItems ?? toNum(t),
       });
     });
+  };
+
+  useEffect(() => {
+    loadCounts();
+
+    // Escuchar eventos de actualización de documentos para actualizar contadores automáticamente
+    const handleDocumentosUpdated = () => {
+      console.log("📊 Dashboard: Evento de documentos recibido - Actualizando contadores...");
+      loadCounts();
+    };
+
+    window.addEventListener("documentosUpdated", handleDocumentosUpdated);
+
+    return () => {
+      window.removeEventListener("documentosUpdated", handleDocumentosUpdated);
+    };
   }, []);
 
   const cards = [
