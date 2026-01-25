@@ -15,6 +15,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import ErrorOutlineIcon from "@mui/icons-material/ErrorOutline";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
@@ -269,46 +270,129 @@ export default function ProcesoAdmisionPage() {
           sx={{
             height: 4,
             background: "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%)",
-            width: `${overallProgress}%`,
-            transition: "width 0.3s ease",
+            width: "100%",
           }}
         />
         <CardContent sx={{ p: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, mb: 1 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, mb: 1.25 }}>
             <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
-                Estado de tu solicitud
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#64748b" }}>
-                {estadoActual}
-              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5, flexWrap: "wrap" }}>
+                <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                  Estado de tu solicitud
+                </Typography>
+                <Chip
+                  label="Activo"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontWeight: 700,
+                    bgcolor: "#e0f2fe",
+                    color: "#2563eb",
+                    "& .MuiChip-label": { px: 1 },
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                <AccessTimeIcon sx={{ color: "#94a3b8", fontSize: 18, flexShrink: 0 }} />
+                <Typography variant="body2" sx={{ color: "#64748b" }} noWrap>
+                  {estadoActual}
+                </Typography>
+              </Box>
             </Box>
+
             <Box sx={{ textAlign: "right" }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: "#3b82f6" }}>
-                {overallProgress}%
+              <Typography
+                sx={{
+                  fontWeight: 900,
+                  color: "#7c3aed",
+                  lineHeight: 1,
+                  fontSize: { xs: 38, sm: 48 },
+                }}
+              >
+                {overallProgress}
+                <Box component="span" sx={{ fontSize: 18, fontWeight: 800, color: "#94a3b8", ml: 0.5 }}>
+                  %
+                </Box>
               </Typography>
-              <Typography variant="caption" sx={{ color: "#64748b" }}>
-                Completado
-              </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                <TrendingUpIcon sx={{ color: "#22c55e", fontSize: 18 }} />
+                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700 }}>
+                  Completado
+                </Typography>
+              </Box>
             </Box>
           </Box>
-          <LinearProgress
-            variant="determinate"
-            value={overallProgress}
+
+          {/* Barra de progreso (estilo ejemplo / documentos) */}
+          <Box
             sx={{
-              height: 6,
-              borderRadius: 4,
-              bgcolor: "#e5e7eb",
-              mb: 0.75,
-              "& .MuiLinearProgress-bar": {
-                borderRadius: 4,
-                background: "#0f172a",
-              },
+              height: 10,
+              borderRadius: 999,
+              bgcolor: "#d1fae5",
+              overflow: "hidden",
+              mb: 1.25,
             }}
-          />
-          <Typography variant="body2" sx={{ color: "text.secondary" }}>
-            Paso {Math.min(currentStepIndex + 1, steps.length)} de {steps.length}
-          </Typography>
+          >
+            <Box
+              sx={{
+                height: "100%",
+                width: `${overallProgress}%`,
+                borderRadius: 999,
+                background: "linear-gradient(90deg, #7c3aed 0%, #22c55e 100%)",
+                transition: "width 0.3s ease",
+              }}
+            />
+          </Box>
+
+          {/* Fila inferior: Paso + indicadores */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  bgcolor: "#7c3aed",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: 13,
+                }}
+              >
+                {Math.min(currentStepIndex + 1, steps.length)}
+              </Box>
+
+              <Typography variant="body2" sx={{ color: "#64748b" }}>
+                Paso{" "}
+                <Box component="span" sx={{ fontWeight: 900, color: "#0f172a" }}>
+                  {Math.min(currentStepIndex + 1, steps.length)}
+                </Box>{" "}
+                de {steps.length}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              {steps.map((_, i) => {
+                const active = i < Math.min(currentStepIndex + 1, steps.length);
+                return (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: active ? 22 : 6,
+                      height: 6,
+                      borderRadius: active ? 999 : "50%",
+                      bgcolor: active ? "#7c3aed" : "#e5e7eb",
+                      transition: "all 0.2s ease",
+                    }}
+                  />
+                );
+              })}
+            </Box>
+          </Box>
         </CardContent>
       </Card>
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "2fr 1fr" }, gap: 2, alignItems: "start" }}>

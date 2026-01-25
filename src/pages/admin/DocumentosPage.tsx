@@ -101,6 +101,7 @@ export default function DocumentosPage() {
     setForm({ id_postulacion: r.id_postulacion, tipo_documento: r.tipo_documento, nombre_archivo: r.nombre_archivo, url_archivo: r.url_archivo, estado_documento: r.estado_documento || "Pendiente", observaciones: r.observaciones || "" }); 
     setOpen(true); 
   };
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
@@ -140,10 +141,9 @@ export default function DocumentosPage() {
             "Content-Type": "multipart/form-data",
           },
         });
-        const url = data.url || data.path || data.fileUrl || data.filename || "";
-        if (!url) {
-          throw new Error("El servidor no devolvió una URL para el archivo");
-        }
+        const payload = (data as any)?.data ?? data;
+        const url = payload?.url_segura || payload?.url_archivo || payload?.url || payload?.path || payload?.fileUrl || "";
+        if (!url) throw new Error("El servidor no devolvió una URL para el archivo");
         return url;
       } catch (error2: any) {
         const errorMessage = error2?.response?.data?.message || error?.response?.data?.message || "Error al subir el archivo";
@@ -256,49 +256,6 @@ export default function DocumentosPage() {
       `${baseURL}/uploads/${raw.replace(/^\/+/, "")}`,
       `${baseURL}/files/${raw.replace(/^\/+/, "")}`,
     ];
-  };
-  const handleDownload = async (url: string, nombre: string) => {
-    if (!url) {
-      alert("No hay URL disponible para descargar");
-      return;
-    }
-    const candidates = buildCandidateUrls(url);
-    const filename = nombre || "documento";
-    for (const candidate of candidates) {
-      try {
-        const res = await api.get(candidate, { responseType: "blob" });
-        const blob: Blob = res.data;
-        if (!blob || blob.size === 0) continue;
-        const objectUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        try { URL.revokeObjectURL(objectUrl); } catch {}
-        return;
-      } catch (error: any) {
-        console.log(`Error al descargar desde ${candidate}:`, error?.response?.status);
-      }
-    }
-    const u = resolveUrl(url);
-    if (!u) {
-      alert("No se pudo construir la URL para descargar el archivo");
-      return;
-    }
-    try {
-      const link = document.createElement("a");
-      link.href = u;
-      link.download = filename;
-      link.target = "_blank";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error("Error al descargar archivo:", error);
-      alert("Error al descargar el archivo. Por favor intenta nuevamente.");
-    }
   };
   const cols = useMemo<Column<DocumentoPostulacion>[]>(() => [
     {

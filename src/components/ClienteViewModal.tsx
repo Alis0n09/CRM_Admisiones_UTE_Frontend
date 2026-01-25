@@ -17,14 +17,31 @@ import Phone from "@mui/icons-material/Phone";
 import CalendarToday from "@mui/icons-material/CalendarToday";
 import Public from "@mui/icons-material/Public";
 import School from "@mui/icons-material/School";
+import Description from "@mui/icons-material/Description";
 import BusinessCenter from "@mui/icons-material/BusinessCenter";
+import DownloadIcon from "@mui/icons-material/Download";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import type { Cliente } from "../services/cliente.service";
+import { Alert, Snackbar } from "@mui/material";
 import { useEffect, useState } from "react";
 import * as postulacionService from "../services/postulacion.service";
+import type { Postulacion } from "../services/postulacion.service";
+import type { DocumentoPostulacion } from "../services/documentoPostulacion.service";
+import type { Beca } from "../services/beca.service";
+import type { BecaEstudiante } from "../services/becaEstudiante.service";
 interface ClienteViewModalProps {
   open: boolean;
   onClose: () => void;
   cliente: Cliente | null;
+  /** Opcional: si se provee, el modal muestra listas y botones (asesor/admin). */
+  postulaciones?: Postulacion[];
+  documentos?: DocumentoPostulacion[];
+  becasDisponibles?: Beca[];
+  becaAsignada?: BecaEstudiante | null;
+  loadingDetail?: boolean;
+  onCrearPostulacionClick?: () => void;
+  onSubirDocumentoClick?: () => void;
+  onAsignarBecaClick?: () => void;
 }
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
@@ -97,6 +114,10 @@ function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
 export default function ClienteViewModal({ open, onClose, cliente }: ClienteViewModalProps) {
   const [postulacionesCount, setPostulacionesCount] = useState(0);
   useEffect(() => {
+    if (Array.isArray(postulaciones)) {
+      setPostulacionesCount(postulaciones.length);
+      return;
+    }
     if (cliente?.id_cliente) {
       postulacionService
         .getPostulaciones({ limit: 1000 })
@@ -307,20 +328,257 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
               mb: 2,
             }}
           >
-            <Stack direction="row" spacing={1} alignItems="center">
-              <School sx={{ color: "white", fontSize: 20 }} />
-              <Typography
-                variant="h6"
-                sx={{
-                  color: "#1e293b",
-                  fontWeight: 700,
-                  fontSize: "1.125rem",
-                }}
-              >
-                Postulaciones ({postulacionesCount})
-              </Typography>
+            <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+              <Stack direction="row" spacing={1} alignItems="center">
+                <School sx={{ color: "white", fontSize: 20 }} />
+                <Typography
+                  variant="h6"
+                  sx={{
+                    color: "#1e293b",
+                    fontWeight: 700,
+                    fontSize: "1.125rem",
+                  }}
+                >
+                  Postulaciones ({postulacionesCount})
+                </Typography>
+              </Stack>
+              {onCrearPostulacionClick && (
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={onCrearPostulacionClick}
+                  sx={{
+                    textTransform: "none",
+                    borderRadius: 2,
+                    fontWeight: 800,
+                    bgcolor: "rgba(255,255,255,0.35)",
+                    color: "#0f172a",
+                    boxShadow: "none",
+                    "&:hover": { bgcolor: "rgba(255,255,255,0.5)", boxShadow: "none" },
+                  }}
+                >
+                  Crear
+                </Button>
+              )}
             </Stack>
           </Box>
+
+          {loadingDetail ? (
+            <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+              Cargando postulaciones...
+            </Typography>
+          ) : Array.isArray(postulaciones) ? (
+            postulaciones.length === 0 ? (
+              <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+                No tiene postulaciones todavía.
+              </Typography>
+            ) : (
+              <Stack spacing={1.25} sx={{ mb: 2 }}>
+                {postulaciones.map((p) => (
+                  <Card key={p.id_postulacion} sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+                    <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                      <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                            {p.carrera?.nombre_carrera || `Carrera ${String(p.id_carrera || "").slice(0, 8)}`}
+                          </Typography>
+                          <Typography variant="caption" sx={{ color: "#64748b" }}>
+                            Período: {p.periodo_academico || "-"} · #{String(p.id_postulacion).slice(0, 8)}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          size="small"
+                          label={p.estado_postulacion || "Pendiente"}
+                          sx={{ bgcolor: "rgba(255,255,255,0.6)", fontWeight: 800 }}
+                        />
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                ))}
+              </Stack>
+            )
+          ) : null}
+
+          {/* Documentos */}
+          {(Array.isArray(documentos) || onSubirDocumentoClick) && (
+            <Box sx={{ mt: 2 }}>
+              <Box
+                sx={{
+                  bgcolor: "#3b82f6",
+                  borderRadius: 2,
+                  p: 2,
+                  mb: 2,
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Description sx={{ color: "white", fontSize: 20 }} />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "1.125rem",
+                      }}
+                    >
+                      Documentos ({Array.isArray(documentos) ? documentos.length : 0})
+                    </Typography>
+                  </Stack>
+                  {onSubirDocumentoClick && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={onSubirDocumentoClick}
+                      sx={{
+                        textTransform: "none",
+                        borderRadius: 2,
+                        fontWeight: 800,
+                        bgcolor: "rgba(255,255,255,0.25)",
+                        color: "white",
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: "rgba(255,255,255,0.35)", boxShadow: "none" },
+                      }}
+                    >
+                      Subir
+                    </Button>
+                  )}
+                </Stack>
+              </Box>
+
+              {loadingDetail ? (
+                <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+                  Cargando documentos...
+                </Typography>
+              ) : Array.isArray(documentos) ? (
+                documentos.length === 0 ? (
+                  <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+                    No tiene documentos todavía.
+                  </Typography>
+                ) : (
+                  <Stack spacing={1.25} sx={{ mb: 2 }}>
+                    {documentos.map((d) => (
+                      <Card key={d.id_documento} sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+                        <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                          <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                            <Box sx={{ minWidth: 0 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                                {d.tipo_documento || "Documento"}
+                              </Typography>
+                              <Typography variant="caption" sx={{ color: "#64748b", display: "block" }}>
+                                {d.nombre_archivo || "-"}
+                              </Typography>
+                              {d.url_archivo && !canPreview(d.url_archivo) && (
+                                <Typography variant="caption" sx={{ mt: 0.25, display: "block", color: "#b45309", fontWeight: 700 }}>
+                                  URL temporal (no previsualizable)
+                                </Typography>
+                              )}
+                            </Box>
+                            <Stack direction="row" spacing={1} alignItems="center">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<VisibilityIcon fontSize="small" />}
+                                onClick={() => previewWithAuth(d.url_archivo, d.nombre_archivo)}
+                                disabled={!canPreview(d.url_archivo)}
+                                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 800 }}
+                              >
+                                Ver
+                              </Button>
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                startIcon={<DownloadIcon fontSize="small" />}
+                                onClick={() => downloadWithAuth(d.url_archivo, d.nombre_archivo)}
+                                disabled={!canPreview(d.url_archivo)}
+                                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 800 }}
+                              >
+                                Descargar
+                              </Button>
+                              <Chip size="small" label={d.estado_documento || "Pendiente"} sx={{ bgcolor: "#f1f5f9", fontWeight: 800 }} />
+                            </Stack>
+                          </Stack>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                )
+              ) : null}
+            </Box>
+          )}
+
+          {/* Becas */}
+          {(becaAsignada !== undefined || Array.isArray(becasDisponibles) || onAsignarBecaClick) && (
+            <Box sx={{ mt: 2 }}>
+              <Box
+                sx={{
+                  bgcolor: "#10b981",
+                  borderRadius: 2,
+                  p: 2,
+                  mb: 2,
+                }}
+              >
+                <Stack direction="row" spacing={1} alignItems="center" justifyContent="space-between">
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <CheckCircle sx={{ color: "white", fontSize: 20 }} />
+                    <Typography
+                      variant="h6"
+                      sx={{
+                        color: "white",
+                        fontWeight: 700,
+                        fontSize: "1.125rem",
+                      }}
+                    >
+                      Becas ({becaAsignada ? 1 : 0}) · Disponibles: {Array.isArray(becasDisponibles) ? becasDisponibles.length : 0}
+                    </Typography>
+                  </Stack>
+                  {onAsignarBecaClick && (
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={onAsignarBecaClick}
+                      sx={{
+                        textTransform: "none",
+                        borderRadius: 2,
+                        fontWeight: 800,
+                        bgcolor: "rgba(255,255,255,0.25)",
+                        color: "white",
+                        boxShadow: "none",
+                        "&:hover": { bgcolor: "rgba(255,255,255,0.35)", boxShadow: "none" },
+                      }}
+                    >
+                      {becaAsignada ? "Actualizar" : "Asignar"}
+                    </Button>
+                  )}
+                </Stack>
+              </Box>
+
+              {loadingDetail ? (
+                <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+                  Cargando becas...
+                </Typography>
+              ) : becaAsignada ? (
+                <Card sx={{ borderRadius: 2, boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}>
+                  <CardContent sx={{ p: 2, "&:last-child": { pb: 2 } }}>
+                    <Stack direction="row" spacing={2} alignItems="center" justifyContent="space-between">
+                      <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 800, color: "#0f172a" }}>
+                          {becaAsignada.beca?.nombre_beca || "Beca asignada"}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: "#64748b" }}>
+                          Período: {becaAsignada.periodo_academico || "-"} · Monto: {becaAsignada.monto_otorgado || "-"}
+                        </Typography>
+                      </Box>
+                      <Chip size="small" label={becaAsignada.estado || "Vigente"} sx={{ bgcolor: "#dcfce7", color: "#166534", fontWeight: 800 }} />
+                    </Stack>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Typography variant="body2" sx={{ color: "#64748b", mb: 2 }}>
+                  No tiene beca asignada.
+                </Typography>
+              )}
+            </Box>
+          )}
         </Box>
       </Box>
       {}
@@ -348,6 +606,16 @@ export default function ClienteViewModal({ open, onClose, cliente }: ClienteView
           CERRAR
         </Button>
       </Box>
+      <Snackbar
+        open={!!fileError}
+        autoHideDuration={8000}
+        onClose={() => setFileError("")}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert severity="error" onClose={() => setFileError("")} sx={{ width: "100%" }}>
+          {fileError}
+        </Alert>
+      </Snackbar>
     </Dialog>
   );
 }

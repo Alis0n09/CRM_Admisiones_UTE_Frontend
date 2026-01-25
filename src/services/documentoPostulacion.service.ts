@@ -24,6 +24,10 @@ export async function getDocumentoPostulacion(id: string) {
   const { data } = await api.get(`${base}/${id}`);
   return getData<DocumentoPostulacion>(data);
 }
+export async function getDocumentosPorPostulacion(idPostulacion: string) {
+  const { data } = await api.get(`${base}?id_postulacion=${idPostulacion}`);
+  return getData<DocumentoPostulacion[]>(data);
+}
 export async function createDocumentoPostulacion(body: { 
   id_postulacion: string; 
   tipo_documento: string; 

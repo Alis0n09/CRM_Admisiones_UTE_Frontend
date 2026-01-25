@@ -2,11 +2,11 @@ import {
   Box, 
   Card, 
   CardContent, 
+  Chip,
   Typography, 
   Button, 
   Stack, 
   CircularProgress,
-  LinearProgress,
   IconButton,
   Tooltip,
   Dialog,
@@ -34,6 +34,8 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import DownloadIcon from "@mui/icons-material/Download";
 import InfoIcon from "@mui/icons-material/Info";
 import LinkIcon from "@mui/icons-material/Link";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import TrendingUpIcon from "@mui/icons-material/TrendingUp";
 import { useAuth } from "../../context/AuthContext";
 import { api } from "../../services/api";
 const DOCUMENTOS_MANDATORIOS = [
@@ -107,6 +109,8 @@ export default function AspiranteDocumentosPage() {
     const baseURL = String(api.defaults.baseURL || "").replace(/\/$/, "");
     if (!baseURL) return raw;
     if (raw.startsWith("/")) return `${baseURL}${raw}`;
+    // Si es solo filename, normalmente vive en /uploads/
+    if (!raw.includes("/")) return `${baseURL}/uploads/${raw}`;
     return `${baseURL}/${raw}`;
   };
   const buildCandidateUrls = (url?: string) => {
@@ -125,8 +129,8 @@ export default function AspiranteDocumentosPage() {
     }
     if (!raw.includes("/")) {
       return [
-        `${baseURL}/${raw}`,
         `${baseURL}/uploads/${raw}`,
+        `${baseURL}/${raw}`,
         `${baseURL}/files/${raw}`,
       ];
     }
@@ -1093,51 +1097,135 @@ export default function AspiranteDocumentosPage() {
           sx={{
             height: 4,
             background: "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%)",
-            width: `${progreso}%`,
+            width: "100%",
             transition: "width 0.3s ease",
           }}
         />
         {}
         <CardContent sx={{ p: 2 }}>
-          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", mb: 1 }}>
-            <Box>
-              <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
-                Estado de tu solicitud
-              </Typography>
-              <Typography variant="body2" sx={{ color: "#64748b" }}>
-                {documentosCargados === totalDocumentos 
-                  ? "Todos los documentos cargados" 
-                  : documentosCargados > 0 
-                  ? "Cargando documentos" 
-                  : "Pendiente de carga"}
-              </Typography>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, mb: 1.25 }}>
+            <Box sx={{ minWidth: 0 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5, flexWrap: "wrap" }}>
+                <Typography sx={{ fontWeight: 800, color: "#0f172a" }}>
+                  Estado de tu solicitud
+                </Typography>
+                <Chip
+                  label="Activo"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontWeight: 700,
+                    bgcolor: "#e0f2fe",
+                    color: "#2563eb",
+                    "& .MuiChip-label": { px: 1 },
+                  }}
+                />
+              </Box>
+
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
+                <AccessTimeIcon sx={{ color: "#94a3b8", fontSize: 18, flexShrink: 0 }} />
+                <Typography variant="body2" sx={{ color: "#64748b" }} noWrap>
+                  {documentosCargados === totalDocumentos
+                    ? "Documentos completados"
+                    : documentosCargados > 0
+                    ? "Revisión de documentos"
+                    : "Revisión de documentos"}
+                </Typography>
+              </Box>
             </Box>
+
             <Box sx={{ textAlign: "right" }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, color: "#3b82f6" }}>
-                {progreso}%
+              <Typography
+                sx={{
+                  fontWeight: 900,
+                  color: "#7c3aed",
+                  lineHeight: 1,
+                  fontSize: { xs: 38, sm: 48 },
+                }}
+              >
+                {progreso}
+                <Box component="span" sx={{ fontSize: 18, fontWeight: 800, color: "#94a3b8", ml: 0.5 }}>
+                  %
+                </Box>
               </Typography>
-              <Typography variant="caption" sx={{ color: "#64748b" }}>
-                Completado
-              </Typography>
+
+              <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.75, mt: 0.25 }}>
+                <TrendingUpIcon sx={{ color: "#22c55e", fontSize: 18 }} />
+                <Typography variant="caption" sx={{ color: "#64748b", fontWeight: 700 }}>
+                  Completado
+                </Typography>
+              </Box>
             </Box>
           </Box>
-          <LinearProgress
-            variant="determinate"
-            value={progreso}
+
+          {/* Barra de progreso (estilo ejemplo) */}
+          <Box
             sx={{
-              height: 6,
-              borderRadius: 4,
-              bgcolor: "#e5e7eb",
-              mb: 0.75,
-              "& .MuiLinearProgress-bar": {
-                borderRadius: 4,
-                background: "linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #10b981 100%)",
-              },
+              height: 10,
+              borderRadius: 999,
+              bgcolor: "#d1fae5",
+              overflow: "hidden",
+              mb: 1.25,
             }}
-          />
-          <Typography variant="body2" sx={{ color: "#64748b" }}>
-            {documentosCargados} de {totalDocumentos} documentos cargados
-          </Typography>
+          >
+            <Box
+              sx={{
+                height: "100%",
+                width: `${progreso}%`,
+                borderRadius: 999,
+                background: "linear-gradient(90deg, #7c3aed 0%, #22c55e 100%)",
+                transition: "width 0.3s ease",
+              }}
+            />
+          </Box>
+
+          {/* Fila inferior: “Subidos X de Y” + indicadores */}
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Box
+                sx={{
+                  width: 28,
+                  height: 28,
+                  borderRadius: "50%",
+                  bgcolor: "#7c3aed",
+                  color: "white",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: 900,
+                  fontSize: 13,
+                }}
+              >
+                {Math.min(documentosCargados, totalDocumentos || 0)}
+              </Box>
+
+              <Typography variant="body2" sx={{ color: "#64748b" }}>
+                Subidos{" "}
+                <Box component="span" sx={{ fontWeight: 900, color: "#0f172a" }}>
+                  {documentosCargados}
+                </Box>{" "}
+                de {totalDocumentos}
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+              {Array.from({ length: totalDocumentos || 0 }).map((_, i) => {
+                const active = i < documentosCargados;
+                return (
+                  <Box
+                    key={i}
+                    sx={{
+                      width: active ? 22 : 6,
+                      height: 6,
+                      borderRadius: active ? 999 : "50%",
+                      bgcolor: active ? "#7c3aed" : "#e5e7eb",
+                      transition: "all 0.2s ease",
+                    }}
+                  />
+                );
+              })}
+            </Box>
+          </Box>
         </CardContent>
       </Card>
       {}
