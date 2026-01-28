@@ -20,7 +20,6 @@ import School from "@mui/icons-material/School";
 import Description from "@mui/icons-material/Description";
 import BusinessCenter from "@mui/icons-material/BusinessCenter";
 import DownloadIcon from "@mui/icons-material/Download";
-import VisibilityIcon from "@mui/icons-material/Visibility";
 import type { Cliente } from "../services/cliente.service";
 import { Alert, Snackbar } from "@mui/material";
 import { useEffect, useState } from "react";
@@ -214,59 +213,6 @@ export default function ClienteViewModal({
         }
       }
       setFileError(`No se pudo descargar (HTTP ${status || "?"}). ${msg}. URL: ${u}`);
-    }
-  };
-
-  const previewWithAuth = async (url?: string, nombre?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    // Si es un URL externo, abrir directo (CORS/auth fuera de nuestro control)
-    if (!isSameOriginAsApi(u)) {
-      window.open(u, "_blank", "noopener,noreferrer");
-      return;
-    }
-    let w: Window | null = null;
-    try {
-      // Abrir la pestaña inmediatamente (evita bloqueo de popup por await)
-      w = window.open("about:blank", "_blank");
-      if (!w) throw new Error("El navegador bloqueó la ventana emergente");
-
-      w.document.title = nombre || "Documento";
-      w.document.body.innerHTML = "<p style='font-family: system-ui; padding: 16px;'>Cargando documento...</p>";
-
-      const res = await api.get(u, { responseType: "arraybuffer", timeout: 20000 });
-      const contentType = String((res as any)?.headers?.["content-type"] || "application/pdf");
-      const blob = new Blob([res.data as ArrayBuffer], { type: contentType });
-      const blobUrl = URL.createObjectURL(blob);
-      // Navegar la pestaña ya abierta al blob
-      w.location.href = blobUrl;
-      // no revocamos inmediatamente para no romper la pestaña; revocar luego
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch (e) {
-      const status = (e as any)?.response?.status;
-      let msg = (e as any)?.response?.data?.message || (e as any)?.message || "Error";
-      const data = (e as any)?.response?.data;
-      if (data instanceof ArrayBuffer) {
-        try {
-          const text = new TextDecoder().decode(new Uint8Array(data));
-          const parsed = JSON.parse(text);
-          msg = parsed?.message || text || msg;
-        } catch {
-          // ignore
-        }
-      }
-      setFileError(`No se pudo previsualizar (HTTP ${status || "?"}). ${msg}. URL: ${u}`);
-      if (w && !w.closed) {
-        w.document.title = "Error";
-        w.document.body.innerHTML = `
-          <div style="font-family: system-ui; padding: 16px;">
-            <h3 style="margin: 0 0 8px;">No se pudo previsualizar</h3>
-            <p style="margin: 0 0 12px;">${String(msg)}</p>
-            <p style="margin: 0 0 12px;">HTTP: ${String(status || "?")}</p>
-            <a href="${u}" target="_blank" rel="noreferrer">Abrir enlace directo</a>
-          </div>
-        `;
-      }
     }
   };
 
@@ -639,19 +585,9 @@ export default function ClienteViewModal({
                               <Button
                                 size="small"
                                 variant="outlined"
-                                startIcon={<VisibilityIcon fontSize="small" />}
-                                onClick={() => previewWithAuth(d.url_archivo, d.nombre_archivo)}
-                                disabled={!canPreview(d.url_archivo)}
-                                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 800 }}
-                              >
-                                Ver
-                              </Button>
-                              <Button
-                                size="small"
-                                variant="outlined"
                                 startIcon={<DownloadIcon fontSize="small" />}
                                 onClick={() => downloadWithAuth(d.url_archivo, d.nombre_archivo)}
-                                disabled={!canPreview(d.url_archivo)}
+                                disabled={!d.url_archivo}
                                 sx={{ textTransform: "none", borderRadius: 2, fontWeight: 800 }}
                               >
                                 Descargar

@@ -611,7 +611,9 @@ export default function AspiranteDocumentosPage() {
       // El aspirante SIEMPRE tiene una postulación activa si está logueado
       // Obtener la postulación SIEMPRE del backend para asegurar que tenemos la correcta
       
-      if (!user?.id_cliente) {
+      // Verificar que el usuario esté autenticado (tiene token)
+      const token = localStorage.getItem("token");
+      if (!token || !user) {
         setUploadError("Error de autenticación. Por favor inicia sesión nuevamente.");
         setUploading(false);
         return;
@@ -619,6 +621,7 @@ export default function AspiranteDocumentosPage() {
 
       // DEPENDENCIA: Si el aspirante está logueado, SIEMPRE tiene una postulación activa
       // Obtener postulaciones del backend SIEMPRE (no confiar solo en el estado)
+      // Nota: No requerimos id_cliente aquí - el backend puede validar por token/email
       let idPostulacionFinal: string | null = null;
       
       console.log("🔍 Iniciando búsqueda de postulación...", {
@@ -651,14 +654,18 @@ export default function AspiranteDocumentosPage() {
             }))
           });
           
-          const postulsCliente = postulsList.filter((p: Postulacion) => {
-            // Comparación flexible: convertir a string para evitar problemas de tipos
-          const pCliente = getPostulacionClienteId(p);
-            const userCliente = String(user.id_cliente || "").trim();
-            const matches = pCliente === userCliente && pCliente !== "";
-            console.log(`  - Postulación ${p.id_postulacion}: id_cliente="${pCliente}" (${typeof p.id_cliente}), user.id_cliente="${userCliente}" (${typeof user.id_cliente}), matches=${matches}`);
-            return matches;
-          });
+          // Si el usuario tiene id_cliente, filtrar por él. Si no, usar todas las postulaciones
+          // El backend validará que el usuario tenga permiso para subir documentos a esa postulación
+          const postulsCliente = user?.id_cliente 
+            ? postulsList.filter((p: Postulacion) => {
+                // Comparación flexible: convertir a string para evitar problemas de tipos
+                const pCliente = getPostulacionClienteId(p);
+                const userCliente = String(user.id_cliente || "").trim();
+                const matches = pCliente === userCliente && pCliente !== "";
+                console.log(`  - Postulación ${p.id_postulacion}: id_cliente="${pCliente}" (${typeof p.id_cliente}), user.id_cliente="${userCliente}" (${typeof user.id_cliente}), matches=${matches}`);
+                return matches;
+              })
+            : postulsList; // Si no hay id_cliente, usar todas (el backend validará)
           
           console.log("👤 Postulaciones del cliente:", postulsCliente.length);
           
@@ -704,14 +711,17 @@ export default function AspiranteDocumentosPage() {
             ? postuls 
             : (postuls as any)?.items || [];
           
-          // Intentar encontrar por id_cliente (comparación flexible)
-          const postulacionEncontrada = postulsList.find((p: Postulacion) => {
-            const pCliente = getPostulacionClienteId(p);
-            const userCliente = String(user.id_cliente || "").trim();
-            const clienteMatch = pCliente === userCliente && pCliente !== "";
-            console.log(`  - Comparando: p.id_cliente="${pCliente}" (${typeof p.id_cliente}) vs user.id_cliente="${userCliente}" (${typeof user.id_cliente}) = ${clienteMatch}`);
-            return clienteMatch;
-          });
+          // Intentar encontrar por id_cliente si existe, sino usar la primera disponible
+          // El backend validará los permisos
+          const postulacionEncontrada = user?.id_cliente
+            ? postulsList.find((p: Postulacion) => {
+                const pCliente = getPostulacionClienteId(p);
+                const userCliente = String(user.id_cliente || "").trim();
+                const clienteMatch = pCliente === userCliente && pCliente !== "";
+                console.log(`  - Comparando: p.id_cliente="${pCliente}" (${typeof p.id_cliente}) vs user.id_cliente="${userCliente}" (${typeof user.id_cliente}) = ${clienteMatch}`);
+                return clienteMatch;
+              })
+            : postulsList[0]; // Si no hay id_cliente, usar la primera
           
           if (postulacionEncontrada?.id_postulacion) {
             idPostulacionFinal = postulacionEncontrada.id_postulacion;

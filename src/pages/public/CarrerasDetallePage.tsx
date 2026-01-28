@@ -28,7 +28,7 @@ const carrerasDetalle = [
     img: "https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1200&auto=format&fit=crop",
     color: "#3b82f6",
     bgColor: "#dbeafe",
-    duracion: "6 semestres",
+    duracion: "4 semestres",
     nivel: "Tecnología Superior",
     informacion: [
       "Formación integral en desarrollo de software y aplicaciones web",
@@ -60,7 +60,7 @@ const carrerasDetalle = [
     img: "https://images.unsplash.com/photo-1521790797524-b2497295b8a0?q=80&w=1200&auto=format&fit=crop",
     color: "#10b981",
     bgColor: "#d1fae5",
-    duracion: "6 semestres",
+    duracion: "4 semestres",
     nivel: "Tecnología Superior",
     informacion: [
       "Formación en gestión empresarial y administración estratégica",
@@ -92,7 +92,7 @@ const carrerasDetalle = [
     img: "https://images.unsplash.com/photo-1551601651-2a8555f1a136?q=80&w=1200&auto=format&fit=crop",
     color: "#ef4444",
     bgColor: "#fee2e2",
-    duracion: "6 semestres",
+    duracion: "4 semestres",
     nivel: "Tecnología Superior",
     informacion: [
       "Formación integral en cuidados de enfermería y atención al paciente",
@@ -124,7 +124,7 @@ const carrerasDetalle = [
     img: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop",
     color: "#8b5cf6",
     bgColor: "#ede9fe",
-    duracion: "6 semestres",
+    duracion: "4 semestres",
     nivel: "Tecnología Superior",
     informacion: [
       "Estrategias de marketing digital y comunicación en línea",
@@ -156,7 +156,7 @@ const carrerasDetalle = [
     img: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1200&auto=format&fit=crop",
     color: "#f59e0b",
     bgColor: "#fef3c7",
-    duracion: "6 semestres",
+    duracion: "4 semestres",
     nivel: "Tecnología Superior",
     informacion: [
       "Asistencia en procedimientos odontológicos y tratamientos",

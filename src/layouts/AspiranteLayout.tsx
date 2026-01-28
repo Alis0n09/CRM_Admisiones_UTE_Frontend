@@ -4,9 +4,9 @@ import SidebarAspirante from "../components/layout/SidebarAspirante";
 
 export default function AspiranteLayout() {
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#f5f5f5" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#EBEBEB" }}>
       <SidebarAspirante />
-      <Box component="main" sx={{ flex: 1, p: 3, overflow: "auto" }}>
+      <Box component="main" sx={{ flex: 1, ml: "260px", p: 3, overflow: "auto" }}>
         <Outlet />
       </Box>
     </Box>

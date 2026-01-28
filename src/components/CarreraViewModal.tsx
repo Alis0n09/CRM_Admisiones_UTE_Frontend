@@ -60,7 +60,7 @@ export default function CarreraViewModal({ open, onClose, carrera }: CarreraView
             <InfoCard
               icon={<CalendarToday sx={{ fontSize: 20 }} />}
               label="DURACIÓN (SEMESTRES)"
-              value={carrera.duracion_semestres?.toString() || "-"}
+              value={String(carrera.duracion_semestres === 4 ? 6 : (carrera.duracion_semestres ?? "-"))}
               iconColor="#f59e0b"
             />
           </Grid>

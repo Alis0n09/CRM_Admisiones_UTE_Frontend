@@ -8,6 +8,8 @@ import BecasDetallePage from "../pages/public/BecasDetallePage";
 import CarrerasDetallePage from "../pages/public/CarrerasDetallePage";
 import LoginPage from "../pages/public/LoginPage";
 import RegisterPage from "../pages/public/RegisterPage";
+import ForgotPasswordPage from "../pages/public/ForgotPasswordPage";
+import ResetPasswordPage from "../pages/public/ResetPasswordPage";
 
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import ClientesPage from "../pages/admin/ClientesPage";
@@ -55,6 +57,8 @@ export default function AppRouter() {
 
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Admin */}
       <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminLayout /></ProtectedRoute>}>

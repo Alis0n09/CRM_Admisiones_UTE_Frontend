@@ -4,6 +4,8 @@ import DataTable, { type Column } from "../../components/DataTable";
 import TareaViewModal from "../../components/TareaViewModal";
 import * as tareaService from "../../services/tarea.service";
 import * as clienteService from "../../services/cliente.service";
+import * as postulacionService from "../../services/postulacion.service";
+import * as carreraService from "../../services/carrera.service";
 import type { TareaCrm } from "../../services/tarea.service";
 import { useAuth } from "../../context/AuthContext";
 import Assignment from "@mui/icons-material/Assignment";
@@ -118,6 +120,7 @@ export default function AsesorTareasPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
+  const [carreras, setCarreras] = useState<{ id_carrera: string; nombre_carrera: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
@@ -133,6 +136,7 @@ export default function AsesorTareasPage() {
   useEffect(() => load(), [load]);
   useEffect(() => {
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
+    carreraService.getCarreras({ limit: 200 }).then((r: any) => setCarreras(r?.items ?? [])).catch(() => setCarreras([]));
   }, []);
 
   useEffect(() => { if (user?.id_empleado) setForm((f) => ({ ...f, id_empleado: user.id_empleado! })); }, [user?.id_empleado]);
@@ -141,12 +145,113 @@ export default function AsesorTareasPage() {
   const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: user?.id_empleado || (r.empleado as any)?.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.id_cliente || !form.descripcion) { alert("Completa cliente y descripción"); return; }
-    const payload = { ...form, id_empleado: form.id_empleado || user?.id_empleado };
-    (sel ? tareaService.updateTarea(sel.id_tarea, { descripcion: form.descripcion, fecha_asignacion: form.fecha_asignacion || undefined, fecha_vencimiento: form.fecha_vencimiento || undefined, estado: form.estado }) : tareaService.createTarea(payload as any))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    const idEmpleado = String(form.id_empleado || user?.id_empleado || "");
+    const idCliente = String(form.id_cliente || "");
+    
+    if (!idEmpleado || !idCliente) {
+      alert("Error: faltan datos de empleado o cliente");
+      return;
+    }
+    
+    const payload = { 
+      ...form, 
+      id_empleado: idEmpleado,
+      id_cliente: idCliente
+    };
+    
+    const estadoAnterior = sel?.estado || "";
+    const estadoNuevo = form.estado;
+    const seCompleto = estadoNuevo === "Completada" && estadoAnterior !== "Completada";
+    
+    try {
+      if (sel) {
+        // Al actualizar, incluir id_empleado e id_cliente como strings
+        const updatePayload = {
+          id_empleado: idEmpleado,
+          id_cliente: idCliente,
+          descripcion: form.descripcion,
+          fecha_asignacion: form.fecha_asignacion || undefined,
+          fecha_vencimiento: form.fecha_vencimiento || undefined,
+          estado: form.estado
+        };
+        await tareaService.updateTarea(sel.id_tarea, updatePayload);
+        
+        // Si se marcó como completada, crear postulación automáticamente
+        if (seCompleto) {
+          await crearPostulacionAutomatica(idCliente);
+        }
+        
+        setOpen(false);
+        load();
+      } else {
+        await tareaService.createTarea(payload as any);
+        
+        // Si se crea como completada, crear postulación automáticamente
+        if (estadoNuevo === "Completada") {
+          await crearPostulacionAutomatica(idCliente);
+        }
+        
+        setOpen(false);
+        load();
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error");
+    }
+  };
+
+  const crearPostulacionAutomatica = async (idCliente: string) => {
+    try {
+      console.log("🔄 Verificando si se debe crear postulación automática para cliente:", idCliente);
+      
+      // Verificar si ya existe una postulación para este cliente
+      const postulacionesExistentes = await postulacionService.getPostulaciones({ id_cliente: idCliente });
+      const listaPostulaciones = Array.isArray(postulacionesExistentes) 
+        ? postulacionesExistentes 
+        : (postulacionesExistentes as any)?.items || [];
+      
+      if (listaPostulaciones.length > 0) {
+        console.log(`ℹ️ Ya existe ${listaPostulaciones.length} postulación(es) para este cliente, no se creará una nueva`);
+        return;
+      }
+
+      // Obtener la primera carrera disponible
+      if (carreras.length === 0) {
+        console.warn("⚠️ No hay carreras disponibles para crear la postulación");
+        alert("⚠️ No se pudo crear la postulación automáticamente: No hay carreras disponibles en el sistema.");
+        return;
+      }
+
+      const primeraCarrera = carreras[0];
+      const añoActual = new Date().getFullYear();
+      const mesActual = new Date().getMonth() + 1; // 1-12
+      const periodoAcademico = mesActual >= 1 && mesActual <= 6 ? `${añoActual}-1` : `${añoActual}-2`;
+
+      console.log("📝 Creando postulación automática:", {
+        id_cliente: idCliente,
+        id_carrera: primeraCarrera.id_carrera,
+        carrera: primeraCarrera.nombre_carrera,
+        periodo_academico: periodoAcademico
+      });
+
+      const nuevaPostulacion = await postulacionService.createPostulacion({
+        id_cliente: idCliente,
+        id_carrera: primeraCarrera.id_carrera,
+        periodo_academico: periodoAcademico,
+        estado_postulacion: "Pendiente",
+        observaciones: "Postulación creada automáticamente al completar la tarea"
+      });
+
+      console.log(`✅ Postulación creada automáticamente para el cliente ${idCliente}:`, nuevaPostulacion);
+      
+      // Mostrar mensaje de éxito al usuario
+      alert(`✅ Tarea completada exitosamente.\n\n📋 Se ha creado automáticamente una postulación para este cliente:\n- Carrera: ${primeraCarrera.nombre_carrera}\n- Período: ${periodoAcademico}\n- Estado: Pendiente`);
+    } catch (error: any) {
+      console.error("❌ Error al crear postulación automática:", error?.response?.data || error);
+      const errorMsg = error?.response?.data?.message || error?.message || "Error desconocido";
+      alert(`⚠️ La tarea se completó, pero no se pudo crear la postulación automáticamente.\n\nError: ${errorMsg}\n\nPuedes crear la postulación manualmente desde la sección de Postulaciones.`);
+    }
   };
 
   return (

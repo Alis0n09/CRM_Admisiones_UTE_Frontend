@@ -149,7 +149,7 @@ export default function HomePage() {
         apellidos: apellidos.trim(),
         tipo_identificacion: "Cédula", // Valor por defecto, el admin/asesor puede actualizarlo
         numero_identificacion: numeroIdentificacionTemp, // Temporal único (máx 20 chars), debe ser actualizado por admin/asesor
-        origen: formData.mensaje.trim() || "Formulario web - Página principal",
+        origen: formData.mensaje.trim() ? formData.mensaje.trim().slice(0, 200) : "Formulario web - Página principal",
         // NO incluir 'estado' - el backend lo maneja con valor por defecto 'Nuevo'
         
         // Campos opcionales de contacto
@@ -544,6 +544,8 @@ export default function HomePage() {
                   value={formData.mensaje}
                   onChange={handleChange("mensaje")}
                   disabled={loading}
+                  inputProps={{ maxLength: 200 }}
+                  helperText="Opcional. Máximo 200 caracteres."
                   sx={{
                     "& .MuiOutlinedInput-root": {
                       borderRadius: 2,

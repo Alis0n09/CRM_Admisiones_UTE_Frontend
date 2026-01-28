@@ -5,6 +5,8 @@ import TareaViewModal from "../../components/TareaViewModal";
 import * as tareaService from "../../services/tarea.service";
 import * as empleadoService from "../../services/empleado.service";
 import * as clienteService from "../../services/cliente.service";
+import * as postulacionService from "../../services/postulacion.service";
+import * as carreraService from "../../services/carrera.service";
 import type { TareaCrm } from "../../services/tarea.service";
 
 const cols: Column<TareaCrm>[] = [
@@ -23,6 +25,7 @@ export default function TareasPage() {
   const [limit, setLimit] = useState(10);
   const [empleados, setEmpleados] = useState<{ id_empleado: string; nombres: string; apellidos: string }[]>([]);
   const [clientes, setClientes] = useState<{ id_cliente: string; nombres: string; apellidos: string }[]>([]);
+  const [carreras, setCarreras] = useState<{ id_carrera: string; nombre_carrera: string }[]>([]);
   const [open, setOpen] = useState(false);
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
@@ -39,17 +42,99 @@ export default function TareasPage() {
   useEffect(() => {
     empleadoService.getEmpleados({ limit: 200 }).then((r: any) => setEmpleados(r?.items ?? [])).catch(() => setEmpleados([]));
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
+    carreraService.getCarreras({ limit: 200 }).then((r: any) => setCarreras(r?.items ?? [])).catch(() => setCarreras([]));
   }, []);
 
   const openAdd = () => { setSel(null); setForm({ id_empleado: empleados[0]?.id_empleado || "", id_cliente: clientes[0]?.id_cliente || "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" }); setOpen(true); };
   const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: (r.empleado as any)?.id_empleado || r.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
 
-  const save = () => {
+  const save = async () => {
     if (!form.id_empleado || !form.id_cliente || !form.descripcion) { alert("Completa empleado, cliente y descripción"); return; }
-    (sel ? tareaService.updateTarea(sel.id_tarea, form) : tareaService.createTarea(form))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    
+    const estadoAnterior = sel?.estado || "";
+    const estadoNuevo = form.estado;
+    const seCompleto = estadoNuevo === "Completada" && estadoAnterior !== "Completada";
+    const idCliente = String(form.id_cliente || "");
+    
+    try {
+      if (sel) {
+        await tareaService.updateTarea(sel.id_tarea, form);
+        
+        // Si se marcó como completada, crear postulación automáticamente
+        if (seCompleto) {
+          await crearPostulacionAutomatica(idCliente);
+        }
+        
+        setOpen(false);
+        load();
+      } else {
+        await tareaService.createTarea(form);
+        
+        // Si se crea como completada, crear postulación automáticamente
+        if (estadoNuevo === "Completada") {
+          await crearPostulacionAutomatica(idCliente);
+        }
+        
+        setOpen(false);
+        load();
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error");
+    }
+  };
+
+  const crearPostulacionAutomatica = async (idCliente: string) => {
+    try {
+      console.log("🔄 Verificando si se debe crear postulación automática para cliente:", idCliente);
+      
+      // Verificar si ya existe una postulación para este cliente
+      const postulacionesExistentes = await postulacionService.getPostulaciones({ id_cliente: idCliente });
+      const listaPostulaciones = Array.isArray(postulacionesExistentes) 
+        ? postulacionesExistentes 
+        : (postulacionesExistentes as any)?.items || [];
+      
+      if (listaPostulaciones.length > 0) {
+        console.log(`ℹ️ Ya existe ${listaPostulaciones.length} postulación(es) para este cliente, no se creará una nueva`);
+        return;
+      }
+
+      // Obtener la primera carrera disponible
+      if (carreras.length === 0) {
+        console.warn("⚠️ No hay carreras disponibles para crear la postulación");
+        alert("⚠️ No se pudo crear la postulación automáticamente: No hay carreras disponibles en el sistema.");
+        return;
+      }
+
+      const primeraCarrera = carreras[0];
+      const añoActual = new Date().getFullYear();
+      const mesActual = new Date().getMonth() + 1; // 1-12
+      const periodoAcademico = mesActual >= 1 && mesActual <= 6 ? `${añoActual}-1` : `${añoActual}-2`;
+
+      console.log("📝 Creando postulación automática:", {
+        id_cliente: idCliente,
+        id_carrera: primeraCarrera.id_carrera,
+        carrera: primeraCarrera.nombre_carrera,
+        periodo_academico: periodoAcademico
+      });
+
+      const nuevaPostulacion = await postulacionService.createPostulacion({
+        id_cliente: idCliente,
+        id_carrera: primeraCarrera.id_carrera,
+        periodo_academico: periodoAcademico,
+        estado_postulacion: "Pendiente",
+        observaciones: "Postulación creada automáticamente al completar la tarea"
+      });
+
+      console.log(`✅ Postulación creada automáticamente para el cliente ${idCliente}:`, nuevaPostulacion);
+      
+      // Mostrar mensaje de éxito al usuario
+      alert(`✅ Tarea completada exitosamente.\n\n📋 Se ha creado automáticamente una postulación para este cliente:\n- Carrera: ${primeraCarrera.nombre_carrera}\n- Período: ${periodoAcademico}\n- Estado: Pendiente`);
+    } catch (error: any) {
+      console.error("❌ Error al crear postulación automática:", error?.response?.data || error);
+      const errorMsg = error?.response?.data?.message || error?.message || "Error desconocido";
+      alert(`⚠️ La tarea se completó, pero no se pudo crear la postulación automáticamente.\n\nError: ${errorMsg}\n\nPuedes crear la postulación manualmente desde la sección de Postulaciones.`);
+    }
   };
 
   const del = (row: TareaCrm) => {

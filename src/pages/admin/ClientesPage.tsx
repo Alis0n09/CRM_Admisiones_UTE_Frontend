@@ -110,14 +110,14 @@ export default function ClientesPage() {
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
     if (sel) {
-      // Para actualizar, excluir campos que el backend no acepta en el payload
-      const { id_cliente, fecha_registro, fecha_cliente, estado, ...updateData } = form;
-      s.updateCliente(sel.id_cliente, updateData)
+      // Para actualizar: incluir todos los campos incluyendo estado
+      s.updateCliente(sel.id_cliente, form)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     } else {
-      // Para crear, enviar todos los campos necesarios
-      s.createCliente(form as any)
+      // Para crear: excluir el campo estado ya que el backend no lo acepta en la creación
+      const { estado, ...formSinEstado } = form;
+      s.createCliente(formSinEstado as any)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }

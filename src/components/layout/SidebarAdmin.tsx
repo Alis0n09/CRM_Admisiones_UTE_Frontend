@@ -1,5 +1,5 @@
 import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Stack } from "@mui/material";
-import { Link as RouterLink, useLocation } from "react-router-dom";
+import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
 import People from "@mui/icons-material/People";
 import Badge from "@mui/icons-material/Badge";
 import Person from "@mui/icons-material/Person";
@@ -34,24 +34,21 @@ const links = [
 
 export default function SidebarAdmin() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { logout, user } = useAuth();
 
-  const userInitials = user?.email
-    ? user.email
-        .split("@")[0]
-        .split(".")
-        .map((n) => n[0])
-        .join("")
-        .toUpperCase()
-        .slice(0, 2) || "AD"
-    : "AD";
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <Box
       sx={{
-        width: 300,
+        width: 260,
         bgcolor: "white",
-        color: "#1e293b",
+        borderRight: "1px solid #eee",
+        p: 2,
         display: "flex",
         flexDirection: "column",
         height: "100vh",
@@ -60,150 +57,89 @@ export default function SidebarAdmin() {
         top: 0,
         zIndex: 1000,
         overflowY: "auto",
-        borderRight: "1px solid #e5e7eb",
-        "&::-webkit-scrollbar": {
-          width: "8px",
-        },
-        "&::-webkit-scrollbar-track": {
-          background: "#f5f5f5",
-        },
-        "&::-webkit-scrollbar-thumb": {
-          background: "#d1d5db",
-          borderRadius: "4px",
-          "&:hover": {
-            background: "#9ca3af",
-          },
-        },
       }}
     >
-      {/* Logo/Brand Section */}
-      <Box sx={{ p: 3, borderBottom: "1px solid #e5e7eb", textAlign: "center", flexShrink: 0 }}>
+      {/* Header (como el diseño del asesor) */}
+      <Box sx={{ textAlign: "center", py: 2 }}>
         <Box
-          component="img"
-          src="/logo.png"
-          alt="Logo"
-          sx={{
-            width: 140,
-            height: 140,
-            objectFit: "contain",
-            mb: 1.5,
-            mx: "auto",
-            display: "block",
-          }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = "none";
-          }}
-        />
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            fontSize: "1rem",
-            color: "#1e293b",
-            mb: 0.5,
-          }}
+          sx={{ mb: 1.5, display: "flex", justifyContent: "center" }}
         >
-          Sistema de Admisiones
+          <Box sx={{ width: 90, height: 90 }}>
+            <Box
+              component="img"
+              src="/logo.png"
+              alt="Logo"
+              sx={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).style.display = "none";
+              }}
+            />
+          </Box>
+        </Box>
+        <Typography fontWeight={700} sx={{ color: "#1e293b" }}>
+          Administrador · UTE Admisiones
         </Typography>
-        <Typography
-          variant="body2"
-          sx={{
-            fontWeight: 400,
-            fontSize: "0.875rem",
-            color: "#64748b",
-          }}
-        >
-          Administrador
-        </Typography>
+        {user?.email && (
+          <Typography variant="caption" sx={{ color: "text.secondary" }}>
+            {user.email}
+          </Typography>
+        )}
       </Box>
+
+      <Divider sx={{ my: 2 }} />
+
+      <Typography variant="caption" sx={{ color: "text.secondary", px: 2 }}>
+        MENÚ
+      </Typography>
 
       {/* Navigation Links */}
-      <Box sx={{ py: 2, flexShrink: 0 }}>
-        <List dense sx={{ px: 1.5 }}>
-          {links.map(({ to, label, icon }) => {
-            const isActive = location.pathname === to;
-            return (
-              <ListItemButton
-                key={to}
-                component={RouterLink}
-                to={to}
-                sx={{
-                  borderRadius: 2,
-                  mb: 0.5,
-                  bgcolor: isActive ? "#3b82f6" : "transparent",
-                  color: isActive ? "white" : "#64748b",
-                  "&:hover": {
-                    bgcolor: isActive ? "#2563eb" : "#f5f5f5",
-                  },
-                  py: 1.25,
-                }}
-              >
-                <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}>{icon}</ListItemIcon>
-                <ListItemText
-                  primary={label}
-                  primaryTypographyProps={{
-                    fontSize: "0.9rem",
-                    fontWeight: isActive ? 600 : 400,
-                  }}
-                />
-              </ListItemButton>
-            );
-          })}
-        </List>
-      </Box>
+      <List dense sx={{ flex: 1 }}>
+        {links.map(({ to, label, icon }) => {
+          const isSelected = location.pathname === to || (to === base && location.pathname === base);
+          return (
+            <ListItemButton
+              key={to}
+              component={RouterLink}
+              to={to}
+              selected={isSelected}
+              sx={{
+                borderRadius: 1,
+                mx: 1,
+                my: 0.25,
+                "&.Mui-selected": {
+                  bgcolor: "#eef2ff",
+                  "&:hover": { bgcolor: "#e0e7ff" },
+                },
+              }}
+            >
+              <ListItemIcon sx={{ minWidth: 36, color: isSelected ? "#4f46e5" : "text.secondary" }}>
+                {icon}
+              </ListItemIcon>
+              <ListItemText
+                primary={label}
+                primaryTypographyProps={{ fontWeight: isSelected ? 700 : 500, color: "#111827", fontSize: "0.92rem" }}
+              />
+            </ListItemButton>
+          );
+        })}
+      </List>
 
-      {/* User Info Section */}
-      <Box sx={{ borderTop: "1px solid #e5e7eb", p: 2, flexShrink: 0 }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar
-            sx={{
-              width: 40,
-              height: 40,
-              bgcolor: "#8b5cf6",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-            }}
-          >
-            {userInitials}
-          </Avatar>
-          <Box sx={{ flex: 1, minWidth: 0 }}>
-            <Typography
-              variant="body2"
-              sx={{
-                fontWeight: 600,
-                color: "#1e293b",
-                fontSize: "0.875rem",
-                lineHeight: 1.2,
-              }}
-            >
-              {user?.email?.split("@")[0] || "Administrador"} Usuario
-            </Typography>
-            <Typography
-              variant="caption"
-              sx={{
-                color: "#64748b",
-                fontSize: "0.75rem",
-                display: "block",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {user?.email || "admin@correo.com"}
-            </Typography>
-          </Box>
-        </Stack>
-        <List dense>
-          <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 2, color: "#64748b", py: 1.25, "&:hover": { bgcolor: "#f5f5f5" } }}>
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><Home /></ListItemIcon>
-            <ListItemText primary="Sitio público" primaryTypographyProps={{ fontSize: "0.9rem" }} />
-          </ListItemButton>
-          <ListItemButton onClick={logout} sx={{ borderRadius: 2, color: "#64748b", py: 1.25, "&:hover": { bgcolor: "#f5f5f5" } }}>
-            <ListItemIcon sx={{ minWidth: 40, color: "inherit" }}><ExitToApp /></ListItemIcon>
-            <ListItemText primary="Cerrar sesión" primaryTypographyProps={{ fontSize: "0.9rem" }} />
-          </ListItemButton>
-        </List>
-      </Box>
+      <Divider />
+
+      <List dense>
+        <ListItemButton component={RouterLink} to="/" sx={{ borderRadius: 1, mx: 1, my: 0.25 }}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <Home />
+          </ListItemIcon>
+          <ListItemText primary="Sitio público" />
+        </ListItemButton>
+        <ListItemButton onClick={handleLogout} sx={{ borderRadius: 1, mx: 1, my: 0.25 }}>
+          <ListItemIcon sx={{ minWidth: 36 }}>
+            <ExitToApp />
+          </ListItemIcon>
+          <ListItemText primary="Cerrar sesión" />
+        </ListItemButton>
+      </List>
     </Box>
   );
 }

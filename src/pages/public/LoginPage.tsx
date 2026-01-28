@@ -116,8 +116,8 @@ export default function LoginPage() {
 
               <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
                 <Link
-                  component="button"
-                  type="button"
+                  component={RouterLink}
+                  to="/forgot-password"
                   underline="hover"
                   sx={{
                     color: "#3b82f6",

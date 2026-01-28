@@ -13,7 +13,7 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     duracion_semestres: 6,
     nivel_grado: "Tecnología Superior",
     cupos_disponibles: 50,
-    estado: "Activa",
+    estado: "1",
   },
   {
     nombre_carrera: "Tecnología en Administración de Empresas",
@@ -21,7 +21,7 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     duracion_semestres: 6,
     nivel_grado: "Tecnología Superior",
     cupos_disponibles: 50,
-    estado: "Activa",
+    estado: "1",
   },
   {
     nombre_carrera: "Tecnología en Atención de Enfermería",
@@ -29,7 +29,7 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     duracion_semestres: 6,
     nivel_grado: "Tecnología Superior",
     cupos_disponibles: 50,
-    estado: "Activa",
+    estado: "1",
   },
   {
     nombre_carrera: "Tecnología en Marketing Digital",
@@ -37,7 +37,7 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     duracion_semestres: 6,
     nivel_grado: "Tecnología Superior",
     cupos_disponibles: 50,
-    estado: "Activa",
+    estado: "1",
   },
   {
     nombre_carrera: "Tecnología en Asistente de Odontología",
@@ -45,7 +45,7 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     duracion_semestres: 6,
     nivel_grado: "Tecnología Superior",
     cupos_disponibles: 50,
-    estado: "Activa",
+    estado: "1",
   },
 ];
 
@@ -58,7 +58,7 @@ const cols: Column<Carrera>[] = [
   { id: "estado", label: "Estado", minWidth: 80 },
 ];
 
-const empty: Partial<Carrera> = { nombre_carrera: "", facultad: "", duracion_semestres: 8, nivel_grado: "Tecnología", cupos_disponibles: 50, estado: "1" };
+const empty: Partial<Carrera> = { nombre_carrera: "", facultad: "", duracion_semestres: 6, nivel_grado: "Tecnología", cupos_disponibles: 50, estado: "1" };
 
 export default function CarrerasPage() {
   const [items, setItems] = useState<Carrera[]>([]);
@@ -133,13 +133,12 @@ export default function CarrerasPage() {
 
   const inicializarCarrerasPorDefectoManual = async () => {
     if (!confirm("¿Deseas crear las carreras por defecto que se ofrecen? Esto creará las carreras si no existen.")) return;
-    
+
     try {
       for (const carrera of carrerasPorDefecto) {
         try {
           await s.createCarrera(carrera as any);
         } catch (error: any) {
-          // Si la carrera ya existe, continuar con la siguiente
           if (error?.response?.status !== 400 && error?.response?.status !== 409) {
             console.error("Error al crear carrera:", error);
           }
@@ -152,31 +151,55 @@ export default function CarrerasPage() {
     }
   };
 
+  const corregirDuraciones = async () => {
+    if (!confirm("¿Actualizar todas las carreras con 4 semestres a 6 semestres? (Estándar para Tecnología Superior)")) return;
+    try {
+      const r = await s.getCarreras({ page: 1, limit: 500 });
+      const items: Carrera[] = r?.items ?? [];
+      const con4 = items.filter((c) => c.duracion_semestres === 4);
+      for (const c of con4) {
+        const { id_carrera, ...rest } = c;
+        await s.updateCarrera(id_carrera, { ...rest, duracion_semestres: 6 });
+      }
+      load();
+      alert(con4.length ? `Se actualizaron ${con4.length} carrera(s) a 6 semestres.` : "No hay carreras con 4 semestres.");
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error al corregir duraciones");
+    }
+  };
+
   return (
     <>
-      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: 600 }}>
           Carreras que ofrecemos
         </Typography>
-        {items.length === 0 && (
-          <Button variant="outlined" onClick={inicializarCarrerasPorDefectoManual}>
-            Inicializar con carreras por defecto
-          </Button>
-        )}
+        <Box sx={{ display: "flex", gap: 1 }}>
+          {items.length > 0 && (
+            <Button variant="outlined" color="warning" onClick={corregirDuraciones}>
+              Corregir duraciones (4 → 6 semestres)
+            </Button>
+          )}
+          {items.length === 0 && (
+            <Button variant="outlined" onClick={inicializarCarrerasPorDefectoManual}>
+              Inicializar con carreras por defecto
+            </Button>
+          )}
+        </Box>
       </Box>
 
       <DataTable title="Carreras" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}
         onView={(r) => { setSel(r); setOpenView(true); }}
-        onEdit={(r) => { setSel(r); setForm({ ...r, nivel_grado: "Tecnología" }); setOpen(true); }}
+        onEdit={(r) => { setSel(r); setForm({ ...r, nivel_grado: "Tecnología", duracion_semestres: r.duracion_semestres === 4 ? 6 : r.duracion_semestres }); setOpen(true); }}
         onDelete={del} getId={(r) => r.id_carrera} />
       <Dialog open={open} onClose={() => setOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>{sel ? "Editar carrera" : "Nueva carrera"}</DialogTitle>
         <DialogContent>
           <TextField margin="dense" fullWidth label="Nombre" value={form.nombre_carrera ?? ""} onChange={(e) => setForm({ ...form, nombre_carrera: e.target.value })} required />
           <TextField margin="dense" fullWidth label="Facultad" value={form.facultad ?? ""} onChange={(e) => setForm({ ...form, facultad: e.target.value })} required />
-          <TextField margin="dense" fullWidth type="number" label="Duración (semestres)" value={form.duracion_semestres ?? 8} onChange={(e) => setForm({ ...form, duracion_semestres: parseInt(e.target.value) || 0 })} />
+          <TextField margin="dense" fullWidth type="number" label="Duración (semestres)" inputProps={{ min: 6 }} value={form.duracion_semestres ?? 6} onChange={(e) => setForm({ ...form, duracion_semestres: Math.max(6, parseInt(e.target.value, 10) || 6) })} />
           <TextField margin="dense" fullWidth select label="Nivel" value={form.nivel_grado ?? "Tecnología"} onChange={(e) => setForm({ ...form, nivel_grado: e.target.value })}>
             <MenuItem value="Tecnología">Tecnología</MenuItem>
           </TextField>

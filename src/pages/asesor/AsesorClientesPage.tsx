@@ -159,9 +159,19 @@ export default function AsesorClientesPage() {
 
   const save = () => {
     if (!form.nombres || !form.apellidos || !form.numero_identificacion || !form.origen) return;
-    (sel ? s.updateCliente(sel.id_cliente, form) : s.createCliente(form as any))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    
+    if (sel) {
+      // Actualizar: incluir todos los campos incluyendo estado
+      s.updateCliente(sel.id_cliente, form)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    } else {
+      // Crear: excluir el campo estado ya que el backend no lo acepta en la creación
+      const { estado, ...formSinEstado } = form;
+      s.createCliente(formSinEstado as any)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    }
   };
 
   const loadClienteDetail = useCallback(async (clienteId: string) => {

@@ -56,18 +56,126 @@ export default function EmpleadosPage() {
   useEffect(() => load(), [load]);
 
   const save = () => {
-    if (!form.nombres || !form.apellidos || !form.numero_identificacion) return;
+    // Validar campos requeridos según el DTO del backend
+    const nombresTrim = form.nombres?.trim() || "";
+    const apellidosTrim = form.apellidos?.trim() || "";
+    const tipoIdentificacion = form.tipo_identificacion || "Cédula";
+    const numeroIdentificacionTrim = form.numero_identificacion?.trim() || "";
+    
+    if (!nombresTrim || nombresTrim.length < 1 || nombresTrim.length > 100) {
+      alert("El campo Nombres es requerido y debe tener entre 1 y 100 caracteres");
+      return;
+    }
+    
+    if (!apellidosTrim || apellidosTrim.length < 1 || apellidosTrim.length > 100) {
+      alert("El campo Apellidos es requerido y debe tener entre 1 y 100 caracteres");
+      return;
+    }
+    
+    if (!tipoIdentificacion || tipoIdentificacion.length < 1 || tipoIdentificacion.length > 20) {
+      alert("El campo Tipo de identificación es requerido y debe tener entre 1 y 20 caracteres");
+      return;
+    }
+    
+    if (!numeroIdentificacionTrim || numeroIdentificacionTrim.length < 1 || numeroIdentificacionTrim.length > 20) {
+      alert("El campo Número de identificación es requerido y debe tener entre 1 y 20 caracteres");
+      return;
+    }
+    
+    // Validar correo si se proporciona (debe ser email válido y entre 1-120 caracteres)
+    const correoTrim = form.correo?.trim() || "";
+    if (correoTrim) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(correoTrim)) {
+        alert("El correo electrónico no es válido");
+        return;
+      }
+      if (correoTrim.length > 120) {
+        alert("El correo electrónico no puede tener más de 120 caracteres");
+        return;
+      }
+    }
+    
+    // Validar teléfono si se proporciona (1-20 caracteres)
+    const telefonoTrim = form.telefono?.trim() || "";
+    if (telefonoTrim && (telefonoTrim.length < 1 || telefonoTrim.length > 20)) {
+      alert("El teléfono debe tener entre 1 y 20 caracteres");
+      return;
+    }
+    
+    // Validar departamento si se proporciona (1-50 caracteres)
+    const departamentoTrim = form.departamento?.trim() || "";
+    if (departamentoTrim && (departamentoTrim.length < 1 || departamentoTrim.length > 50)) {
+      alert("El departamento debe tener entre 1 y 50 caracteres");
+      return;
+    }
+    
+    // Preparar datos para enviar según el DTO del backend
+    const prepareData = (data: Partial<Empleado>) => {
+      const prepared: any = {
+        nombres: nombresTrim,
+        apellidos: apellidosTrim,
+        tipo_identificacion: tipoIdentificacion,
+        numero_identificacion: numeroIdentificacionTrim,
+      };
+      
+      // Campos opcionales: solo incluir si tienen valor válido (no enviar strings vacíos)
+      // El backend valida con @Length(1, ...) así que no podemos enviar strings vacíos
+      if (correoTrim && correoTrim.length >= 1) {
+        prepared.correo = correoTrim;
+      }
+      if (telefonoTrim && telefonoTrim.length >= 1) {
+        prepared.telefono = telefonoTrim;
+      }
+      if (departamentoTrim && departamentoTrim.length >= 1) {
+        prepared.departamento = departamentoTrim;
+      }
+      
+      return prepared;
+    };
     
     if (sel) {
       // Al actualizar, excluir id_empleado del body ya que va en la URL
       const { id_empleado, ...updateData } = form;
-      s.updateEmpleado(sel.id_empleado, updateData)
-        .then(() => { setOpen(false); load(); })
-        .catch((e) => alert(e?.response?.data?.message || "Error"));
+      const preparedData = prepareData(updateData);
+      s.updateEmpleado(sel.id_empleado, preparedData)
+        .then(() => { 
+          setOpen(false);
+          setForm(empty);
+          load(); 
+        })
+        .catch((e) => {
+          const errorMsg = e?.response?.data?.message || e?.message || "Error al actualizar empleado";
+          console.error("Error al actualizar empleado:", e);
+          console.error("Datos enviados:", preparedData);
+          alert(errorMsg);
+        });
     } else {
-      s.createEmpleado(form as any)
-        .then(() => { setOpen(false); load(); })
-        .catch((e) => alert(e?.response?.data?.message || "Error"));
+      // Al crear, excluir id_empleado si existe
+      const { id_empleado, ...formSinId } = form;
+      const preparedData = prepareData(formSinId);
+      console.log("📤 Creando empleado con datos:", preparedData);
+      s.createEmpleado(preparedData)
+        .then((empleadoCreado) => { 
+          console.log("✅ Empleado creado exitosamente:", empleadoCreado);
+          setOpen(false);
+          setForm(empty);
+          // Recargar la lista - asegurar que se muestre en la primera página si es necesario
+          setPage(1);
+          load();
+        })
+        .catch((e) => {
+          const errorMsg = e?.response?.data?.message || e?.message || "Error al crear empleado";
+          const status = e?.response?.status;
+          console.error("❌ Error al crear empleado:", {
+            status,
+            message: errorMsg,
+            error: e,
+            datosEnviados: preparedData,
+            responseData: e?.response?.data
+          });
+          alert(`Error al crear empleado: ${errorMsg}\n\nRevisa la consola para más detalles.`);
+        });
     }
   };
 

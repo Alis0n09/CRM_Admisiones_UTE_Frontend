@@ -52,5 +52,9 @@ export async function updatePostulacion(id: string, body: Partial<Postulacion>) 
 
 export async function deletePostulacion(id: string) {
   const { data } = await api.delete(`${base}/${id}`);
-  return getData<Postulacion>(data);
+  // El backend devuelve SuccessResponseDto, extraer los datos correctamente
+  const response = getData<any>(data);
+  // Si la respuesta tiene una estructura { message, data }, devolver data
+  // Si no, devolver la respuesta completa
+  return response?.data || response;
 }

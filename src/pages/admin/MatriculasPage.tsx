@@ -46,9 +46,19 @@ export default function MatriculasPage() {
 
   const save = () => {
     if (!form.id_cliente || !form.id_carrera || !form.periodo_academico) { alert("Completa cliente, carrera y período"); return; }
-    (sel ? matriculaService.updateMatricula(sel.id_matricula, form) : matriculaService.createMatricula(form))
-      .then(() => { setOpen(false); load(); })
-      .catch((e) => alert(e?.response?.data?.message || "Error"));
+    
+    if (sel) {
+      // Para actualizar: incluir todos los campos incluyendo estado
+      matriculaService.updateMatricula(sel.id_matricula, form)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    } else {
+      // Para crear: excluir el campo estado si el backend no lo acepta en la creación
+      const { estado, ...formSinEstado } = form;
+      matriculaService.createMatricula(formSinEstado as any)
+        .then(() => { setOpen(false); load(); })
+        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    }
   };
 
   const del = (row: Matricula) => {

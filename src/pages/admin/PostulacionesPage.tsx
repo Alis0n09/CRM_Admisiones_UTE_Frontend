@@ -133,9 +133,91 @@ export default function PostulacionesPage() {
     }
   };
 
-  const del = (row: Postulacion) => {
+  const del = async (row: Postulacion) => {
     if (!confirm("¿Eliminar esta postulación?")) return;
-    postulacionService.deletePostulacion(row.id_postulacion).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
+    
+    // Obtener el ID de múltiples formas posibles
+    const idPostulacion = row.id_postulacion || (row as any).id_postulacion || (row as any).id || (row as any)._id;
+    
+    console.log("🔍 Objeto row completo:", row);
+    console.log("🔍 ID obtenido:", idPostulacion);
+    console.log("🔍 Tipo del ID:", typeof idPostulacion);
+    
+    if (!idPostulacion) {
+      console.error("Error: No se pudo obtener el ID de la postulación", row);
+      alert("Error: No se pudo obtener el ID de la postulación. Revisa la consola para más detalles.");
+      return;
+    }
+    
+    // Limpiar el ID: convertir a string, eliminar espacios y caracteres no válidos
+    let idString = String(idPostulacion)
+      .trim()
+      .replace(/\s+/g, '') // Eliminar todos los espacios
+      .replace(/[^\w-]/g, ''); // Eliminar caracteres especiales excepto guiones y alfanuméricos
+    
+    if (!idString || idString === "undefined" || idString === "null" || idString.length < 8) {
+      console.error("Error: ID de postulación inválido", { idPostulacion, idString, row });
+      alert("Error: ID de postulación inválido. Revisa la consola para más detalles.");
+      return;
+    }
+    
+    // Verificar primero que la postulación existe antes de intentar eliminarla
+    try {
+      console.log("🔍 Verificando que la postulación existe antes de eliminar...");
+      const postulacionExistente = await postulacionService.getPostulacion(idString);
+      console.log("📋 Postulación encontrada:", postulacionExistente);
+      
+      if (!postulacionExistente) {
+        alert(`La postulación con ID ${idString} no existe en el servidor.`);
+        load(); // Recargar la lista por si acaso
+        return;
+      }
+    } catch (verifyError: any) {
+      console.warn("⚠️ No se pudo verificar la existencia de la postulación:", verifyError);
+      // Continuar con la eliminación de todas formas
+    }
+    
+    console.log("📤 Intentando eliminar postulación:");
+    console.log("  - ID original:", idPostulacion);
+    console.log("  - ID limpio:", idString);
+    console.log("  - URL completa:", `${import.meta.env.VITE_API_URL || "http://localhost:3000"}/postulacion/${idString}`);
+    
+    postulacionService.deletePostulacion(idString)
+      .then((result) => { 
+        console.log("✅ Postulación eliminada exitosamente:", result);
+        load();
+        // Disparar evento para actualizar otras páginas que usan postulaciones
+        window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
+      })
+      .catch((e: any) => {
+        const status = e?.response?.status;
+        const errorMsg = e?.response?.data?.message || e?.message || "Error al eliminar la postulación";
+        const url = e?.config?.url || e?.request?.responseURL || "URL desconocida";
+        const responseData = e?.response?.data;
+        
+        console.error("❌ Error al eliminar postulación:", {
+          idOriginal: idPostulacion,
+          idLimpio: idString,
+          status,
+          url,
+          method: e?.config?.method || "DELETE",
+          error: e,
+          response: responseData,
+          responseMessage: responseData?.message,
+          row: row
+        });
+        
+        if (status === 404) {
+          const backendMessage = responseData?.message || "No se encontró la postulación";
+          alert(`Postulación no encontrada (ID: ${idString}).\n\nMensaje del backend: ${backendMessage}\n\nPosibles causas:\n- La postulación ya fue eliminada\n- El ID no existe en la base de datos\n- El método remove() del servicio no encuentra la postulación\n- Verifica en el backend que el campo id_postulacion en la entidad Postulacion esté correctamente configurado\n\nRevisa la consola para más detalles.`);
+        } else if (status === 403) {
+          alert("No tienes permisos para eliminar esta postulación.");
+        } else if (status === 401) {
+          alert("Sesión expirada. Por favor, inicia sesión nuevamente.");
+        } else {
+          alert(`Error al eliminar la postulación: ${errorMsg}\n\nRevisa la consola para más detalles.`);
+        }
+      });
   };
 
   return (

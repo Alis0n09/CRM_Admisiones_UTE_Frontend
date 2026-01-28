@@ -86,7 +86,7 @@ export default function RegisterPage() {
       
       // Aquí podrías crear el usuario también si el backend lo requiere
       // Por ahora solo redirigimos al login
-      alert("Registro exitoso. Por favor inicia sesión.");
+      alert("Gracias por registrarte, un asesor se contactará contigo muy pronto!");
       navigate("/login");
     } catch (err: any) {
       const msg = err?.response?.data?.message;

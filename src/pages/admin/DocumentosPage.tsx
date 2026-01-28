@@ -114,31 +114,6 @@ export default function DocumentosPage() {
     setOpen(true); 
   };
 
-  const handleDownload = (url?: string, nombre?: string) => {
-    const u = resolveUrl(url);
-    if (!u) return;
-    // Descargar autenticado (tu endpoint seguro requiere Bearer token)
-    const token = localStorage.getItem("token");
-    fetch(u, {
-      method: "GET",
-      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
-    })
-      .then(async (res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const blob = await res.blob();
-        const blobUrl = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.download = nombre || "documento";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(blobUrl);
-      })
-      .catch(() => {
-        // Fallback: abrir directo si es público
-        window.open(u, "_blank", "noopener,noreferrer");
-      });
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {

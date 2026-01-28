@@ -1,74 +1,60 @@
-# React + TypeScript + Vite
+# CRM + Sistema de Admisiones UTE – Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend desarrollado en **ReactJS con TypeScript y Vite** para la gestión de un **CRM y sistema de admisiones universitarias**.  
+El sistema se conecta a un backend desarrollado en **NestJS** mediante API REST y permite administrar usuarios, roles, clientes, postulaciones, matrículas y becas, integrando autenticación mediante **JWT** y una interfaz moderna con **Material-UI**.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Características principales
 
-## React Compiler
+- Interfaz de usuario moderna con **Material-UI (MUI)**
+- Autenticación con **JWT**
+  - Login
+  - Almacenamiento del token en `localStorage`
+  - Protección de rutas por rol
+- Gestión completa de:
+  - Usuarios y roles
+  - Clientes del CRM
+  - Postulaciones
+  - Matrículas
+  - Becas
+- Layouts diferenciados por rol:
+  - Administrador
+  - Asesor
+  - Público
+- Interceptores de **Axios** para:
+  - Envío automático del token en cada petición
+  - Manejo global de errores (401, 403)
+- Recuperación de contraseña mediante correo electrónico
+- Navegación protegida con **React Router**
+- Uso de **TypeScript** para tipado estático y mejor mantenimiento del código
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## Tecnologías utilizadas
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **React** 19.2.0
+- **TypeScript** 5.9.3
+- **Vite** 7.2.4
+- **Material-UI (MUI)** 7.3.7
+- **React Router DOM** 7.12.0
+- **Axios** 1.13.2
+- **Emotion** 11.14.0
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+---
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Requisitos previos
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Node.js** v18 o superior
+- **npm** (incluido con Node.js)
+- Backend NestJS en ejecución
+- Navegador web moderno (Chrome, Edge, Firefox)
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+---
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Instalación del proyecto
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-"# CRM_Admisiones_UTE_Frontend" 
+Clonar el repositorio:
+
+```bash
+git clone https://github.com/Alis0n09/CRM_Admisiones_UTE_Frontend.git
