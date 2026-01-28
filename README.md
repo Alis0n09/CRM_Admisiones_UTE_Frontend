@@ -180,6 +180,3 @@ Autores
 Universidad UTE 
 Tecnología en Desarrollo de Software
 
-Repositorio del Backend
-https://github.com/Alis0n09/CRM_Admisiones_UTE
-
