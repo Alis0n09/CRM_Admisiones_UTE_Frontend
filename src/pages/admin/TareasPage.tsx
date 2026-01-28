@@ -8,7 +8,6 @@ import * as clienteService from "../../services/cliente.service";
 import * as postulacionService from "../../services/postulacion.service";
 import * as carreraService from "../../services/carrera.service";
 import type { TareaCrm } from "../../services/tarea.service";
-
 const cols: Column<TareaCrm>[] = [
   { id: "descripcion", label: "Descripción", minWidth: 180 },
   { id: "empleado", label: "Asesor", minWidth: 140, format: (_, r) => r.empleado ? `${r.empleado.nombres} ${r.empleado.apellidos}` : "-" },
@@ -17,7 +16,6 @@ const cols: Column<TareaCrm>[] = [
   { id: "fecha_vencimiento", label: "Vencimiento", minWidth: 100 },
   { id: "estado", label: "Estado", minWidth: 90 },
 ];
-
 export default function TareasPage() {
   const [items, setItems] = useState<TareaCrm[]>([]);
   const [total, setTotal] = useState(0);
@@ -30,24 +28,22 @@ export default function TareasPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<TareaCrm | null>(null);
   const [form, setForm] = useState<{ id_empleado: string; id_cliente: string; descripcion: string; fecha_asignacion: string; fecha_vencimiento: string; estado: string }>({ id_empleado: "", id_cliente: "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" });
-
   const load = useCallback(() => {
     tareaService.getTareas({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
   useEffect(() => {
     empleadoService.getEmpleados({ limit: 200 }).then((r: any) => setEmpleados(r?.items ?? [])).catch(() => setEmpleados([]));
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
     carreraService.getCarreras({ limit: 200 }).then((r: any) => setCarreras(r?.items ?? [])).catch(() => setCarreras([]));
   }, []);
-
   const openAdd = () => { setSel(null); setForm({ id_empleado: empleados[0]?.id_empleado || "", id_cliente: clientes[0]?.id_cliente || "", descripcion: "", fecha_asignacion: "", fecha_vencimiento: "", estado: "Pendiente" }); setOpen(true); };
   const handleView = (r: TareaCrm) => { setSel(r); setOpenView(true); };
   const openEdit = (r: TareaCrm) => { setSel(r); setForm({ id_empleado: (r.empleado as any)?.id_empleado || r.id_empleado || "", id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", descripcion: r.descripcion || "", fecha_asignacion: r.fecha_asignacion || "", fecha_vencimiento: r.fecha_vencimiento || "", estado: r.estado || "Pendiente" }); setOpen(true); };
+<<<<<<< HEAD
 
   const save = async () => {
     if (!form.id_empleado || !form.id_cliente || !form.descripcion) { alert("Completa empleado, cliente y descripción"); return; }
@@ -135,13 +131,40 @@ export default function TareasPage() {
       const errorMsg = error?.response?.data?.message || error?.message || "Error desconocido";
       alert(`⚠️ La tarea se completó, pero no se pudo crear la postulación automáticamente.\n\nError: ${errorMsg}\n\nPuedes crear la postulación manualmente desde la sección de Postulaciones.`);
     }
+=======
+  const save = async () => {
+    if (!form.id_empleado || !form.id_cliente || !form.descripcion) { alert("Completa empleado, cliente y descripción"); return; }
+    
+    const estadoAnterior = sel?.estado;
+    const estadoNuevo = form.estado;
+    const seCompleta = estadoNuevo === "Completada" && estadoAnterior !== "Completada";
+    
+    try {
+      if (sel) {
+        if (seCompleta) {
+          await tareaService.deleteTarea(sel.id_tarea);
+          alert("✅ Tarea completada y eliminada automáticamente.");
+        } else {
+          await tareaService.updateTarea(sel.id_tarea, form);
+        }
+      } else {
+        if (estadoNuevo === "Completada") {
+          alert("⚠️ No se puede crear una tarea directamente como completada.");
+          return;
+        }
+        await tareaService.createTarea(form);
+      }
+      setOpen(false);
+      load();
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error");
+    }
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
   };
-
   const del = (row: TareaCrm) => {
     if (!confirm("¿Eliminar esta tarea?")) return;
     tareaService.deleteTarea(row.id_tarea).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   return (
     <>
       <DataTable title="Tareas CRM" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}

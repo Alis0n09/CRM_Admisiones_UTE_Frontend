@@ -20,7 +20,6 @@ import {
   Edit,
   Delete,
 } from "@mui/icons-material";
-
 interface CalendarNote {
   id: string;
   date: string; // YYYY-MM-DD
@@ -29,7 +28,6 @@ interface CalendarNote {
   color: string;
   time?: string;
 }
-
 const COLORS = [
   { name: "Azul", value: "#3b82f6" },
   { name: "Verde", value: "#10b981" },
@@ -37,7 +35,6 @@ const COLORS = [
   { name: "Naranja", value: "#f59e0b" },
   { name: "Rojo", value: "#ef4444" },
 ];
-
 const DAYS_ABBR = ["DOM", "LUN", "MAR", "MIE", "JUE", "VIE", "SAB"];
 const MONTHS = [
   "enero",
@@ -53,7 +50,6 @@ const MONTHS = [
   "noviembre",
   "diciembre",
 ];
-
 export default function AsesorCalendarioPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [notes, setNotes] = useState<CalendarNote[]>([]);
@@ -66,38 +62,29 @@ export default function AsesorCalendarioPage() {
     color: COLORS[0].value,
     time: "",
   });
-
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
-
-  // getDay() devuelve 0=domingo, 1=lunes, etc. Necesitamos ajustar para que domingo sea el primer día
   const firstDayOfMonth = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
   const calendarDays = useMemo(() => {
     const days: (number | null)[] = [];
-    // Días del mes anterior (domingo = 0, así que agregamos espacios vacíos)
     for (let i = 0; i < firstDayOfMonth; i++) {
       days.push(null);
     }
-    // Días del mes actual
     for (let i = 1; i <= daysInMonth; i++) {
       days.push(i);
     }
-    // Completar hasta 42 celdas (6 semanas) para mantener la cuadrícula completa
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
       days.push(null);
     }
     return days;
   }, [year, month, firstDayOfMonth, daysInMonth]);
-
   const getNotesForDate = (day: number | null): CalendarNote[] => {
     if (day === null) return [];
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     return notes.filter((note) => note.date === dateStr);
   };
-
   const handleDateClick = (day: number | null) => {
     if (day === null) return;
     const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
@@ -106,7 +93,6 @@ export default function AsesorCalendarioPage() {
     setForm({ title: "", description: "", color: COLORS[0].value, time: "" });
     setOpenDialog(true);
   };
-
   const handleNoteClick = (note: CalendarNote) => {
     setSelectedNote(note);
     setSelectedDate(note.date);
@@ -118,10 +104,8 @@ export default function AsesorCalendarioPage() {
     });
     setOpenDialog(true);
   };
-
   const handleSave = () => {
     if (!form.title.trim()) return;
-
     if (selectedNote) {
       setNotes(
         notes.map((n) =>
@@ -141,12 +125,10 @@ export default function AsesorCalendarioPage() {
       };
       setNotes([...notes, newNote]);
     }
-
     setOpenDialog(false);
     setForm({ title: "", description: "", color: COLORS[0].value, time: "" });
     setSelectedNote(null);
   };
-
   const handleDelete = () => {
     if (selectedNote) {
       setNotes(notes.filter((n) => n.id !== selectedNote.id));
@@ -154,19 +136,15 @@ export default function AsesorCalendarioPage() {
       setSelectedNote(null);
     }
   };
-
   const goToPreviousMonth = () => {
     setCurrentDate(new Date(year, month - 1, 1));
   };
-
   const goToNextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
   };
-
   const goToToday = () => {
     setCurrentDate(new Date());
   };
-
   const isToday = (day: number | null) => {
     if (day === null) return false;
     const today = new Date();
@@ -176,7 +154,6 @@ export default function AsesorCalendarioPage() {
       year === today.getFullYear()
     );
   };
-
   return (
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 4 }}>
@@ -200,7 +177,6 @@ export default function AsesorCalendarioPage() {
           Nueva Nota
         </Button>
       </Box>
-
       <Card 
         sx={{ 
           borderRadius: 2, 
@@ -210,7 +186,7 @@ export default function AsesorCalendarioPage() {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          {/* Header con mes y año */}
+          {}
           <Box sx={{ textAlign: "center", mb: 3 }}>
             <Typography
               variant="h3"
@@ -240,8 +216,7 @@ export default function AsesorCalendarioPage() {
               {year}
             </Typography>
           </Box>
-
-          {/* Controles de navegación */}
+          {}
           <Box
             sx={{
               display: "flex",
@@ -290,8 +265,7 @@ export default function AsesorCalendarioPage() {
               <ChevronRight />
             </IconButton>
           </Box>
-
-          {/* Días de la semana */}
+          {}
           <Box sx={{ display: "flex", gap: 0.5, mb: 0.5 }}>
             {DAYS_ABBR.map((day) => (
               <Box
@@ -310,13 +284,11 @@ export default function AsesorCalendarioPage() {
               </Box>
             ))}
           </Box>
-
-          {/* Calendario Grid */}
+          {}
           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
             {calendarDays.map((day, idx) => {
               const dayNotes = getNotesForDate(day);
               const today = isToday(day);
-
               return (
                 <Box
                   key={idx}
@@ -417,8 +389,7 @@ export default function AsesorCalendarioPage() {
           </Box>
         </CardContent>
       </Card>
-
-      {/* Dialog para agregar/editar nota */}
+      {}
       <Dialog 
         open={openDialog} 
         onClose={() => setOpenDialog(false)} 

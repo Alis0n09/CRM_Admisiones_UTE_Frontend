@@ -9,13 +9,11 @@ import Phone from "@mui/icons-material/Phone";
 import Email from "@mui/icons-material/Email";
 import WhatsApp from "@mui/icons-material/WhatsApp";
 import Person from "@mui/icons-material/Person";
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 function getMedioIcon(medio?: string) {
   const medioLower = medio?.toLowerCase() || "";
   if (medioLower.includes("llamada")) return <Phone sx={{ fontSize: 18, color: "#10b981" }} />;
@@ -24,7 +22,6 @@ function getMedioIcon(medio?: string) {
   if (medioLower.includes("presencial")) return <Person sx={{ fontSize: 18, color: "#8b5cf6" }} />;
   return <Phone sx={{ fontSize: 18 }} />;
 }
-
 const cols: Column<Seguimiento>[] = [
   { 
     id: "cliente", 
@@ -96,9 +93,7 @@ const cols: Column<Seguimiento>[] = [
     )
   },
 ];
-
 const empty = { id_cliente: "", fecha_contacto: "", medio: "Llamada", comentarios: "", proximo_paso: "", fecha_proximo_contacto: "" };
-
 export default function AsesorSeguimientosPage() {
   const [items, setItems] = useState<Seguimiento[]>([]);
   const [total, setTotal] = useState(0);
@@ -109,24 +104,20 @@ export default function AsesorSeguimientosPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Seguimiento | null>(null);
   const [form, setForm] = useState(empty);
-
   const load = useCallback(() => {
     seguimientoService.getSeguimientos({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
   useEffect(() => { clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([])); }, []);
-
   const save = () => {
     if (!form.id_cliente) return;
     (sel ? seguimientoService.updateSeguimiento(sel.id_seguimiento, form) : seguimientoService.createSeguimiento(form))
       .then(() => { setOpen(false); load(); })
       .catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   return (
     <>
       <DataTable title="Seguimientos" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}

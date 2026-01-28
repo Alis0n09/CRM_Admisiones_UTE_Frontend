@@ -14,7 +14,6 @@ import {
   YouTube,
 } from "@mui/icons-material";
 import Logo from "./Logo";
-
 export default function FooterPublic() {
   return (
     <Box
@@ -27,7 +26,7 @@ export default function FooterPublic() {
     >
       <Container maxWidth="lg">
         <Grid container spacing={4}>
-          {/* Left Side - Logo and Brand */}
+          {}
           <Grid item xs={12} md={4}>
             <Stack spacing={2}>
               <Box sx={{ filter: "brightness(1.1)" }}>
@@ -38,11 +37,10 @@ export default function FooterPublic() {
               </Typography>
             </Stack>
           </Grid>
-
-          {/* Navigation Links */}
+          {}
           <Grid item xs={12} md={6}>
             <Grid container spacing={4}>
-              {/* Becas Column */}
+              {}
               <Grid item xs={6} sm={4}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "white" }}>
                   Becas
@@ -59,8 +57,7 @@ export default function FooterPublic() {
                   </Link>
                 </Stack>
               </Grid>
-
-              {/* Carreras Column */}
+              {}
               <Grid item xs={6} sm={4}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "white" }}>
                   Carreras
@@ -77,8 +74,7 @@ export default function FooterPublic() {
                   </Link>
                 </Stack>
               </Grid>
-
-              {/* Información Column */}
+              {}
               <Grid item xs={6} sm={4}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 2, color: "white" }}>
                   Información
@@ -94,8 +90,7 @@ export default function FooterPublic() {
               </Grid>
             </Grid>
           </Grid>
-
-          {/* Right Side - Social Media */}
+          {}
           <Grid item xs={12} md={2}>
             <Stack spacing={2} alignItems={{ xs: "flex-start", md: "flex-end" }}>
               <Stack direction="row" spacing={1}>
@@ -135,8 +130,7 @@ export default function FooterPublic() {
             </Stack>
           </Grid>
         </Grid>
-
-        {/* Copyright */}
+        {}
         <Box sx={{ mt: 4, pt: 4, borderTop: "1px solid #334155", textAlign: "center" }}>
           <Typography variant="caption" sx={{ color: "#94a3b8" }}>
             © 2024 AliVic Admission. Todos los derechos reservados.

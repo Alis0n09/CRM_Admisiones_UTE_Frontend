@@ -21,7 +21,6 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@mui/material";
-
 const becasDetalle = [
   {
     icon: <School sx={{ fontSize: 40, color: "#3b82f6" }} />,
@@ -137,16 +136,13 @@ const becasDetalle = [
     porcentaje: "Hasta 50%",
   },
 ];
-
 export default function BecasDetallePage() {
   const navigate = useNavigate();
-
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
       <TopbarPublic />
-
       <Container maxWidth="lg" sx={{ py: 5 }}>
-        {/* Header */}
+        {}
         <Box sx={{ mb: 4 }}>
           <Button
             startIcon={<ArrowBack />}
@@ -177,8 +173,7 @@ export default function BecasDetallePage() {
             situación.
           </Typography>
         </Box>
-
-        {/* Becas Cards */}
+        {}
         <Stack spacing={4}>
           {becasDetalle.map((beca, index) => (
             <Card
@@ -234,7 +229,6 @@ export default function BecasDetallePage() {
                   </Typography>
                 </Box>
               </Box>
-
               <CardContent sx={{ p: 4 }}>
                 <Box
                   sx={{
@@ -246,7 +240,7 @@ export default function BecasDetallePage() {
                     gap: 4,
                   }}
                 >
-                  {/* Información */}
+                  {}
                   <Box>
                     <Stack
                       direction="row"
@@ -288,8 +282,7 @@ export default function BecasDetallePage() {
                       ))}
                     </Stack>
                   </Box>
-
-                  {/* Requisitos */}
+                  {}
                   <Box>
                     <Stack
                       direction="row"
@@ -336,8 +329,7 @@ export default function BecasDetallePage() {
             </Card>
           ))}
         </Stack>
-
-        {/* CTA Section */}
+        {}
         <Box
           sx={{
             mt: 6,
@@ -383,7 +375,6 @@ export default function BecasDetallePage() {
           </Button>
         </Box>
       </Container>
-
       <FooterPublic />
     </Box>
   );

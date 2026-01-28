@@ -5,15 +5,14 @@ import PostulacionViewModal from "../../components/PostulacionViewModal";
 import * as postulacionService from "../../services/postulacion.service";
 import * as clienteService from "../../services/cliente.service";
 import * as carreraService from "../../services/carrera.service";
+import * as matriculaService from "../../services/matricula.service";
 import type { Postulacion } from "../../services/postulacion.service";
 import School from "@mui/icons-material/School";
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
   const estadoLower = estado.toLowerCase();
@@ -23,7 +22,6 @@ function getEstadoColor(estado?: string) {
   if (estadoLower.includes("rechazada")) return "error";
   return "default";
 }
-
 const cols: Column<Postulacion>[] = [
   { 
     id: "cliente", 
@@ -72,7 +70,6 @@ const cols: Column<Postulacion>[] = [
     )
   },
 ];
-
 export default function PostulacionesPage() {
   const [items, setItems] = useState<Postulacion[]>([]);
   const [total, setTotal] = useState(0);
@@ -84,7 +81,6 @@ export default function PostulacionesPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Postulacion | null>(null);
   const [form, setForm] = useState<{ id_cliente: string; id_carrera: string; periodo_academico: string; estado_postulacion: string; observaciones: string }>({ id_cliente: "", id_carrera: "", periodo_academico: "", estado_postulacion: "Pendiente", observaciones: "" });
-
   const load = useCallback(() => {
     postulacionService.getPostulaciones({ page, limit }).then((r: any) => {
       const list = r?.items ?? (Array.isArray(r) ? r : []);
@@ -92,48 +88,88 @@ export default function PostulacionesPage() {
       setTotal(r?.meta?.totalItems ?? list.length);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
   useEffect(() => {
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
     carreraService.getCarreras({ limit: 200 }).then((r: any) => setCarreras(r?.items ?? [])).catch(() => setCarreras([]));
   }, []);
-
   const openAdd = () => { setSel(null); setForm({ id_cliente: clientes[0]?.id_cliente || "", id_carrera: carreras[0]?.id_carrera || "", periodo_academico: new Date().getFullYear() + "-1", estado_postulacion: "Pendiente", observaciones: "" }); setOpen(true); };
   const handleView = (r: Postulacion) => { setSel(r); setOpenView(true); };
   const openEdit = (r: Postulacion) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", id_carrera: (r.carrera as any)?.id_carrera || r.id_carrera || "", periodo_academico: (r as any).periodo_academico || "", estado_postulacion: r.estado_postulacion || "Pendiente", observaciones: r.observaciones || "" }); setOpen(true); };
-
-  const save = () => {
+  const save = async () => {
     if (!form.id_cliente || !form.id_carrera || !form.periodo_academico) { alert("Completa cliente, carrera y período"); return; }
-    if (sel) {
-      // Para actualizar, solo enviar los campos que pueden modificarse
-      const updateData = {
-        periodo_academico: form.periodo_academico,
-        estado_postulacion: form.estado_postulacion,
-        observaciones: form.observaciones,
-      };
-      postulacionService.updatePostulacion(sel.id_postulacion, updateData)
-        .then(() => { 
-          setOpen(false); 
-          load();
-          // Disparar evento para actualizar otras páginas que usan postulaciones
-          window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
-        })
-        .catch((e) => alert(e?.response?.data?.message || "Error"));
-    } else {
-      // Para crear, enviar todos los campos necesarios
-      postulacionService.createPostulacion(form)
-        .then(() => { 
-          setOpen(false); 
-          load();
-          // Disparar evento para actualizar otras páginas que usan postulaciones
-          window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
-        })
-        .catch((e) => alert(e?.response?.data?.message || "Error"));
+    const estadoAnterior = sel?.estado_postulacion;
+    const estadoNuevo = form.estado_postulacion;
+    const seAprueba = estadoNuevo === "Aprobada" && estadoAnterior !== "Aprobada";
+    try {
+      if (sel) {
+        const updateData = {
+          periodo_academico: form.periodo_academico,
+          estado_postulacion: form.estado_postulacion,
+          observaciones: form.observaciones,
+        };
+        await postulacionService.updatePostulacion(sel.id_postulacion, updateData);
+        if (seAprueba) {
+          try {
+            const matriculas = await matriculaService.getMatriculas({ limit: 1000 });
+            const matriculasList = (matriculas as any)?.items ?? [];
+            const existeMatricula = matriculasList.some(
+              (m: any) => 
+                m.id_cliente === form.id_cliente && 
+                m.id_carrera === form.id_carrera && 
+                m.periodo_academico === form.periodo_academico
+            );
+            if (!existeMatricula) {
+              await matriculaService.createMatricula({
+                id_cliente: form.id_cliente,
+                id_carrera: form.id_carrera,
+                periodo_academico: form.periodo_academico,
+                estado: "Activa",
+                fecha_matricula: new Date().toISOString().split('T')[0],
+              });
+              alert("✅ Postulación aprobada y matrícula creada automáticamente.");
+            } else {
+              alert("✅ Postulación aprobada. La matrícula ya existe para este período.");
+            }
+          } catch (matriculaError: any) {
+            console.error("Error al crear matrícula automática:", matriculaError);
+            alert(`⚠️ Postulación actualizada, pero hubo un error al crear la matrícula: ${matriculaError?.response?.data?.message || matriculaError?.message || "Error desconocido"}`);
+          }
+        }
+        setOpen(false); 
+        load();
+        window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
+      } else {
+        await postulacionService.createPostulacion(form);
+        if (estadoNuevo === "Aprobada") {
+          try {
+            await matriculaService.createMatricula({
+              id_cliente: form.id_cliente,
+              id_carrera: form.id_carrera,
+              periodo_academico: form.periodo_academico,
+              estado: "Activa",
+              fecha_matricula: new Date().toISOString().split('T')[0],
+            });
+            alert("✅ Postulación creada y aprobada. Matrícula creada automáticamente.");
+          } catch (matriculaError: any) {
+            console.error("Error al crear matrícula automática:", matriculaError);
+            alert(`⚠️ Postulación creada, pero hubo un error al crear la matrícula: ${matriculaError?.response?.data?.message || matriculaError?.message || "Error desconocido"}`);
+          }
+        }
+        setOpen(false); 
+        load();
+        window.dispatchEvent(new CustomEvent("postulacionesUpdated"));
+      }
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "Error al guardar la postulación");
     }
   };
+<<<<<<< HEAD
 
   const del = async (row: Postulacion) => {
+=======
+  const del = (row: Postulacion) => {
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
     if (!confirm("¿Eliminar esta postulación?")) return;
     
     // Obtener el ID de múltiples formas posibles
@@ -219,7 +255,6 @@ export default function PostulacionesPage() {
         }
       });
   };
-
   return (
     <>
       <DataTable title="Postulaciones" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}

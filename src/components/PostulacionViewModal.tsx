@@ -4,13 +4,11 @@ import Person from "@mui/icons-material/Person";
 import CalendarToday from "@mui/icons-material/CalendarToday";
 import ViewModalBase, { InfoCard, formatDate, getInitials } from "./ViewModalBase";
 import type { Postulacion } from "../services/postulacion.service";
-
 interface PostulacionViewModalProps {
   open: boolean;
   onClose: () => void;
   postulacion: Postulacion | null;
 }
-
 function getEstadoColor(estado?: string) {
   if (!estado) return "default";
   const estadoLower = estado.toLowerCase();
@@ -20,14 +18,11 @@ function getEstadoColor(estado?: string) {
   if (estadoLower.includes("rechazada")) return "error";
   return "default";
 }
-
 export default function PostulacionViewModal({ open, onClose, postulacion }: PostulacionViewModalProps) {
   if (!postulacion) return null;
-
   const clienteNombre = postulacion.cliente ? `${postulacion.cliente.nombres} ${postulacion.cliente.apellidos}` : "Aspirante";
   const initials = postulacion.cliente ? getInitials(postulacion.cliente.nombres, postulacion.cliente.apellidos) : "P";
   const estadoColor = getEstadoColor(postulacion.estado_postulacion);
-
   return (
     <ViewModalBase
       open={open}

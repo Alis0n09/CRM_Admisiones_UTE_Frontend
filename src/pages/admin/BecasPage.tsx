@@ -4,8 +4,6 @@ import DataTable, { type Column } from "../../components/DataTable";
 import BecaViewModal from "../../components/BecaViewModal";
 import * as s from "../../services/beca.service";
 import type { Beca } from "../../services/beca.service";
-
-// Becas por defecto que se ofrecen
 const becasPorDefecto: Partial<Beca>[] = [
   {
     nombre_beca: "Becas por mérito",
@@ -48,7 +46,6 @@ const becasPorDefecto: Partial<Beca>[] = [
     estado: "Activa",
   },
 ];
-
 const cols: Column<Beca>[] = [
   { id: "nombre_beca", label: "Nombre", minWidth: 160 },
   { id: "tipo_beca", label: "Tipo", minWidth: 120 },
@@ -56,9 +53,7 @@ const cols: Column<Beca>[] = [
   { id: "fecha_inicio", label: "Inicio", minWidth: 100 },
   { id: "estado", label: "Estado", minWidth: 90 },
 ];
-
 const empty: Partial<Beca> = { nombre_beca: "", tipo_beca: "Mérito", descripcion: "", porcentaje_cobertura: 50, fecha_inicio: new Date().toISOString().slice(0, 10), estado: "Activa" };
-
 export default function BecasPage() {
   const [items, setItems] = useState<Beca[]>([]);
   const [total, setTotal] = useState(0);
@@ -68,27 +63,23 @@ export default function BecasPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Beca | null>(null);
   const [form, setForm] = useState<Partial<Beca>>(empty);
-
   const load = useCallback(() => {
     s.getBecas({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   const inicializarBecasPorDefecto = useCallback(async () => {
     try {
       for (const beca of becasPorDefecto) {
         try {
           await s.createBeca(beca as any);
         } catch (error: any) {
-          // Si la beca ya existe, continuar con la siguiente
           if (error?.response?.status !== 400 && error?.response?.status !== 409) {
             console.error("Error al crear beca:", error);
           }
         }
       }
-      // Recargar después de crear las becas
       s.getBecas({ page, limit }).then((r: any) => {
         setItems(r?.items ?? []);
         setTotal(r?.meta?.totalItems ?? 0);
@@ -97,22 +88,16 @@ export default function BecasPage() {
       console.error("Error al crear las becas por defecto:", error);
     }
   }, [page, limit]);
-
   useEffect(() => {
     load();
-    // Inicializar automáticamente si no hay becas
     s.getBecas({ page: 1, limit: 1 }).then((r: any) => {
       if ((r?.items ?? []).length === 0) {
-        // No hay becas, inicializar con las por defecto
         inicializarBecasPorDefecto();
       }
     }).catch(() => {});
   }, [load, inicializarBecasPorDefecto]);
-
   const save = () => {
     if (!form.nombre_beca || !form.tipo_beca || form.porcentaje_cobertura == null) return;
-    
-    // Convertir porcentaje_cobertura a número decimal válido
     let porcentajeCobertura: number;
     if (typeof form.porcentaje_cobertura === 'number' && !isNaN(form.porcentaje_cobertura)) {
       porcentajeCobertura = form.porcentaje_cobertura;
@@ -120,8 +105,6 @@ export default function BecasPage() {
       const parsed = Number(String(form.porcentaje_cobertura).replace(',', '.'));
       porcentajeCobertura = isNaN(parsed) ? 0 : parsed;
     }
-    
-    // Convertir monto_maximo a número decimal válido si existe
     let montoMaximo: number | undefined;
     if (form.monto_maximo != null && form.monto_maximo !== "" && form.monto_maximo !== 0) {
       if (typeof form.monto_maximo === 'number' && !isNaN(form.monto_maximo)) {
@@ -131,21 +114,14 @@ export default function BecasPage() {
         montoMaximo = isNaN(parsed) ? undefined : parsed;
       }
     }
-    
-    // Validar que los números sean válidos antes de enviar
     if (isNaN(porcentajeCobertura)) {
       alert("El porcentaje de cobertura debe ser un número válido");
       return;
     }
-    
     if (montoMaximo != null && isNaN(montoMaximo)) {
       alert("El monto máximo debe ser un número válido");
       return;
     }
-    
-    // Preparar los datos asegurando que los números sean decimales válidos
-    // El backend puede estar esperando números como strings con formato decimal explícito
-    // Intentamos primero como números, pero si falla, el backend podría necesitar strings
     const dataToSend: any = {
       nombre_beca: form.nombre_beca,
       tipo_beca: form.tipo_beca,
@@ -155,39 +131,27 @@ export default function BecasPage() {
       fecha_fin: form.fecha_fin || undefined,
       estado: form.estado || "Activa",
     };
-    
-    // Solo incluir monto_maximo si tiene un valor válido
     if (montoMaximo != null && montoMaximo > 0) {
       dataToSend.monto_maximo = montoMaximo; // Enviar como número
     }
-    
-    // Asegurar que los números sean válidos
     if (isNaN(porcentajeCobertura) || !isFinite(porcentajeCobertura)) {
       alert("El porcentaje de cobertura debe ser un número válido");
       return;
     }
-    
     if (montoMaximo != null && (isNaN(montoMaximo) || !isFinite(montoMaximo))) {
       alert("El monto máximo debe ser un número válido");
       return;
     }
-    
-    // Convertir a strings con formato decimal si el backend lo requiere
-    // Esto es un workaround para backends que validan formato decimal estricto
     const payloadToSend: any = {
       ...dataToSend,
       porcentaje_cobertura: String(porcentajeCobertura.toFixed(2)),
     };
-    
     if (montoMaximo != null && montoMaximo > 0) {
       payloadToSend.monto_maximo = String(montoMaximo.toFixed(2));
     }
-    
-    // Debug: verificar que los valores sean números válidos
     console.log("Datos a enviar (payload):", payloadToSend);
     console.log("Tipo de porcentaje_cobertura:", typeof payloadToSend.porcentaje_cobertura, payloadToSend.porcentaje_cobertura);
     console.log("Tipo de monto_maximo:", typeof payloadToSend.monto_maximo, payloadToSend.monto_maximo);
-    
     (sel ? s.updateBeca(sel.id_beca, payloadToSend) : s.createBeca(payloadToSend))
       .then(() => { setOpen(false); load(); })
       .catch((e) => {
@@ -195,21 +159,17 @@ export default function BecasPage() {
         alert(e?.response?.data?.message || e?.message || "Error al guardar la beca");
       });
   };
-
   const del = (row: Beca) => {
     if (!confirm("¿Eliminar esta beca?")) return;
     s.deleteBeca(row.id_beca).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const inicializarBecasPorDefectoManual = async () => {
     if (!confirm("¿Deseas crear las becas por defecto que se ofrecen? Esto creará las becas si no existen.")) return;
-    
     try {
       for (const beca of becasPorDefecto) {
         try {
           await s.createBeca(beca as any);
         } catch (error: any) {
-          // Si la beca ya existe, continuar con la siguiente
           if (error?.response?.status !== 400 && error?.response?.status !== 409) {
             console.error("Error al crear beca:", error);
           }
@@ -221,7 +181,6 @@ export default function BecasPage() {
       alert("Error al crear las becas por defecto");
     }
   };
-
   return (
     <>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -234,7 +193,6 @@ export default function BecasPage() {
           </Button>
         )}
       </Box>
-
       <DataTable title="Becas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}

@@ -17,7 +17,6 @@ import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import * as clienteService from "../../services/cliente.service";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-
 export default function RegisterPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -30,7 +29,6 @@ export default function RegisterPage() {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement> | { target: { name: string; value: unknown } }) => {
     const { name, value } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
@@ -40,39 +38,31 @@ export default function RegisterPage() {
       [name]: type === "checkbox" ? checked : value,
     }));
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-
     if (!formData.acceptTerms) {
       setError("Debes aceptar los términos y condiciones");
       return;
     }
-
     if (!formData.password) {
       setError("Debes ingresar una contraseña");
       return;
     }
-
     if (formData.password.length < 6) {
       setError("La contraseña debe tener al menos 6 caracteres");
       return;
     }
-
     if (formData.password !== formData.confirmPassword) {
       setError("¡Las contraseñas no coinciden");
       return;
     }
-
     if (!formData.numero_identificacion || formData.numero_identificacion.trim() === "") {
       setError("Debes ingresar tu número de identificación");
       return;
     }
-
     setLoading(true);
     try {
-      // Crear el cliente - NO incluir 'estado' ya que el backend no lo acepta
       const clienteData = {
         nombres: formData.nombres,
         apellidos: formData.apellidos,
@@ -81,12 +71,15 @@ export default function RegisterPage() {
         numero_identificacion: formData.numero_identificacion.trim(),
         origen: "Formulario Web",
       };
-
       const cliente = await clienteService.createClientePublico(clienteData);
+<<<<<<< HEAD
       
       // Aquí podrías crear el usuario también si el backend lo requiere
       // Por ahora solo redirigimos al login
       alert("Gracias por registrarte, un asesor se contactará contigo muy pronto!");
+=======
+      alert("Registro exitoso. Por favor inicia sesión.");
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
       navigate("/login");
     } catch (err: any) {
       const msg = err?.response?.data?.message;
@@ -95,10 +88,9 @@ export default function RegisterPage() {
       setLoading(false);
     }
   };
-
   return (
     <Box sx={{ height: "100vh", display: "flex", overflow: "hidden" }}>
-      {/* IZQUIERDA: Imagen con degradado */}
+      {}
       <Box
         sx={{
           flex: 1,
@@ -110,7 +102,7 @@ export default function RegisterPage() {
           pt: 6,
         }}
       >
-        {/* Fondo con imagen */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -130,7 +122,7 @@ export default function RegisterPage() {
             },
           }}
         />
-        {/* Overlay degradado mejorado */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -140,8 +132,7 @@ export default function RegisterPage() {
             backdropFilter: "blur(0.5px)",
           }}
         />
-
-        {/* Contenido arriba */}
+        {}
         <Box
           sx={{
             position: "relative",
@@ -173,8 +164,7 @@ export default function RegisterPage() {
           </Typography>
         </Box>
       </Box>
-
-      {/* DERECHA: Form */}
+      {}
       <Box
         sx={{
           width: { xs: "100%", md: "50%" },
@@ -188,7 +178,7 @@ export default function RegisterPage() {
         }}
       >
         <Box sx={{ width: "100%", maxWidth: 400 }}>
-          {/* Logo */}
+          {}
           <Box
             sx={{
               mb: 1.5,
@@ -224,7 +214,6 @@ export default function RegisterPage() {
           >
             Crea tu cuenta para gestionar tu proceso de admisión
           </Typography>
-
           <form onSubmit={handleSubmit}>
             <Stack spacing={2}>
               {error && <Alert severity="error">{error}</Alert>}
@@ -243,7 +232,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <TextField
                 name="apellidos"
                 label="Apellidos"
@@ -259,7 +247,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <TextField
                 name="correo"
                 label="Correo electrónico"
@@ -276,7 +263,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <FormControl fullWidth size="small">
                 <InputLabel>Tipo de identificación</InputLabel>
                 <Select
@@ -294,7 +280,6 @@ export default function RegisterPage() {
                   <MenuItem value="RUC">RUC</MenuItem>
                 </Select>
               </FormControl>
-
               <TextField
                 name="numero_identificacion"
                 label="Número de identificación"
@@ -310,7 +295,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <TextField
                 name="password"
                 label="Contraseña"
@@ -327,7 +311,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <TextField
                 name="confirmPassword"
                 label="Confirmar contraseña"
@@ -344,7 +327,6 @@ export default function RegisterPage() {
                   },
                 }}
               />
-
               <FormControlLabel
                 control={
                   <Checkbox
@@ -365,7 +347,6 @@ export default function RegisterPage() {
                   </Typography>
                 }
               />
-
               <Button
                 type="submit"
                 variant="contained"
@@ -391,7 +372,6 @@ export default function RegisterPage() {
               </Button>
             </Stack>
           </form>
-
           <Stack spacing={0.5} alignItems="center" sx={{ mt: 2 }}>
             <Typography sx={{ fontSize: 14, color: "#64748b" }}>
               ¿Ya tienes una cuenta?{" "}

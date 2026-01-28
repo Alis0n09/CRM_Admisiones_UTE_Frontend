@@ -6,7 +6,6 @@ import * as matriculaService from "../../services/matricula.service";
 import * as clienteService from "../../services/cliente.service";
 import * as carreraService from "../../services/carrera.service";
 import type { Matricula } from "../../services/matricula.service";
-
 const cols: Column<Matricula>[] = [
   { id: "cliente", label: "Cliente", minWidth: 160, format: (_, r) => r.cliente ? `${r.cliente.nombres} ${r.cliente.apellidos}` : "-" },
   { id: "carrera", label: "Carrera", minWidth: 180, format: (_, r) => r.carrera?.nombre_carrera ?? "-" },
@@ -14,7 +13,6 @@ const cols: Column<Matricula>[] = [
   { id: "fecha_matricula", label: "Fecha", minWidth: 100 },
   { id: "estado", label: "Estado", minWidth: 90 },
 ];
-
 export default function MatriculasPage() {
   const [items, setItems] = useState<Matricula[]>([]);
   const [total, setTotal] = useState(0);
@@ -26,24 +24,20 @@ export default function MatriculasPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Matricula | null>(null);
   const [form, setForm] = useState<{ id_cliente: string; id_carrera: string; periodo_academico: string; estado: string }>({ id_cliente: "", id_carrera: "", periodo_academico: "", estado: "Activa" });
-
   const load = useCallback(() => {
     matriculaService.getMatriculas({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   useEffect(() => load(), [load]);
   useEffect(() => {
     clienteService.getClientes({ limit: 200 }).then((r: any) => setClientes(r?.items ?? [])).catch(() => setClientes([]));
     carreraService.getCarreras({ limit: 200 }).then((r: any) => setCarreras(r?.items ?? [])).catch(() => setCarreras([]));
   }, []);
-
   const openAdd = () => { setSel(null); setForm({ id_cliente: clientes[0]?.id_cliente || "", id_carrera: carreras[0]?.id_carrera || "", periodo_academico: new Date().getFullYear() + "-1", estado: "Activa" }); setOpen(true); };
   const handleView = (r: Matricula) => { setSel(r); setOpenView(true); };
   const openEdit = (r: Matricula) => { setSel(r); setForm({ id_cliente: (r.cliente as any)?.id_cliente || r.id_cliente || "", id_carrera: (r.carrera as any)?.id_carrera || r.id_carrera || "", periodo_academico: (r as any).periodo_academico || "", estado: r.estado || "Activa" }); setOpen(true); };
-
   const save = () => {
     if (!form.id_cliente || !form.id_carrera || !form.periodo_academico) { alert("Completa cliente, carrera y período"); return; }
     
@@ -60,12 +54,10 @@ export default function MatriculasPage() {
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }
   };
-
   const del = (row: Matricula) => {
     if (!confirm("¿Eliminar esta matrícula?")) return;
     matriculaService.deleteMatricula(row.id_matricula).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   return (
     <>
       <DataTable title="Matrículas" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}

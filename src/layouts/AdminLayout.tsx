@@ -2,7 +2,6 @@ import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import SidebarAdmin from "../components/layout/SidebarAdmin";
 import TopbarAdmin from "../components/layout/TopbarAdmin";
-
 export default function AdminLayout() {
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", bgcolor: "#EBEBEB" }}>

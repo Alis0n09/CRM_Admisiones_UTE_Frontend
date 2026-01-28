@@ -10,7 +10,6 @@ import {
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -18,7 +17,6 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -49,10 +47,9 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
-
   return (
     <Box sx={{ minHeight: "100vh", display: "flex" }}>
-      {/* IZQUIERDA: Form */}
+      {}
       <Box
         sx={{
           width: { xs: "100%", md: "50%" },
@@ -79,7 +76,6 @@ export default function LoginPage() {
           >
             Ingresa los detalles de tu cuenta para continuar
           </Typography>
-
           <form onSubmit={handleSubmit}>
             <Stack spacing={2.5}>
               {error && <Alert severity="error">{error}</Alert>}
@@ -113,7 +109,6 @@ export default function LoginPage() {
                   },
                 }}
               />
-
               <Box sx={{ display: "flex", justifyContent: "flex-start" }}>
                 <Link
                   component={RouterLink}
@@ -131,7 +126,6 @@ export default function LoginPage() {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </Box>
-
               <Button
                 type="submit"
                 variant="contained"
@@ -157,7 +151,6 @@ export default function LoginPage() {
               </Button>
             </Stack>
           </form>
-
           <Stack spacing={1} alignItems="center" sx={{ mt: 3 }}>
             <Typography sx={{ fontSize: 14, color: "#64748b" }}>
               ¿No tienes una cuenta?{" "}
@@ -194,8 +187,7 @@ export default function LoginPage() {
           </Stack>
         </Box>
       </Box>
-
-      {/* DERECHA: Imagen con degradado */}
+      {}
       <Box
         sx={{
           flex: 1,
@@ -206,7 +198,7 @@ export default function LoginPage() {
           justifyContent: "center",
         }}
       >
-        {/* Fondo con imagen */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -217,7 +209,7 @@ export default function LoginPage() {
             filter: "brightness(0.9) saturate(1.1)",
           }}
         />
-        {/* Overlay degradado corregido */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -226,8 +218,7 @@ export default function LoginPage() {
               "linear-gradient(135deg, rgba(139, 92, 246, 0.85) 0%, rgba(99, 102, 241, 0.80) 50%, rgba(20, 184, 166, 0.78) 100%)",
           }}
         />
-
-        {/* Contenido centrado */}
+        {}
         <Box
           sx={{
             position: "relative",

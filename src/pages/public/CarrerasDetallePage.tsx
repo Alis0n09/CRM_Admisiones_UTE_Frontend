@@ -20,7 +20,6 @@ import {
   Book,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-
 const carrerasDetalle = [
   {
     title: "Tecnología en Desarrollo de Software",
@@ -183,16 +182,13 @@ const carrerasDetalle = [
     ],
   },
 ];
-
 export default function CarrerasDetallePage() {
   const navigate = useNavigate();
-
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh" }}>
       <TopbarPublic />
-
       <Container maxWidth="lg" sx={{ py: 5 }}>
-        {/* Header */}
+        {}
         <Box sx={{ mb: 4 }}>
           <Button
             startIcon={<ArrowBack />}
@@ -223,8 +219,7 @@ export default function CarrerasDetallePage() {
             que mejor se adapte a tus intereses y objetivos profesionales.
           </Typography>
         </Box>
-
-        {/* Carreras Cards */}
+        {}
         <Stack spacing={4}>
           {carrerasDetalle.map((carrera, index) => (
             <Card
@@ -250,7 +245,7 @@ export default function CarrerasDetallePage() {
                   gap: 0,
                 }}
               >
-                {/* Imagen */}
+                {}
                 <Box
                   component="img"
                   src={carrera.img}
@@ -268,8 +263,7 @@ export default function CarrerasDetallePage() {
                     backgroundColor: "#e0f2fe",
                   }}
                 />
-
-                {/* Contenido */}
+                {}
                 <Box>
                   <Box
                     sx={{
@@ -294,7 +288,6 @@ export default function CarrerasDetallePage() {
                         </Typography>
                       </Box>
                     </Stack>
-
                     <Stack
                       direction="row"
                       spacing={2}
@@ -321,7 +314,6 @@ export default function CarrerasDetallePage() {
                       />
                     </Stack>
                   </Box>
-
                   <CardContent sx={{ p: 4 }}>
                     <Box
                       sx={{
@@ -333,7 +325,7 @@ export default function CarrerasDetallePage() {
                         gap: 4,
                       }}
                     >
-                      {/* Información */}
+                      {}
                       <Box>
                         <Stack
                           direction="row"
@@ -375,8 +367,7 @@ export default function CarrerasDetallePage() {
                           ))}
                         </Stack>
                       </Box>
-
-                      {/* Perfil y Campo Laboral */}
+                      {}
                       <Box>
                         <Stack
                           direction="row"
@@ -417,7 +408,6 @@ export default function CarrerasDetallePage() {
                             </Stack>
                           ))}
                         </Stack>
-
                         <Stack
                           direction="row"
                           spacing={1}
@@ -465,8 +455,7 @@ export default function CarrerasDetallePage() {
             </Card>
           ))}
         </Stack>
-
-        {/* CTA Section */}
+        {}
         <Box
           sx={{
             mt: 6,
@@ -518,7 +507,6 @@ export default function CarrerasDetallePage() {
           </Button>
         </Box>
       </Container>
-
       <FooterPublic />
     </Box>
   );

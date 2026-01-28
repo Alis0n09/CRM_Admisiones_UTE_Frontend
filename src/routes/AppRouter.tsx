@@ -8,9 +8,12 @@ import BecasDetallePage from "../pages/public/BecasDetallePage";
 import CarrerasDetallePage from "../pages/public/CarrerasDetallePage";
 import LoginPage from "../pages/public/LoginPage";
 import RegisterPage from "../pages/public/RegisterPage";
+<<<<<<< HEAD
 import ForgotPasswordPage from "../pages/public/ForgotPasswordPage";
 import ResetPasswordPage from "../pages/public/ResetPasswordPage";
 
+=======
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import ClientesPage from "../pages/admin/ClientesPage";
 import EmpleadosPage from "../pages/admin/EmpleadosPage";
@@ -23,7 +26,6 @@ import DocumentosPage from "../pages/admin/DocumentosPage";
 import BecasPage from "../pages/admin/BecasPage";
 import RolesPage from "../pages/admin/RolesPage";
 import SeguimientosPage from "../pages/admin/SeguimientosPage";
-
 import AsesorDashboard from "../pages/asesor/AsesorDashboard";
 import AsesorClientesPage from "../pages/asesor/AsesorClientesPage";
 import AsesorTareasPage from "../pages/asesor/AsesorTareasPage";
@@ -33,7 +35,6 @@ import AsesorDocumentosPage from "../pages/asesor/AsesorDocumentosPage";
 import AsesorSeguimientosPage from "../pages/asesor/AsesorSeguimientosPage";
 import AsesorEvaluacionesPage from "../pages/asesor/AsesorEvaluacionesPage";
 import AsesorCalendarioPage from "../pages/asesor/AsesorCalendarioPage";
-
 import AspiranteDashboard from "../pages/aspirante/AspiranteDashboard";
 import AspirantePerfilPage from "../pages/aspirante/AspirantePerfilPage";
 import AspirantePostulacionesPage from "../pages/aspirante/AspirantePostulacionesPage";
@@ -43,9 +44,7 @@ import AspiranteCarrerasPage from "../pages/aspirante/AspiranteCarrerasPage";
 import AspiranteBecasPage from "../pages/aspirante/AspiranteBecasPage";
 import AspiranteSeguimientosPage from "../pages/aspirante/AspiranteSeguimientosPage";
 import ProcesoAdmisionPage from "../pages/aspirante/ProcesoAdmisionPage";
-
 import ProtectedRoute from "../components/ProtectedRoute";
-
 export default function AppRouter() {
   return (
     <Routes>
@@ -54,13 +53,16 @@ export default function AppRouter() {
         <Route path="/becas" element={<BecasDetallePage />} />
         <Route path="/carreras" element={<CarrerasDetallePage />} />
       </Route>
-
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+<<<<<<< HEAD
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
 
       {/* Admin */}
+=======
+      {}
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
       <Route path="/admin" element={<ProtectedRoute allowedRoles={["ADMIN"]}><AdminLayout /></ProtectedRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="clientes" element={<ClientesPage />} />
@@ -75,8 +77,7 @@ export default function AppRouter() {
         <Route path="roles" element={<RolesPage />} />
         <Route path="seguimientos" element={<SeguimientosPage />} />
       </Route>
-
-      {/* Asesor */}
+      {}
       <Route path="/asesor" element={<ProtectedRoute allowedRoles={["ADMIN", "ASESOR"]}><AsesorLayout /></ProtectedRoute>}>
         <Route index element={<AsesorDashboard />} />
         <Route path="clientes" element={<AsesorClientesPage />} />
@@ -88,8 +89,7 @@ export default function AppRouter() {
         <Route path="documentos" element={<AsesorDocumentosPage />} />
         <Route path="seguimientos" element={<AsesorSeguimientosPage />} />
       </Route>
-
-      {/* Aspirante */}
+      {}
       <Route path="/aspirante" element={<ProtectedRoute allowedRoles={["ADMIN", "ASPIRANTE"]}><AspiranteLayout /></ProtectedRoute>}>
         <Route index element={<ProcesoAdmisionPage />} />
         <Route path="solicitud" element={<ProcesoAdmisionPage />} />
@@ -102,7 +102,6 @@ export default function AppRouter() {
         <Route path="becas" element={<AspiranteBecasPage />} />
         <Route path="seguimientos" element={<AspiranteSeguimientosPage />} />
       </Route>
-
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

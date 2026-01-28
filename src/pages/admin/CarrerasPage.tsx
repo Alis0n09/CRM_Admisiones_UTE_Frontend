@@ -4,8 +4,6 @@ import DataTable, { type Column } from "../../components/DataTable";
 import CarreraViewModal from "../../components/CarreraViewModal";
 import * as s from "../../services/carrera.service";
 import type { Carrera } from "../../services/carrera.service";
-
-// Carreras por defecto que se ofrecen
 const carrerasPorDefecto: Partial<Carrera>[] = [
   {
     nombre_carrera: "Tecnología en Desarrollo de Software",
@@ -48,7 +46,6 @@ const carrerasPorDefecto: Partial<Carrera>[] = [
     estado: "1",
   },
 ];
-
 const cols: Column<Carrera>[] = [
   { id: "nombre_carrera", label: "Carrera", minWidth: 200 },
   { id: "facultad", label: "Facultad", minWidth: 120 },
@@ -57,9 +54,13 @@ const cols: Column<Carrera>[] = [
   { id: "cupos_disponibles", label: "Cupos", minWidth: 70 },
   { id: "estado", label: "Estado", minWidth: 80 },
 ];
+<<<<<<< HEAD
 
 const empty: Partial<Carrera> = { nombre_carrera: "", facultad: "", duracion_semestres: 6, nivel_grado: "Tecnología", cupos_disponibles: 50, estado: "1" };
 
+=======
+const empty: Partial<Carrera> = { nombre_carrera: "", facultad: "", duracion_semestres: 8, nivel_grado: "Tecnología", cupos_disponibles: 50, estado: "1" };
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
 export default function CarrerasPage() {
   const [items, setItems] = useState<Carrera[]>([]);
   const [total, setTotal] = useState(0);
@@ -69,27 +70,23 @@ export default function CarrerasPage() {
   const [openView, setOpenView] = useState(false);
   const [sel, setSel] = useState<Carrera | null>(null);
   const [form, setForm] = useState<Partial<Carrera>>(empty);
-
   const load = useCallback(() => {
     s.getCarreras({ page, limit }).then((r: any) => {
       setItems(r?.items ?? []);
       setTotal(r?.meta?.totalItems ?? 0);
     }).catch(() => setItems([]));
   }, [page, limit]);
-
   const inicializarCarrerasPorDefecto = useCallback(async () => {
     try {
       for (const carrera of carrerasPorDefecto) {
         try {
           await s.createCarrera(carrera as any);
         } catch (error: any) {
-          // Si la carrera ya existe, continuar con la siguiente
           if (error?.response?.status !== 400 && error?.response?.status !== 409) {
             console.error("Error al crear carrera:", error);
           }
         }
       }
-      // Recargar después de crear las carreras
       s.getCarreras({ page, limit }).then((r: any) => {
         setItems(r?.items ?? []);
         setTotal(r?.meta?.totalItems ?? 0);
@@ -98,42 +95,37 @@ export default function CarrerasPage() {
       console.error("Error al crear las carreras por defecto:", error);
     }
   }, [page, limit]);
-
   useEffect(() => {
     load();
-    // Inicializar automáticamente si no hay carreras
     s.getCarreras({ page: 1, limit: 1 }).then((r: any) => {
       if ((r?.items ?? []).length === 0) {
-        // No hay carreras, inicializar con las por defecto
         inicializarCarrerasPorDefecto();
       }
     }).catch(() => {});
   }, [load, inicializarCarrerasPorDefecto]);
-
   const save = () => {
     if (!form.nombre_carrera || !form.facultad) return;
     if (sel) {
-      // Para actualizar, solo enviar los campos que pueden modificarse (excluir id_carrera)
       const { id_carrera, ...updateData } = form;
       s.updateCarrera(sel.id_carrera, updateData)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     } else {
-      // Para crear, enviar todos los campos necesarios
       s.createCarrera(form as any)
         .then(() => { setOpen(false); load(); })
         .catch((e) => alert(e?.response?.data?.message || "Error"));
     }
   };
-
   const del = (row: Carrera) => {
     if (!confirm("¿Eliminar esta carrera?")) return;
     s.deleteCarrera(row.id_carrera).then(() => load()).catch((e) => alert(e?.response?.data?.message || "Error"));
   };
-
   const inicializarCarrerasPorDefectoManual = async () => {
     if (!confirm("¿Deseas crear las carreras por defecto que se ofrecen? Esto creará las carreras si no existen.")) return;
+<<<<<<< HEAD
 
+=======
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
     try {
       for (const carrera of carrerasPorDefecto) {
         try {
@@ -150,6 +142,7 @@ export default function CarrerasPage() {
       alert("Error al crear las carreras por defecto");
     }
   };
+<<<<<<< HEAD
 
   const corregirDuraciones = async () => {
     if (!confirm("¿Actualizar todas las carreras con 4 semestres a 6 semestres? (Estándar para Tecnología Superior)")) return;
@@ -168,6 +161,8 @@ export default function CarrerasPage() {
     }
   };
 
+=======
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
   return (
     <>
       <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 1 }}>
@@ -187,7 +182,6 @@ export default function CarrerasPage() {
           )}
         </Box>
       </Box>
-
       <DataTable title="Carreras" columns={cols} rows={items} total={total} page={page} rowsPerPage={limit}
         onPageChange={setPage} onRowsPerPageChange={(l) => { setLimit(l); setPage(1); }}
         onAdd={() => { setSel(null); setForm(empty); setOpen(true); }}

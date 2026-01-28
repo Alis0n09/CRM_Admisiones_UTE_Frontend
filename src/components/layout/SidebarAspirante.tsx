@@ -1,24 +1,34 @@
+<<<<<<< HEAD
 import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography } from "@mui/material";
 import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+=======
+import { Box, Divider, List, ListItemButton, ListItemIcon, ListItemText, Typography, Avatar, Stack } from "@mui/material";
+import { Link as RouterLink, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
 import Person from "@mui/icons-material/Person";
 import Description from "@mui/icons-material/Description";
 import Dashboard from "@mui/icons-material/Dashboard";
 import ExitToApp from "@mui/icons-material/ExitToApp";
 import Home from "@mui/icons-material/Home";
 import { useAuth } from "../../context/AuthContext";
+<<<<<<< HEAD
 
+=======
+import * as clienteService from "../../services/cliente.service";
+import Logo from "../Logo";
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
 const base = "/aspirante";
-
 const links = [
   { to: `${base}/solicitud`, label: "Mi Solicitud", icon: <Dashboard /> },
   { to: `${base}/documentos`, label: "Documentos", icon: <Description /> },
   { to: `${base}/perfil`, label: "Mi Perfil", icon: <Person /> },
 ];
-
 export default function SidebarAspirante() {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+<<<<<<< HEAD
 
   const handleLogout = () => {
     logout();
@@ -48,6 +58,36 @@ export default function SidebarAspirante() {
           sx={{ mb: 1.5, display: "flex", justifyContent: "center" }}
         >
           <Box sx={{ width: 90, height: 90 }}>
+=======
+  const [clienteInfo, setClienteInfo] = useState<{ nombres?: string; apellidos?: string } | null>(null);
+  useEffect(() => {
+    if (user?.id_cliente) {
+      clienteService.getCliente(user.id_cliente)
+        .then((cliente) => {
+          setClienteInfo({ nombres: cliente.nombres, apellidos: cliente.apellidos });
+        })
+        .catch(() => {
+          setClienteInfo(null);
+        });
+    }
+  }, [user?.id_cliente]);
+  const nombreCompleto = clienteInfo ? `${clienteInfo.nombres || ""} ${clienteInfo.apellidos || ""}`.trim() : null;
+  const getInitials = (nombres?: string, apellidos?: string, email?: string): string => {
+    if (nombres && apellidos) {
+      return `${nombres[0] || ""}${apellidos[0] || ""}`.toUpperCase();
+    }
+    if (email) {
+      return email[0].toUpperCase();
+    }
+    return "A";
+  };
+  const initials = getInitials(clienteInfo?.nombres, clienteInfo?.apellidos, user?.email);
+  return (
+    <Box sx={{ width: 260, bgcolor: "white", borderRight: "1px solid #eee", p: 2, display: "flex", flexDirection: "column" }}>
+      <Box sx={{ py: 2 }}>
+        <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
+          <Box sx={{ width: 150, height: 150 }}>
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
             <Box
               component="img"
               src="/logo.png"
@@ -59,6 +99,7 @@ export default function SidebarAspirante() {
             />
           </Box>
         </Box>
+<<<<<<< HEAD
         <Typography fontWeight={700} sx={{ color: "#1e293b" }}>
           Aspirante · UTE Admisiones
         </Typography>
@@ -67,6 +108,32 @@ export default function SidebarAspirante() {
             {user.email}
           </Typography>
         )}
+=======
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ px: 1 }}>
+          <Avatar
+            sx={{
+              width: 48,
+              height: 48,
+              bgcolor: "#8b5cf6",
+              color: "white",
+              fontSize: "1.25rem",
+              fontWeight: 700,
+            }}
+          >
+            {initials}
+          </Avatar>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
+            <Typography variant="body1" fontWeight={700} sx={{ color: "#1e293b", fontSize: "0.95rem", lineHeight: 1.3 }}>
+              {nombreCompleto || "Aspirante"}
+            </Typography>
+            {user?.email && (
+              <Typography variant="body2" sx={{ color: "text.secondary", fontSize: "0.8rem", lineHeight: 1.3 }}>
+                {user.email}
+              </Typography>
+            )}
+          </Box>
+        </Stack>
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
       </Box>
 
       <Divider sx={{ my: 2 }} />

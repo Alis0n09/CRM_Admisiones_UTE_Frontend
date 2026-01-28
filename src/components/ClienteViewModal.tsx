@@ -28,8 +28,6 @@ import type { Postulacion } from "../services/postulacion.service";
 import type { DocumentoPostulacion } from "../services/documentoPostulacion.service";
 import type { Beca } from "../services/beca.service";
 import type { BecaEstudiante } from "../services/becaEstudiante.service";
-import { api } from "../services/api";
-
 interface ClienteViewModalProps {
   open: boolean;
   onClose: () => void;
@@ -44,7 +42,6 @@ interface ClienteViewModalProps {
   onSubirDocumentoClick?: () => void;
   onAsignarBecaClick?: () => void;
 }
-
 function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
   try {
@@ -57,20 +54,17 @@ function formatDate(dateStr?: string): string {
     return dateStr;
   }
 }
-
 function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 interface InfoCardProps {
   icon: React.ReactNode;
   label: string;
   value: string;
   iconColor: string;
 }
-
 function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
   return (
     <Card
@@ -116,21 +110,9 @@ function InfoCard({ icon, label, value, iconColor }: InfoCardProps) {
     </Card>
   );
 }
-
-export default function ClienteViewModal({
-  open,
-  onClose,
-  cliente,
-  postulaciones,
-  documentos,
-  becasDisponibles,
-  becaAsignada,
-  loadingDetail,
-  onCrearPostulacionClick,
-  onSubirDocumentoClick,
-  onAsignarBecaClick,
-}: ClienteViewModalProps) {
+export default function ClienteViewModal({ open, onClose, cliente }: ClienteViewModalProps) {
   const [postulacionesCount, setPostulacionesCount] = useState(0);
+<<<<<<< HEAD
   const [fileError, setFileError] = useState<string>("");
 
   const resolveUrl = (url?: string) => {
@@ -216,6 +198,8 @@ export default function ClienteViewModal({
     }
   };
 
+=======
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
   useEffect(() => {
     if (Array.isArray(postulaciones)) {
       setPostulacionesCount(postulaciones.length);
@@ -233,13 +217,10 @@ export default function ClienteViewModal({
         })
         .catch(() => setPostulacionesCount(0));
     }
-  }, [cliente?.id_cliente, postulaciones]);
-
+  }, [cliente?.id_cliente]);
   if (!cliente) return null;
-
   const initials = getInitials(cliente.nombres, cliente.apellidos);
   const nombreCompleto = `${cliente.nombres || ""} ${cliente.apellidos || ""}`.trim();
-
   return (
     <Dialog
       open={open}
@@ -254,7 +235,7 @@ export default function ClienteViewModal({
         },
       }}
     >
-      {/* Header con gradiente morado */}
+      {}
       <Box
         sx={{
           background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
@@ -309,10 +290,9 @@ export default function ClienteViewModal({
           />
         </Stack>
       </Box>
-
-      {/* Contenido */}
+      {}
       <Box sx={{ p: 3, bgcolor: "#f9fafb", maxHeight: "calc(90vh - 200px)", overflowY: "auto" }}>
-        {/* Información Personal */}
+        {}
         <Box sx={{ mb: 3 }}>
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
             <Person sx={{ color: "#3b82f6", fontSize: 20 }} />
@@ -425,8 +405,7 @@ export default function ClienteViewModal({
             </Grid>
           </Grid>
         </Box>
-
-        {/* Postulaciones */}
+        {}
         <Box>
           <Box
             sx={{
@@ -679,8 +658,7 @@ export default function ClienteViewModal({
           )}
         </Box>
       </Box>
-
-      {/* Footer */}
+      {}
       <Box
         sx={{
           p: 2,

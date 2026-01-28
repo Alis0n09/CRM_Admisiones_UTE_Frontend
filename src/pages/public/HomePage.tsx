@@ -29,7 +29,6 @@ import {
   Instagram,
 } from "@mui/icons-material";
 import * as clienteService from "../../services/cliente.service";
-
 const scholarships = [
   {
     icon: <School sx={{ fontSize: 36, color: "#3b82f6" }} />,
@@ -57,7 +56,6 @@ const scholarships = [
     description: "Apoyo para mujeres en ciencia, tecnología e ingeniería",
   },
 ];
-
 const careers = [
   {
     title: "Tecnología en Desarrollo de Software",
@@ -85,7 +83,6 @@ const careers = [
     img: "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?q=80&w=1200&auto=format&fit=crop",
   },
 ];
-
 export default function HomePage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
@@ -100,15 +97,11 @@ export default function HomePage() {
     message: string;
     severity: "success" | "error";
   }>({ open: false, message: "", severity: "success" });
-
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [field]: e.target.value });
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validación básica
     if (!formData.nombresCompletos.trim() || !formData.correo.trim() || !formData.telefono.trim()) {
       setSnackbar({
         open: true,
@@ -117,12 +110,9 @@ export default function HomePage() {
       });
       return;
     }
-
-    // Dividir nombres completos en nombres y apellidos
     const nombresArray = formData.nombresCompletos.trim().split(" ");
     const nombres = nombresArray[0] || "";
     const apellidos = nombresArray.slice(1).join(" ") || nombresArray[0] || "";
-
     if (!nombres || !apellidos) {
       setSnackbar({
         open: true,
@@ -131,47 +121,35 @@ export default function HomePage() {
       });
       return;
     }
-
     setLoading(true);
-
     try {
-      // Generar un número de identificación temporal único (máximo 20 caracteres según la entidad)
-      // Usar formato corto: TEMP + últimos dígitos del timestamp + número aleatorio corto
       const timestamp = Date.now().toString().slice(-8); // Últimos 8 dígitos del timestamp
       const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0'); // 3 dígitos
       const numeroIdentificacionTemp = `TEMP${timestamp}${randomNum}`.slice(0, 20); // Máximo 20 caracteres
-      
-      // Preparar los datos del cliente según la estructura de la entidad
-      // NOTA: No enviar 'estado' ya que el backend tiene un valor por defecto y puede causar error
       const clienteData: Partial<clienteService.Cliente> = {
-        // Campos requeridos (nullable: false)
         nombres: nombres.trim(),
         apellidos: apellidos.trim(),
         tipo_identificacion: "Cédula", // Valor por defecto, el admin/asesor puede actualizarlo
         numero_identificacion: numeroIdentificacionTemp, // Temporal único (máx 20 chars), debe ser actualizado por admin/asesor
+<<<<<<< HEAD
         origen: formData.mensaje.trim() ? formData.mensaje.trim().slice(0, 200) : "Formulario web - Página principal",
         // NO incluir 'estado' - el backend lo maneja con valor por defecto 'Nuevo'
         
         // Campos opcionales de contacto
+=======
+        origen: formData.mensaje.trim() || "Formulario web - Página principal",
+>>>>>>> b0812e374e8bce34a15d44db7119aa11adf96874
         correo: formData.correo.trim() || undefined,
         telefono: formData.telefono.trim() || undefined,
         celular: formData.telefono.trim() || undefined, // Usar el mismo teléfono para celular si no se especifica
-        
-        // Campos opcionales que no se capturan en el formulario público
-        // calle_principal, calle_secundaria, numero_casa, nacionalidad, genero, estado_civil, fecha_nacimiento
-        // Estos pueden ser completados por el admin/asesor después
       };
-
       await clienteService.createClientePublico(clienteData);
-
-      // Limpiar formulario
       setFormData({
         nombresCompletos: "",
         correo: "",
         telefono: "",
         mensaje: "",
       });
-
       setSnackbar({
         open: true,
         message: "¡Gracias! Hemos recibido tu información. Te contactaremos pronto.",
@@ -184,7 +162,6 @@ export default function HomePage() {
         error?.message || 
         error?.response?.data?.error ||
         "Error al enviar el formulario. Por favor intenta nuevamente.";
-      
       setSnackbar({
         open: true,
         message: errorMessage,
@@ -194,12 +171,10 @@ export default function HomePage() {
       setLoading(false);
     }
   };
-
   return (
     <Box sx={{ bgcolor: "#f8fafc", minHeight: "100vh", position: "relative", overflow: "hidden" }}>
       <TopbarPublic />
-
-      {/* HERO SECTION */}
+      {}
       <Box
         sx={{
           position: "relative",
@@ -211,7 +186,7 @@ export default function HomePage() {
           alignItems: "center",
         }}
       >
-        {/* Background Image */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -226,8 +201,7 @@ export default function HomePage() {
             zIndex: 0,
           }}
         />
-        
-        {/* Overlay for better text readability */}
+        {}
         <Box
           sx={{
             position: "absolute",
@@ -239,14 +213,11 @@ export default function HomePage() {
             zIndex: 1,
           }}
         />
-
-
         <Container maxWidth="lg" sx={{ position: "relative", zIndex: 2 }}>
           <Stack spacing={3} alignItems="center" sx={{ textAlign: "center" }}>
-            {/* Logo - Extra Large and Centered, without text */}
+            {}
             <Logo size="large" showText={false} />
-
-            {/* Main Title */}
+            {}
             <Typography
               variant="h2"
               sx={{
@@ -259,8 +230,7 @@ export default function HomePage() {
             >
               Tu futuro empieza aquí
         </Typography>
-
-            {/* Subtitle */}
+            {}
             <Typography
               variant="h6"
               sx={{
@@ -275,8 +245,7 @@ export default function HomePage() {
               Explora carreras y becas. Déjanos tus datos y un asesor te contactará con información
               personalizada.
         </Typography>
-
-            {/* CTA Buttons */}
+            {}
             <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ mt: 1, justifyContent: "center" }}>
               <Button
                 variant="contained"
@@ -322,9 +291,8 @@ export default function HomePage() {
           </Stack>
         </Container>
       </Box>
-
       <Container maxWidth="lg" sx={{ py: 3 }}>
-        {/* QUOTE SECTION */}
+        {}
       <Box sx={{ textAlign: "center", my: 3, position: "relative" }}>
           <Box
             sx={{
@@ -358,8 +326,7 @@ export default function HomePage() {
             "La educación no cambia el mundo, cambia a las personas que van a cambiar el mundo."
         </Typography>
       </Box>
-
-        {/* BECAS SECTION */}
+        {}
         <Box id="becas" sx={{ my: 4, position: "relative" }}>
           <Box
             sx={{
@@ -380,11 +347,9 @@ export default function HomePage() {
           Becas
         </Typography>
           </Stack>
-
           <Typography sx={{ color: "#64748b", mb: 2.5, fontSize: "0.95rem", position: "relative", zIndex: 1 }}>
             Conoce los tipos de becas que tenemos disponibles, además de más opciones avanzadas.
         </Typography>
-
           <Box
             sx={{
               display: "grid",
@@ -426,7 +391,6 @@ export default function HomePage() {
               </Card>
             ))}
           </Box>
-
           <Box sx={{ textAlign: "center", position: "relative", zIndex: 1 }}>
             <Button
               variant="contained"
@@ -450,8 +414,7 @@ export default function HomePage() {
             </Button>
           </Box>
         </Box>
-
-        {/* FORM SECTION - Explora nuestras carreras */}
+        {}
         <Box id="formulario" sx={{ my: 4, position: "relative" }}>
           <Box
             sx={{
@@ -472,11 +435,9 @@ export default function HomePage() {
               Explora nuestras carreras
             </Typography>
           </Stack>
-
           <Typography sx={{ color: "#64748b", mb: 2.5, fontSize: "0.95rem", position: "relative", zIndex: 1 }}>
             Déjanos tus datos y te contactaremos a la brevedad.
           </Typography>
-
           <Card
             sx={{
               borderRadius: 2,
@@ -581,8 +542,7 @@ export default function HomePage() {
             </form>
           </Card>
         </Box>
-
-        {/* CAREERS SECTION */}
+        {}
         <Box id="carreras" sx={{ my: 4, position: "relative" }}>
           <Box
             sx={{
@@ -603,11 +563,9 @@ export default function HomePage() {
               Explora nuestras carreras
             </Typography>
           </Stack>
-
           <Typography sx={{ color: "#64748b", mb: 2.5, fontSize: "0.95rem", position: "relative", zIndex: 1 }}>
             Programación, bases de datos, arquitectura y desarrollo web.
         </Typography>
-
         <Box
           sx={{
             display: "grid",
@@ -641,7 +599,6 @@ export default function HomePage() {
                     src={career.img}
                     alt={career.title}
                     onError={(e) => {
-                      // Fallback image if original fails to load
                       const target = e.currentTarget;
                       target.src = "https://images.unsplash.com/photo-1559757148-5c350d0d3c56?q=80&w=1200&auto=format&fit=crop";
                     }}
@@ -664,7 +621,6 @@ export default function HomePage() {
               </Box>
             ))}
           </Box>
-
           <Box sx={{ textAlign: "center", mt: 4, position: "relative", zIndex: 1 }}>
             <Button
               variant="contained"
@@ -688,8 +644,7 @@ export default function HomePage() {
             </Button>
           </Box>
         </Box>
-
-        {/* CONTACT SECTION */}
+        {}
         <Box id="contacto" sx={{ my: 4, position: "relative" }}>
           <Box
             sx={{
@@ -718,7 +673,6 @@ export default function HomePage() {
           <Typography sx={{ color: "#64748b", mb: 2.5, textAlign: "center", fontSize: "0.95rem", position: "relative", zIndex: 1 }}>
             Déjanos tus datos y te contactaremos a la brevedad.
           </Typography>
-
           <Card
             sx={{
               borderRadius: 2,
@@ -837,11 +791,9 @@ export default function HomePage() {
           </Card>
         </Box>
       </Container>
-
-      {/* FOOTER */}
+      {}
       <FooterPublic />
-
-      {/* Snackbar para notificaciones */}
+      {}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}

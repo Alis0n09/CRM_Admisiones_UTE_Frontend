@@ -10,7 +10,6 @@ import {
   Button,
   Stack,
 } from "@mui/material";
-
 interface ViewModalBaseProps {
   open: boolean;
   onClose: () => void;
@@ -22,7 +21,6 @@ interface ViewModalBaseProps {
   children: React.ReactNode;
   actions?: React.ReactNode;
 }
-
 export function InfoCard({ icon, label, value, iconColor }: { icon: React.ReactNode; label: string; value: string; iconColor: string }) {
   return (
     <Card
@@ -68,7 +66,6 @@ export function InfoCard({ icon, label, value, iconColor }: { icon: React.ReactN
     </Card>
   );
 }
-
 export function formatDate(dateStr?: string): string {
   if (!dateStr) return "-";
   try {
@@ -81,13 +78,11 @@ export function formatDate(dateStr?: string): string {
     return dateStr;
   }
 }
-
 export function getInitials(nombres?: string, apellidos?: string): string {
   const first = nombres?.[0]?.toUpperCase() || "";
   const last = apellidos?.[0]?.toUpperCase() || "";
   return first + last;
 }
-
 export default function ViewModalBase({
   open,
   onClose,
@@ -113,7 +108,7 @@ export default function ViewModalBase({
         },
       }}
     >
-      {/* Header con gradiente morado */}
+      {}
       <Box
         sx={{
           background: "linear-gradient(135deg, #8b5cf6 0%, #a78bfa 100%)",
@@ -170,13 +165,11 @@ export default function ViewModalBase({
           )}
         </Stack>
       </Box>
-
-      {/* Contenido */}
+      {}
       <Box sx={{ p: 3, bgcolor: "#f9fafb", maxHeight: "calc(90vh - 200px)", overflowY: "auto" }}>
         {children}
       </Box>
-
-      {/* Footer */}
+      {}
       <Box
         sx={{
           p: 2,
