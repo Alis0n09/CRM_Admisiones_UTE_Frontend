@@ -1,4 +1,4 @@
-name: ⚛️ Deploy React to VPS (Nginx)
+name: ⚛️ Deploy React to VPS (Nginx) - CI/CD
 
 on:
   push:
